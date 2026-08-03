@@ -1,5 +1,4 @@
 create extension if not exists pgcrypto;
-create extension if not exists unaccent;
 
 create table public.admin_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -115,9 +114,6 @@ create table public.element_translations (
   seo_title text,
   seo_description text,
   is_published boolean not null default false,
-  search_vector tsvector generated always as (
-    to_tsvector('simple', unaccent(coalesce(name, '') || ' ' || coalesce(short_text, '')))
-  ) stored,
   unique(element_id, language_id)
 );
 
@@ -186,7 +182,8 @@ create index languages_active_order_idx on public.languages(is_active, sort_orde
 create index elements_status_order_idx on public.elements(status, sort_order);
 create index elements_type_idx on public.elements(element_type_id);
 create index element_translations_language_idx on public.element_translations(language_id);
-create index element_translations_search_idx on public.element_translations using gin(search_vector);
+create index element_translations_name_idx on public.element_translations(lower(name));
+create index element_translations_short_text_idx on public.element_translations(lower(short_text));
 create index element_images_order_idx on public.element_images(element_id, sort_order);
 create index element_audios_language_order_idx on public.element_audios(element_id, language_id, sort_order);
 create index element_links_language_order_idx on public.element_links(element_id, language_id, sort_order);
