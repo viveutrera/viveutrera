@@ -1,27 +1,56 @@
 import { collaborators, elements, elementTypes, languages, siteContent } from './mockData';
 import type { GuideElement, LanguageCode, UploadRequest, UploadResult } from '../domain/types';
 import { mediaUrl } from '../lib/media';
+import { canUseSupabase, supabaseGuideRepository } from './supabaseRepository';
+
+async function withFallback<T>(action: () => Promise<T>, fallback: () => T | Promise<T>) {
+  if (!canUseSupabase()) return fallback();
+  try {
+    return await action();
+  } catch (error) {
+    console.warn('Supabase no disponible, usando datos simulados.', error);
+    return fallback();
+  }
+}
 
 export const guideRepository = {
   async getLanguages() {
-    return languages.filter((language) => language.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+    return withFallback(
+      () => supabaseGuideRepository.getLanguages(),
+      () => languages.filter((language) => language.isActive).sort((a, b) => a.sortOrder - b.sortOrder)
+    );
   },
   async getSiteContent(language: LanguageCode) {
-    return siteContent[language] ?? siteContent.es;
+    return withFallback(
+      () => supabaseGuideRepository.getSiteContent(language),
+      () => siteContent[language] ?? siteContent.es
+    );
   },
   async getElementTypes() {
-    return elementTypes.filter((type) => type.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+    return withFallback(
+      () => supabaseGuideRepository.getElementTypes(),
+      () => elementTypes.filter((type) => type.isActive).sort((a, b) => a.sortOrder - b.sortOrder)
+    );
   },
   async getElements(language: LanguageCode) {
-    return elements
-      .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+    return withFallback(
+      () => supabaseGuideRepository.getElements(language),
+      () => elements
+        .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+    );
   },
   async getElementBySlug(language: LanguageCode, slug: string): Promise<GuideElement | undefined> {
-    return elements.find((element) => element.slug === slug && element.translations[language]?.isPublished);
+    return withFallback(
+      () => supabaseGuideRepository.getElementBySlug(language, slug),
+      () => elements.find((element) => element.slug === slug && element.translations[language]?.isPublished)
+    );
   },
   async getCollaborators() {
-    return collaborators.filter((collaborator) => collaborator.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+    return withFallback(
+      () => supabaseGuideRepository.getCollaborators(),
+      () => collaborators.filter((collaborator) => collaborator.isActive).sort((a, b) => a.sortOrder - b.sortOrder)
+    );
   }
 };
 

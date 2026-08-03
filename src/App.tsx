@@ -2,8 +2,12 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminElements } from './pages/admin/AdminElements';
+import { AdminElementTypes } from './pages/admin/AdminElementTypes';
+import { AdminLanguages } from './pages/admin/AdminLanguages';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
+import { AdminSettings } from './pages/admin/AdminSettings';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
 import { LandingPage } from './pages/public/LandingPage';
@@ -28,10 +32,10 @@ export function App() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="configuracion" element={<AdminPlaceholder title="Configuracion" />} />
-        <Route path="idiomas" element={<AdminPlaceholder title="Idiomas" />} />
-        <Route path="tipos" element={<AdminPlaceholder title="Tipos de elementos" />} />
-        <Route path="elementos" element={<AdminPlaceholder title="Elementos" />} />
+        <Route path="configuracion" element={<AdminSettings />} />
+        <Route path="idiomas" element={<AdminLanguages />} />
+        <Route path="tipos" element={<AdminElementTypes />} />
+        <Route path="elementos" element={<AdminElements />} />
         <Route path="colaboradores" element={<AdminPlaceholder title="Colaboradores" />} />
       </Route>
       <Route path="/404" element={<NotFoundPage />} />

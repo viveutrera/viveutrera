@@ -4,7 +4,7 @@ Guia audiovisual publica de Utrera, mobile-first y preparada para publicarse com
 
 ## Estado
 
-Primera fase implementada:
+Fases implementadas:
 
 - Vite, React, TypeScript y React Router.
 - Rutas publicas: `/`, `/guia/:idioma`, `/guia/:idioma/elemento/:slug`.
@@ -16,8 +16,12 @@ Primera fase implementada:
 - Contrato de almacenamiento y cliente simulado para sustituir por Cloudflare Worker + R2.
 - Migracion SQL inicial con tablas, indices y RLS.
 - Workflow de GitHub Pages.
+- Repositorios publicos con Supabase real y fallback a mocks.
+- Login admin con Supabase Auth y comprobacion de `admin_profiles`.
+- CRUD textual basico de configuracion, idiomas, tipos y elementos.
+- Seed inicial sin multimedia real en `supabase/seeds/20260803_initial_content.sql`.
 
-## Instalacion
+## Ejecucion local opcional
 
 ```bash
 npm install
@@ -34,7 +38,13 @@ npm run build
 
 ## Variables
 
-Copia `.env.example` a `.env.local` para desarrollo local:
+La configuracion principal del despliegue debe vivir en GitHub Actions Variables:
+
+```text
+Settings -> Secrets and variables -> Actions -> Variables
+```
+
+Variables publicas del frontend:
 
 ```env
 VITE_SUPABASE_URL=
@@ -62,6 +72,7 @@ PUBLIC_MEDIA_BASE_URL=
 ## Supabase
 
 La migracion inicial esta en `supabase/migrations/20260803190000_initial_schema.sql`.
+El contenido inicial esta en `supabase/seeds/20260803_initial_content.sql`.
 
 Incluye:
 
@@ -73,6 +84,11 @@ Incluye:
 - Politicas administrativas basadas en `public.is_admin()`.
 
 Para crear administradores, primero crea usuarios en Supabase Auth y despues inserta su `auth.users.id` en `public.admin_profiles`.
+
+```sql
+insert into public.admin_profiles (user_id)
+values ('UUID_DEL_USUARIO');
+```
 
 ## Cloudflare R2 y Worker
 
@@ -95,10 +111,10 @@ La primera fase es una SPA para GitHub Pages. Esto permite despliegue simple, pe
 
 ## Siguientes pasos
 
-1. Crear proyecto Supabase y ejecutar migraciones.
-2. Insertar idiomas iniciales y contenido base.
-3. Implementar repositorios Supabase reales.
+1. Ejecutar migracion y seed en Supabase.
+2. Crear usuarios administradores y autorizar su UID en `admin_profiles`.
+3. Completar CRUD de colaboradores y enlaces.
 4. Crear Cloudflare Worker para R2.
 5. Sustituir placeholders de marca e imagenes.
-6. Completar CRUD administrativo con modales y validaciones de dominio.
+6. Completar subida, borrado y optimizacion de multimedia.
 7. Preparar prerender o generacion estatica si el SEO organico pasa a ser prioritario.
