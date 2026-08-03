@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="180" viewBox="0 0 640 180" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder logo horizontal Vive Utrera</title>
+  <desc id="desc">Recurso temporal de marca para sustituir por el logotipo definitivo.</desc>
+  <rect width="640" height="180" fill="#0D2B4D"/>
+  <rect x="32" y="32" width="116" height="116" rx="14" fill="#D8C7A6"/>
+  <path d="M62 118h56L90 62z" fill="#B22226"/>
+  <text x="176" y="82" font-family="Montserrat, Arial, sans-serif" font-size="42" font-weight="800" fill="#FFFFFF">VIVE</text>
+  <text x="176" y="126" font-family="Montserrat, Arial, sans-serif" font-size="42" font-weight="600" fill="#D8C7A6">UTRERA</text>
+</svg>
