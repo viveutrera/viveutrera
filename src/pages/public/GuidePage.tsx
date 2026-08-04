@@ -9,7 +9,7 @@ import { guideRepository } from '../../data/repositories';
 import type { ElementType, GuideElement, Language, LanguageCode, SiteContent } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
-import { mediaUrl } from '../../lib/media';
+import { mediaObjectKey, mediaUrl } from '../../lib/media';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function GuidePage() {
@@ -119,7 +119,7 @@ export function GuidePage() {
             const type = types.find((item) => item.id === element.typeId);
             return (
               <Card key={element.id} className="element-card">
-                {cover ? <img src={mediaUrl(cover.mediaAsset.objectKey)} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
+                {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
                 <div>
                   <span className="tag">{type?.name[contentLanguage]}</span>
                   <h2>{translation.name}</h2>

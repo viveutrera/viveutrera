@@ -5,10 +5,11 @@ import type {
   Language,
   LanguageCode,
   MediaAsset,
+  MediaVariant,
   SiteContent
 } from '../domain/types';
 import { supabase } from '../lib/supabase';
-import { elements as mockElements, languages as mockLanguages, siteContent as mockSiteContent } from './mockData';
+import { languages as mockLanguages, siteContent as mockSiteContent } from './mockData';
 
 const languageCodes: LanguageCode[] = ['es', 'en', 'fr', 'de'];
 
@@ -70,6 +71,40 @@ interface MediaAssetRowRaw {
   width: number | null;
   height: number | null;
   duration_seconds: number | null;
+  media_variants?: MediaVariantRowRaw[] | MediaVariantRowRaw | null;
+}
+
+interface MediaVariantRowRaw {
+  id?: string;
+  variant: string;
+  object_key: string;
+  file_size: number;
+  width: number | null;
+  height: number | null;
+}
+
+interface ElementImageRowRaw {
+  id: string;
+  element_id: string;
+  is_cover: boolean;
+  sort_order: number;
+  media_assets: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
+  element_image_translations?: Array<{
+    title: string | null;
+    alt_text: string;
+    caption: string | null;
+    languages?: { code: string } | { code: string }[] | null;
+  }>;
+}
+
+interface ElementAudioRowRaw {
+  id: string;
+  element_id: string;
+  title: string;
+  transcript: string | null;
+  sort_order: number;
+  is_published: boolean;
+  media_assets: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
 }
 
 function asLanguageCode(code: string): LanguageCode {
@@ -196,7 +231,9 @@ export const supabaseGuideRepository = {
 
     if (error) throw error;
 
-    return ((data ?? []) as ElementRowRaw[]).map((row) => mapElementRow(row, language));
+    const elements = ((data ?? []) as ElementRowRaw[]).map((row) => mapElementRow(row, language));
+    await hydrateElementMedia(elements, languageId, language);
+    return elements;
   },
 
   async getElementBySlug(language: LanguageCode, slug: string): Promise<GuideElement | undefined> {
@@ -217,6 +254,7 @@ export const supabaseGuideRepository = {
     if (!data) return undefined;
 
     const element = mapElementRow(data as unknown as ElementRowRaw, language);
+    await hydrateElementMedia([element], languageId, language);
     const { data: links, error: linksError } = await client
       .from('element_links')
       .select('id, language_id, title, url, link_type, sort_order, is_published')
@@ -495,6 +533,99 @@ export const adminRepository = {
     if (error) throw error;
   },
 
+  async listElementImages() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('element_images')
+      .select('id, element_id, media_asset_id, is_cover, sort_order, elements(slug), media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), element_image_translations(id, title, alt_text, caption, language_id, languages(code))')
+      .order('sort_order');
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveElementImage(input: {
+    id?: string;
+    element_id: string;
+    media_asset_id: string;
+    is_cover: boolean;
+    sort_order: number;
+    translations: Array<{ language_id: string; title: string; alt_text: string; caption: string }>;
+  }) {
+    const client = ensureSupabase();
+    const { data: image, error } = await client
+      .from('element_images')
+      .upsert({
+        id: input.id,
+        element_id: input.element_id,
+        media_asset_id: input.media_asset_id,
+        is_cover: input.is_cover,
+        sort_order: input.sort_order
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+
+    const rows = input.translations.filter((translation) => translation.alt_text.trim()).map((translation) => ({
+      element_image_id: image.id,
+      language_id: translation.language_id,
+      title: translation.title || null,
+      alt_text: translation.alt_text,
+      caption: translation.caption || null
+    }));
+    if (rows.length) {
+      const { error: translationError } = await client
+        .from('element_image_translations')
+        .upsert(rows, { onConflict: 'element_image_id,language_id' });
+      if (translationError) throw translationError;
+    }
+  },
+  async deleteElementImage(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('element_images').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async listElementAudios() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('element_audios')
+      .select('id, element_id, language_id, media_asset_id, title, transcript, sort_order, is_published, elements(slug), languages(code), media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds)')
+      .order('sort_order');
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveElementAudio(input: {
+    id?: string;
+    element_id: string;
+    language_id: string;
+    media_asset_id: string;
+    title: string;
+    transcript: string;
+    sort_order: number;
+    is_published: boolean;
+  }) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('element_audios')
+      .upsert({
+        id: input.id,
+        element_id: input.element_id,
+        language_id: input.language_id,
+        media_asset_id: input.media_asset_id,
+        title: input.title,
+        transcript: input.transcript || null,
+        sort_order: input.sort_order,
+        is_published: input.is_published
+      })
+      .select()
+      .single();
+    if (error) throw error;
+  },
+  async deleteElementAudio(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('element_audios').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   async listCollaborators() {
     const client = ensureSupabase();
     const { data, error } = await client
@@ -596,6 +727,74 @@ async function getLanguageId(language: LanguageCode): Promise<string | undefined
   return data?.id;
 }
 
+async function hydrateElementMedia(elements: GuideElement[], languageId: string, language: LanguageCode) {
+  if (elements.length === 0) return;
+  const client = ensureSupabase();
+  const ids = elements.map((element) => element.id);
+
+  const { data: imageRows, error: imageError } = await client
+    .from('element_images')
+    .select('id, element_id, is_cover, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(title, alt_text, caption, languages(code))')
+    .in('element_id', ids)
+    .order('sort_order');
+  if (imageError) throw imageError;
+
+  const { data: audioRows, error: audioError } = await client
+    .from('element_audios')
+    .select('id, element_id, title, transcript, sort_order, is_published, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds)')
+    .in('element_id', ids)
+    .eq('language_id', languageId)
+    .eq('is_published', true)
+    .order('sort_order');
+  if (audioError) throw audioError;
+
+  elements.forEach((element) => {
+    const images = ((imageRows ?? []) as unknown as ElementImageRowRaw[])
+      .filter((row) => row.element_id === element.id)
+      .map((row) => {
+        const mediaAsset = mapMediaAsset(row.media_assets) ?? placeholderAsset;
+        const translations = emptyTranslations(() => ({ title: mediaAsset.originalName, altText: mediaAsset.originalName, caption: undefined as string | undefined }));
+        row.element_image_translations?.forEach((translation) => {
+          const code = asLanguageCode(relatedLanguageCode(translation.languages));
+          translations[code] = {
+            title: translation.title ?? mediaAsset.originalName,
+            altText: translation.alt_text,
+            caption: translation.caption ?? undefined
+          };
+        });
+        if (!translations[language].altText) {
+          translations[language] = { title: mediaAsset.originalName, altText: element.translations[language].name, caption: undefined };
+        }
+        return {
+          id: row.id,
+          mediaAsset,
+          isCover: row.is_cover,
+          sortOrder: row.sort_order,
+          translations
+        };
+      });
+
+    const audios = ((audioRows ?? []) as unknown as ElementAudioRowRaw[])
+      .filter((row) => row.element_id === element.id)
+      .map((row) => {
+        const mediaAsset = mapMediaAsset(row.media_assets) ?? placeholderAsset;
+        return {
+          id: row.id,
+          languageCode: language,
+          title: row.title,
+          durationSeconds: mediaAsset.durationSeconds ?? 0,
+          mediaAsset,
+          transcript: row.transcript ?? undefined,
+          sortOrder: row.sort_order,
+          isPublished: row.is_published
+        };
+      });
+
+    element.images = images.length ? images : element.images;
+    element.audios = audios;
+  });
+}
+
 function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement {
   const translation = Array.isArray(row.element_translations) ? row.element_translations[0] : row.element_translations;
   const translations = emptyTranslations(() => ({
@@ -627,7 +826,7 @@ function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement
     isFeatured: row.is_featured,
     sortOrder: row.sort_order,
     translations,
-    images: mockElements[0]?.images ?? [],
+    images: [],
     audios: [],
     links: []
   };
@@ -646,8 +845,21 @@ function mapMediaAsset(relation: MediaAssetRowRaw | MediaAssetRowRaw[] | null | 
     fileSize: asset.file_size,
     width: asset.width ?? undefined,
     height: asset.height ?? undefined,
-    durationSeconds: asset.duration_seconds ?? undefined
+    durationSeconds: asset.duration_seconds ?? undefined,
+    variants: mapMediaVariants(asset.media_variants)
   };
+}
+
+function mapMediaVariants(relation: MediaVariantRowRaw[] | MediaVariantRowRaw | null | undefined): MediaVariant[] {
+  const rows = Array.isArray(relation) ? relation : relation ? [relation] : [];
+  return rows.map((variant) => ({
+    id: variant.id,
+    variant: variant.variant,
+    objectKey: variant.object_key,
+    fileSize: variant.file_size,
+    width: variant.width ?? undefined,
+    height: variant.height ?? undefined
+  }));
 }
 
 export function canUseSupabase() {

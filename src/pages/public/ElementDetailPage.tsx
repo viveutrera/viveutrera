@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { Button } from '../../components/ui/Button';
@@ -8,7 +8,7 @@ import { guideRepository } from '../../data/repositories';
 import type { ElementType, GuideElement, Language, LanguageCode } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
-import { formatDuration, mediaUrl } from '../../lib/media';
+import { formatDuration, mediaObjectKey, mediaUrl } from '../../lib/media';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function ElementDetailPage() {
@@ -22,6 +22,15 @@ export function ElementDetailPage() {
   const [types, setTypes] = useState<ElementType[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [showLongText, setShowLongText] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | undefined>();
+  const imageCount = element?.images.length ?? 0;
+
+  const moveImage = useCallback((direction: -1 | 1) => {
+    setSelectedImageIndex((current) => {
+      if (current === undefined || imageCount === 0) return current;
+      return (current + direction + imageCount) % imageCount;
+    });
+  }, [imageCount]);
 
   useEffect(() => {
     setLoading(true);
@@ -75,6 +84,17 @@ export function ElementDetailPage() {
     });
   }, [idioma, slug]);
 
+  useEffect(() => {
+    if (selectedImageIndex === undefined) return undefined;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSelectedImageIndex(undefined);
+      if (event.key === 'ArrowLeft') moveImage(-1);
+      if (event.key === 'ArrowRight') moveImage(1);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [moveImage, selectedImageIndex]);
+
   if (!requestedLanguage) return <Navigate to={`/guia/${language}/elemento/${slug}`} replace />;
   if (isLoading) return <LoadingState />;
   if (!element) return <EmptyState title="Recurso no encontrado" message="El elemento no existe o no esta publicado en este idioma." />;
@@ -83,6 +103,7 @@ export function ElementDetailPage() {
   const type = types.find((item) => item.id === element.typeId);
   const audios = element.audios.filter((audio) => audio.languageCode === contentLanguage && audio.isPublished);
   const links = element.links.filter((link) => link.languageCode === contentLanguage && link.isPublished);
+  const selectedImage = selectedImageIndex === undefined ? undefined : element.images[selectedImageIndex];
   const currentIndex = siblings.findIndex((item) => item.id === element.id);
   const previous = currentIndex > 0 ? siblings[currentIndex - 1] : undefined;
   const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
@@ -111,13 +132,48 @@ export function ElementDetailPage() {
       {showLongText ? <p className="long-text">{translation.longText}</p> : null}
 
       <section className="gallery" aria-label="Galeria">
-        {element.images.length ? element.images.map((image) => (
-          <figure key={image.id}>
-            <img src={mediaUrl(image.mediaAsset.objectKey)} alt={image.translations[contentLanguage].altText} loading="lazy" />
-            <figcaption>{image.translations[contentLanguage].caption ?? image.translations[contentLanguage].title}</figcaption>
-          </figure>
-        )) : <div className="state">No hay imagenes publicadas para este elemento.</div>}
+        {element.images.length ? (
+          <>
+            <figure className="gallery-feature">
+              <button type="button" className="gallery-open" onClick={() => setSelectedImageIndex(0)}>
+                <img src={mediaUrl(element.images[0].mediaAsset.objectKey)} alt={element.images[0].translations[contentLanguage].altText} loading="lazy" />
+              </button>
+              <figcaption>{element.images[0].translations[contentLanguage].caption ?? element.images[0].translations[contentLanguage].title}</figcaption>
+            </figure>
+            {element.images.length > 1 ? (
+              <div className="gallery-thumbs" aria-label="Miniaturas">
+                {element.images.map((image, index) => (
+                  <button key={image.id} type="button" onClick={() => setSelectedImageIndex(index)} aria-label={`Abrir imagen ${index + 1}`}>
+                    <img src={mediaUrl(mediaObjectKey(image.mediaAsset, 'thumbnail'))} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : <div className="state">No hay imagenes publicadas para este elemento.</div>}
       </section>
+
+      {selectedImage ? (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes">
+          <button type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
+            <X size={22} />
+          </button>
+          {element.images.length > 1 ? (
+            <button type="button" className="lightbox-previous" onClick={() => moveImage(-1)} aria-label="Imagen anterior">
+              <ChevronLeft size={28} />
+            </button>
+          ) : null}
+          <figure>
+            <img src={mediaUrl(selectedImage.mediaAsset.objectKey)} alt={selectedImage.translations[contentLanguage].altText} />
+            <figcaption>{selectedImage.translations[contentLanguage].caption ?? selectedImage.translations[contentLanguage].title}</figcaption>
+          </figure>
+          {element.images.length > 1 ? (
+            <button type="button" className="lightbox-next" onClick={() => moveImage(1)} aria-label="Imagen siguiente">
+              <ChevronRight size={28} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <section className="media-list">
         <h2>{t(language, 'audios')}</h2>

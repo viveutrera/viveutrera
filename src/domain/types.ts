@@ -34,6 +34,16 @@ export interface MediaAsset {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  variants?: MediaVariant[];
+}
+
+export interface MediaVariant {
+  id?: string;
+  variant: 'main' | 'thumbnail' | string;
+  objectKey: string;
+  fileSize: number;
+  width?: number;
+  height?: number;
 }
 
 export interface ElementImage {
