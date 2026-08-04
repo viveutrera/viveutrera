@@ -7,7 +7,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
 import { mediaUrl } from '../../lib/media';
-import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
+import { canUseUploadApi, deleteMediaFiles, uploadMediaFile } from '../../lib/uploadApi';
 import { matchesSearch, validateRequired } from '../../lib/validation';
 
 interface MediaAssetRow {
@@ -20,6 +20,16 @@ interface MediaAssetRow {
   width?: number | null;
   height?: number | null;
   duration_seconds?: number | null;
+  media_variants?: MediaVariantRow[] | null;
+}
+
+interface MediaVariantRow {
+  id?: string;
+  variant: string;
+  object_key: string;
+  file_size: number;
+  width?: number | null;
+  height?: number | null;
 }
 
 interface ElementOptionRow {
@@ -265,16 +275,28 @@ export function AdminMedia() {
 
   async function confirmDelete() {
     if (!deleteId) return;
+    const asset = items.find((item) => item.id === deleteId);
+    if (!asset?.id) return;
+
     setSubmitting(true);
     setError('');
     setSuccess('');
     try {
+      const usage = await adminRepository.getMediaAssetUsage(asset.id);
+      const totalUsage = usage.images + usage.audios + usage.collaborators;
+      if (totalUsage > 0) {
+        setError(`No se puede borrar: esta usado en ${usage.images} imagenes de elementos, ${usage.audios} audios y ${usage.collaborators} colaboradores. Quita primero esas asociaciones.`);
+        return;
+      }
+
+      const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+      await deleteMediaFiles(objectKeys);
       await adminRepository.deleteMediaAsset(deleteId);
       setDeleteId(undefined);
-      setSuccess('Asset borrado.');
+      setSuccess(`Asset borrado de R2 y Supabase: ${objectKeys.length} archivo${objectKeys.length === 1 ? '' : 's'}.`);
       await load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No se pudo borrar el asset. Puede estar asociado a elementos o colaboradores.');
+      setError(caught instanceof Error ? caught.message : 'No se pudo borrar el asset de forma coordinada.');
     } finally {
       setSubmitting(false);
     }
@@ -546,7 +568,7 @@ export function AdminMedia() {
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar asset"
-        message={`Se eliminara el registro ${selectedAsset?.object_key ?? 'seleccionado'} de Supabase. No borra el archivo fisico de R2.`}
+        message={`Se borrara ${selectedAsset?.object_key ?? 'el asset seleccionado'} de R2 y despues su registro de Supabase. Si esta asociado a algun elemento o colaborador, se bloqueara el borrado.`}
         confirmLabel="Borrar"
         onCancel={() => setDeleteId(undefined)}
         onConfirm={confirmDelete}

@@ -14,6 +14,10 @@ export default {
       return json({ ok: true }, 200, corsHeaders);
     }
 
+    if (url.pathname === '/delete' && request.method === 'POST') {
+      return handleDelete(request, env, corsHeaders);
+    }
+
     if (url.pathname !== '/upload' || request.method !== 'POST') {
       return json({ error: 'Not found' }, 404, corsHeaders);
     }
@@ -66,6 +70,29 @@ export default {
     }
   }
 };
+
+async function handleDelete(request, env, corsHeaders) {
+  try {
+    await assertAdmin(request, env);
+    const payload = await request.json().catch(() => undefined);
+    const objectKeys = Array.isArray(payload?.objectKeys) ? payload.objectKeys.map((key) => String(key).replace(/^\/+/, '')).filter(Boolean) : [];
+
+    if (objectKeys.length === 0) {
+      return json({ error: 'No hay archivos para borrar.' }, 400, corsHeaders);
+    }
+
+    if (objectKeys.some((key) => !isSafeObjectKey(key))) {
+      return json({ error: 'Una de las rutas no es valida.' }, 400, corsHeaders);
+    }
+
+    await Promise.all(objectKeys.map((key) => env.MEDIA_BUCKET.delete(key)));
+    return json({ deleted: objectKeys }, 200, corsHeaders);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'No se pudieron borrar los archivos.';
+    const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500;
+    return json({ error: message }, status, corsHeaders);
+  }
+}
 
 async function assertAdmin(request, env) {
   const authorization = request.headers.get('Authorization') || '';
@@ -120,6 +147,14 @@ function inferMediaType(target, mimeType) {
   if (target === 'collaborator') return 'logo';
   if (mimeType.startsWith('image/')) return 'image';
   return 'file';
+}
+
+function isSafeObjectKey(key) {
+  return key.length > 0
+    && key.length <= 1024
+    && !key.startsWith('/')
+    && !key.includes('..')
+    && /^[A-Za-z0-9/_.,=@+~-]+$/.test(key);
 }
 
 function buildCorsHeaders(request, env) {

@@ -5,10 +5,11 @@ Worker de Cloudflare para subir ficheros desde `Admin -> Multimedia` a R2.
 ## Que hace
 
 - Recibe `POST /upload` con `multipart/form-data`.
+- Recibe `POST /delete` con `{ "objectKeys": ["ruta/en/r2.webp"] }`.
 - Exige `Authorization: Bearer <supabase_access_token>`.
 - Valida el usuario contra Supabase Auth.
 - Comprueba que el usuario existe en `public.admin_profiles`.
-- Sube el fichero al bucket R2 enlazado como `MEDIA_BUCKET`.
+- Sube o borra ficheros en el bucket R2 enlazado como `MEDIA_BUCKET`.
 - Devuelve metadatos para registrar el asset en `public.media_assets`.
 
 Las imagenes se optimizan en el navegador antes de llamar al Worker: el admin envia una version principal de hasta 300 KB y una miniatura de hasta 50 KB, ambas en WebP. El Worker no reescala imagenes; solo valida y guarda lo recibido.

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, ExternalLink, MapPin, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import { AudioPlayer } from '../../components/AudioPlayer';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { Button } from '../../components/ui/Button';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -8,7 +9,7 @@ import { guideRepository } from '../../data/repositories';
 import type { ElementType, GuideElement, Language, LanguageCode } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
-import { formatDuration, mediaObjectKey, mediaUrl } from '../../lib/media';
+import { mediaObjectKey, mediaUrl } from '../../lib/media';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function ElementDetailPage() {
@@ -23,6 +24,7 @@ export function ElementDetailPage() {
   const [isLoading, setLoading] = useState(true);
   const [showLongText, setShowLongText] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | undefined>();
+  const [activeAudioId, setActiveAudioId] = useState<string>();
   const imageCount = element?.images.length ?? 0;
 
   const moveImage = useCallback((direction: -1 | 1) => {
@@ -178,13 +180,15 @@ export function ElementDetailPage() {
       <section className="media-list">
         <h2>{t(language, 'audios')}</h2>
         {audios.length ? audios.map((audio) => (
-          <article key={audio.id} className="audio-item">
-            <div>
-              <strong>{audio.title}</strong>
-              <span>{formatDuration(audio.durationSeconds)}</span>
-            </div>
-            <audio controls preload="metadata" src={mediaUrl(audio.mediaAsset.objectKey)} />
-          </article>
+          <AudioPlayer
+            key={audio.id}
+            id={audio.id}
+            title={audio.title}
+            src={mediaUrl(audio.mediaAsset.objectKey)}
+            durationSeconds={audio.durationSeconds}
+            activeAudioId={activeAudioId}
+            onActivate={setActiveAudioId}
+          />
         )) : <div className="state">No hay audios publicados para este idioma.</div>}
       </section>
 

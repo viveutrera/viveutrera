@@ -316,7 +316,7 @@ export const adminRepository = {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('media_assets')
-      .select('id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, created_at')
+      .select('id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, created_at, media_variants(id, variant, object_key, file_size, width, height)')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data ?? [];
@@ -376,6 +376,21 @@ export const adminRepository = {
     const client = ensureSupabase();
     const { error } = await client.from('media_assets').delete().eq('id', id);
     if (error) throw error;
+  },
+  async getMediaAssetUsage(id: string) {
+    const client = ensureSupabase();
+    const [images, audios, collaborators] = await Promise.all([
+      client.from('element_images').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
+      client.from('element_audios').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
+      client.from('collaborators').select('id', { count: 'exact', head: true }).eq('media_asset_id', id)
+    ]);
+    const error = images.error ?? audios.error ?? collaborators.error;
+    if (error) throw error;
+    return {
+      images: images.count ?? 0,
+      audios: audios.count ?? 0,
+      collaborators: collaborators.count ?? 0
+    };
   },
 
   async listSiteTranslations() {
