@@ -6,6 +6,7 @@ import { FormField, SelectField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { mediaUrl } from '../../lib/media';
+import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
 import { matchesSearch, validateRequired } from '../../lib/validation';
 
 interface MediaAssetRow {
@@ -39,6 +40,8 @@ export function AdminMedia() {
   const [isSubmitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [uploadTarget, setUploadTarget] = useState('element-image');
+  const [uploadFile, setUploadFile] = useState<File>();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -93,6 +96,35 @@ export function AdminMedia() {
     }
   }
 
+  async function upload(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!uploadFile) {
+      setError('Selecciona un fichero para subir.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await uploadMediaFile(uploadFile, uploadTarget);
+      await adminRepository.saveMediaAsset({
+        ...result.asset,
+        width: null,
+        height: null,
+        duration_seconds: null
+      });
+      setUploadFile(undefined);
+      setSuccess(`Fichero subido y registrado: ${result.asset.object_key}`);
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo subir el fichero.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function edit(item: MediaAssetRow) {
     setError('');
     setSuccess('');
@@ -135,6 +167,21 @@ export function AdminMedia() {
       <h1>Multimedia</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
+      <Card>
+        <form className="admin-form" onSubmit={upload}>
+          <SelectField label="Destino" value={uploadTarget} onChange={(event) => setUploadTarget(event.target.value)}>
+            <option value="element-image">Imagen de elemento</option>
+            <option value="element-audio">Audio de elemento</option>
+            <option value="collaborator">Logo colaborador</option>
+            <option value="site">General del sitio</option>
+          </SelectField>
+          <FormField label="Fichero" type="file" onChange={(event) => setUploadFile(event.target.files?.[0])} disabled={!canUseUploadApi()} />
+          <div className="button-row">
+            <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir a R2'}</Button>
+          </div>
+          {!canUseUploadApi() ? <p className="hint">Configura VITE_UPLOAD_API_URL y despliega el Worker para activar la subida directa.</p> : null}
+        </form>
+      </Card>
       <Card>
         <form className="admin-form" onSubmit={submit}>
           <FormField label="Object key" value={form.object_key} onChange={(event) => setForm({ ...form, object_key: event.target.value })} required />

@@ -7,6 +7,17 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['dist', 'node_modules'] },
   js.configs.recommended,
+  {
+    files: ['worker/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.serviceworker,
+        crypto: 'readonly'
+      }
+    }
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],

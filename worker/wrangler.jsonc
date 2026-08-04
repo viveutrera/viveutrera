@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "viveutrera-media-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-04",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_MEDIA_BASE_URL": "https://media.viveutrera.es",
+    "ALLOWED_ORIGINS": "https://viveutrera.es,https://www.viveutrera.es,https://viveutrera.github.io"
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "viveutrera-media"
+    }
+  ]
+}

@@ -13,13 +13,13 @@ Fases implementadas:
 - Componentes reutilizables de botones, tarjetas, formularios, modales, confirmacion y estados.
 - Datos simulados tipados y repositorios desacoplados.
 - Cliente Supabase preparado por variables de entorno.
-- Contrato de almacenamiento y cliente simulado para sustituir por Cloudflare Worker + R2.
+- Contrato de almacenamiento y Worker de Cloudflare preparado para subir a R2.
 - Migracion SQL inicial con tablas, indices y RLS.
 - Workflow de GitHub Pages.
 - Repositorios publicos con Supabase real y fallback a mocks.
 - Login admin con Supabase Auth y comprobacion de `admin_profiles`.
 - CRUD textual basico de configuracion, idiomas, tipos, elementos, enlaces y colaboradores.
-- Biblioteca multimedia para registrar metadatos y `object_key` antes de activar subida real a R2.
+- Biblioteca multimedia para subir a R2 mediante Worker o registrar metadatos manualmente.
 - Edicion multidioma de configuracion, tipos, elementos y colaboradores para ES, EN, FR y DE.
 - Colaboradores con logo/imagen asociable desde la biblioteca multimedia.
 - Detalle publico con enlaces complementarios reales por idioma desde Supabase.
@@ -58,6 +58,7 @@ Variables publicas del frontend:
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_PUBLIC_MEDIA_BASE_URL=
+VITE_UPLOAD_API_URL=
 VITE_SITE_URL=
 VITE_BASE_PATH=/viveutrera/
 VITE_CUSTOM_DOMAIN=
@@ -69,12 +70,9 @@ Variables privadas previstas para el Cloudflare Worker:
 
 ```env
 SUPABASE_URL=
-SUPABASE_JWT_SECRET_OR_VERIFICATION_CONFIG=
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
+SUPABASE_ANON_KEY=
 PUBLIC_MEDIA_BASE_URL=
+ALLOWED_ORIGINS=
 ```
 
 ## Supabase
@@ -102,15 +100,15 @@ values ('UUID_DEL_USUARIO');
 
 ## Cloudflare R2 y Worker
 
-En esta fase no hay credenciales reales ni subida a R2. La app expone un contrato `StorageService` y un `mockStorageService`.
+El Worker esta en `worker/` y expone `POST /upload` para subir ficheros autenticados a R2.
 
-Mientras R2 no este configurado, puedes subir un archivo por fuera y registrar su `object_key` en `Admin -> Multimedia`. Si `VITE_PUBLIC_MEDIA_BASE_URL` apunta al dominio publico del bucket/CDN, la web resolvera ese asset con `mediaUrl(object_key)`. Ese registro ya puede asociarse a colaboradores como logo.
+Mientras R2 no este configurado, puedes seguir subiendo un archivo por fuera y registrar su `object_key` en `Admin -> Multimedia`. Si `VITE_PUBLIC_MEDIA_BASE_URL` apunta al dominio publico del bucket/CDN, la web resolvera ese asset con `mediaUrl(object_key)`. Ese registro ya puede asociarse a colaboradores como logo.
 
-El Worker posterior debera:
+El Worker:
 
 - Verificar JWT de Supabase.
 - Confirmar que el usuario esta en `admin_profiles`.
-- Generar URLs firmadas o ejecutar operaciones seguras contra R2.
+- Ejecutar operaciones seguras contra el binding R2 `MEDIA_BUCKET`.
 - Devolver `object_key` y metadatos para guardar en Supabase.
 
 ## SEO
@@ -125,7 +123,7 @@ La primera fase es una SPA para GitHub Pages. Esto permite despliegue simple, pe
 
 1. Ejecutar migraciones y seed en Supabase.
 2. Crear usuarios administradores y autorizar su UID en `admin_profiles`.
-3. Crear Cloudflare Worker para R2.
+3. Desplegar Cloudflare Worker para R2 y configurar `VITE_UPLOAD_API_URL`.
 4. Sustituir placeholders de marca e imagenes.
 5. Completar subida, borrado y optimizacion de multimedia.
 6. Preparar prerender o generacion estatica si el SEO organico pasa a ser prioritario.

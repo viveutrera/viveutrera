@@ -31,6 +31,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_PUBLIC_MEDIA_BASE_URL: ${{ vars.VITE_PUBLIC_MEDIA_BASE_URL }}
+          VITE_UPLOAD_API_URL: ${{ vars.VITE_UPLOAD_API_URL }}
           VITE_SITE_URL: ${{ vars.VITE_SITE_URL || 'https://viveutrera.github.io/viveutrera' }}
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || '/viveutrera/' }}
       - uses: actions/upload-pages-artifact@v3
