@@ -63,6 +63,14 @@ function emptyTranslations<T>(factory: () => T): Record<LanguageCode, T> {
   };
 }
 
+function relatedLanguageCode(relation: unknown): string {
+  if (Array.isArray(relation)) return relation[0]?.code ?? 'es';
+  if (relation && typeof relation === 'object' && 'code' in relation) {
+    return String((relation as { code?: unknown }).code ?? 'es');
+  }
+  return 'es';
+}
+
 function ensureSupabase() {
   if (!supabase) throw new Error('Supabase no esta configurado.');
   return supabase;
@@ -136,7 +144,7 @@ export const supabaseGuideRepository = {
     return (data ?? []).map((row) => {
       const names = emptyTranslations(() => row.slug);
       row.element_type_translations?.forEach((translation) => {
-        const code = asLanguageCode(translation.languages?.code ?? 'es');
+        const code = asLanguageCode(relatedLanguageCode(translation.languages));
         names[code] = translation.name;
       });
 
@@ -185,9 +193,9 @@ export const supabaseGuideRepository = {
     if (error) throw error;
 
     return (data ?? []).map((row) => {
-      const translations = emptyTranslations(() => ({ displayName: row.name }));
+      const translations = emptyTranslations<{ displayName: string; thankYouText?: string }>(() => ({ displayName: row.name }));
       row.collaborator_translations?.forEach((translation) => {
-        const code = asLanguageCode(translation.languages?.code ?? 'es');
+        const code = asLanguageCode(relatedLanguageCode(translation.languages));
         translations[code] = {
           displayName: translation.display_name,
           thankYouText: translation.thank_you_text ?? undefined

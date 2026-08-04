@@ -9,7 +9,7 @@ import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 interface TypeRow {
   id: string;
   slug: string;
-  element_type_translations?: Array<{ name: string; languages?: { code: string } | null }>;
+  element_type_translations?: Array<{ name: string; languages?: { code: string } | { code: string }[] | null }>;
 }
 
 interface ElementRow {
@@ -25,7 +25,7 @@ interface ElementRow {
     short_text: string;
     long_text?: string | null;
     is_published: boolean;
-    languages?: { code: string } | null;
+    languages?: { code: string } | { code: string }[] | null;
   }>;
 }
 
@@ -74,8 +74,8 @@ export function AdminElements() {
       adminRepository.listElements(),
       adminRepository.listElementTypes()
     ]);
-    setItems(elementRows as ElementRow[]);
-    setTypes(typeRows as TypeRow[]);
+    setItems(elementRows as unknown as ElementRow[]);
+    setTypes(typeRows as unknown as TypeRow[]);
     setLoading(false);
   }
 
@@ -99,7 +99,7 @@ export function AdminElements() {
   }
 
   function edit(item: ElementRow) {
-    const es = item.element_translations?.find((translation) => translation.languages?.code === 'es');
+    const es = item.element_translations?.find((translation) => getCode(translation.languages) === 'es');
     setEditingId(item.id);
     setForm({
       slug: item.slug,
@@ -135,7 +135,7 @@ export function AdminElements() {
           <SelectField label="Tipo" value={form.element_type_id} onChange={(event) => setForm({ ...form, element_type_id: event.target.value })} required>
             <option value="">Selecciona un tipo</option>
             {types.map((type) => (
-              <option key={type.id} value={type.id}>{type.element_type_translations?.find((translation) => translation.languages?.code === 'es')?.name ?? type.slug}</option>
+              <option key={type.id} value={type.id}>{type.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? type.slug}</option>
             ))}
           </SelectField>
           <SelectField label="Estado" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as 'draft' | 'published' })}>
@@ -154,7 +154,7 @@ export function AdminElements() {
       </Card>
       <div className="admin-table">
         {items.map((item) => {
-          const es = item.element_translations?.find((translation) => translation.languages?.code === 'es');
+          const es = item.element_translations?.find((translation) => getCode(translation.languages) === 'es');
           return (
             <Card key={item.id}>
               <h2>{es?.name ?? item.slug}</h2>
@@ -170,4 +170,8 @@ export function AdminElements() {
       <ConfirmDialog isOpen={Boolean(deleteId)} title="Borrar elemento" message="Se eliminaran sus traducciones, enlaces y asociaciones textuales." confirmLabel="Borrar" onCancel={() => setDeleteId(undefined)} onConfirm={confirmDelete} />
     </section>
   );
+}
+
+function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
+  return Array.isArray(relation) ? relation[0]?.code : relation?.code;
 }

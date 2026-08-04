@@ -12,7 +12,7 @@ interface ElementTypeRow {
   icon: string;
   sort_order: number;
   is_active: boolean;
-  element_type_translations?: Array<{ name: string; description?: string | null; languages?: { code: string } | null }>;
+  element_type_translations?: Array<{ name: string; description?: string | null; languages?: { code: string } | { code: string }[] | null }>;
 }
 
 const emptyType = { slug: '', icon: 'landmark', name_es: '', description_es: '', sort_order: 0, is_active: true };
@@ -31,7 +31,7 @@ export function AdminElementTypes() {
       return;
     }
     setLoading(true);
-    setItems(await adminRepository.listElementTypes() as ElementTypeRow[]);
+    setItems(await adminRepository.listElementTypes() as unknown as ElementTypeRow[]);
     setLoading(false);
   }
 
@@ -55,7 +55,7 @@ export function AdminElementTypes() {
   }
 
   function edit(item: ElementTypeRow) {
-    const es = item.element_type_translations?.find((translation) => translation.languages?.code === 'es');
+    const es = item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es');
     setEditingId(item.id);
     setForm({
       slug: item.slug,
@@ -95,7 +95,7 @@ export function AdminElementTypes() {
       <div className="admin-table">
         {items.map((item) => (
           <Card key={item.id}>
-            <h2>{item.element_type_translations?.find((translation) => translation.languages?.code === 'es')?.name ?? item.slug}</h2>
+            <h2>{item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? item.slug}</h2>
             <p>{item.slug}</p>
             <div className="table-actions">
               <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
@@ -107,4 +107,8 @@ export function AdminElementTypes() {
       <ConfirmDialog isOpen={Boolean(deleteId)} title="Borrar tipo" message="No se podra borrar si hay elementos asociados." confirmLabel="Borrar" onCancel={() => setDeleteId(undefined)} onConfirm={confirmDelete} />
     </section>
   );
+}
+
+function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
+  return Array.isArray(relation) ? relation[0]?.code : relation?.code;
 }
