@@ -1,10 +1,11 @@
-import { Image, Link as LinkIcon, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
+import { ExternalLink, Image, Link as LinkIcon, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { publicPath } from '../lib/routing';
 import { useAuth } from '../routes/authContext';
 
 const links = [
+  { to: '/', label: 'Web publica', icon: ExternalLink },
   { to: '/admin', label: 'Panel', icon: LayoutDashboard },
   { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
   { to: '/admin/idiomas', label: 'Idiomas', icon: Languages },
@@ -20,10 +21,10 @@ export function AdminLayout() {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
+        <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         <nav aria-label="Administracion">
           {links.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === '/admin'}>
+            <NavLink key={to} to={to} end={to === '/' || to === '/admin'}>
               <Icon size={18} />
               <span>{label}</span>
             </NavLink>

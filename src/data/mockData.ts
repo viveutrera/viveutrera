@@ -54,13 +54,13 @@ export const elementTypes: ElementType[] = [
 
 const image = {
   id: 'asset-cover',
-  objectKey: 'brand/logo-horizontal-placeholder.svg',
+  objectKey: 'brand/logo-vive-utrera.png',
   mediaType: 'image' as const,
-  mimeType: 'image/svg+xml',
-  originalName: 'placeholder.svg',
-  fileSize: 1024,
-  width: 640,
-  height: 180
+  mimeType: 'image/png',
+  originalName: 'logo-vive-utrera.png',
+  fileSize: 348481,
+  width: 461,
+  height: 524
 };
 
 export const elements: GuideElement[] = [

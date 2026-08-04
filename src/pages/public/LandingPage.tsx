@@ -5,7 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
 import type { Collaborator, Language, SiteContent } from '../../domain/types';
-import { getPersistedLanguage, persistLanguage } from '../../lib/language';
+import { persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
@@ -46,17 +46,19 @@ export function LandingPage() {
     <>
       <header className="hero">
         <nav className="hero-nav" aria-label="Principal">
-          <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
-          <div className="hero-actions">
-            <ButtonLink to={`/guia/${getPersistedLanguage() ?? 'es'}`} variant="secondary">Guia</ButtonLink>
-            <ButtonLink to="/admin/login" variant="secondary">Admin</ButtonLink>
-          </div>
+          <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         </nav>
-        <div className="hero-content">
-          <p className="brand-kicker">Vive Utrera</p>
-          <h1>{content.heroTitle}</h1>
-          <p className="hero-slogan">{content.heroSlogan}</p>
-          <p className="hero-description">{content.heroDescription}</p>
+        <div className="hero-content hero-brand-lockup">
+          <img className="hero-mark" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
+          <div className="hero-wordmark">
+            <p className="brand-kicker">Vive Utrera</p>
+            <h1>
+              <span>VIVE</span>
+              <span>UTRERA</span>
+            </h1>
+            <p className="hero-slogan">{content.heroSlogan}</p>
+            <p className="hero-description">{content.heroDescription}</p>
+          </div>
         </div>
       </header>
 

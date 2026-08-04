@@ -36,7 +36,7 @@ export function AdminLogin() {
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
+        <img src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         <h1>Administracion</h1>
         {!isSupabaseConfigured ? (
           <p className="hint">Modo maqueta: se acepta cualquier correo y contrasena hasta configurar Supabase.</p>

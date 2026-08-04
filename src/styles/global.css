@@ -35,15 +35,15 @@ button, input { font: inherit; }
 }
 
 .hero {
-  min-height: 92svh;
+  min-height: 84svh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 24px clamp(20px, 6vw, 76px) 64px;
-  color: var(--color-white);
+  padding: 22px clamp(20px, 6vw, 76px) 52px;
+  color: var(--color-primary);
   background:
-    linear-gradient(90deg, rgba(13, 43, 77, 0.94), rgba(13, 43, 77, 0.68)),
-    linear-gradient(135deg, #0d2b4d 0%, #153e68 48%, #d8c7a6 100%);
+    radial-gradient(circle at 16% 14%, rgba(216, 199, 166, 0.28), transparent 28%),
+    linear-gradient(180deg, #fffdf9 0%, #ffffff 58%, rgba(216, 199, 166, 0.18) 100%);
 }
 
 .hero-nav, .hero-actions, .admin-topbar, .admin-title-row, .detail-actions, .modal-header, .modal-actions {
@@ -53,12 +53,55 @@ button, input { font: inherit; }
   gap: 16px;
 }
 
-.hero-nav img { width: min(230px, 58vw); }
-.hero-content { max-width: 780px; }
+.hero-nav .brand-logo { width: clamp(72px, 9vw, 118px); }
+.hero-content { width: 100%; }
+.hero-brand-lockup {
+  display: grid;
+  grid-template-columns: minmax(220px, 390px) minmax(300px, 1fr);
+  align-items: center;
+  gap: clamp(24px, 6vw, 76px);
+  max-width: 1120px;
+  margin: auto auto 0;
+}
+.hero-mark {
+  width: min(36vw, 390px);
+  min-width: 220px;
+  justify-self: end;
+}
+.hero-wordmark { max-width: 700px; }
 .brand-kicker, .tag { color: var(--color-stone); font-weight: 800; text-transform: uppercase; letter-spacing: 0; }
-.hero h1 { font-size: clamp(2.4rem, 7vw, 5.8rem); line-height: 0.98; margin: 18px 0; letter-spacing: 0; }
-.hero-slogan { font-size: clamp(1.1rem, 2.4vw, 1.65rem); color: var(--color-stone); font-weight: 600; }
+.hero h1 {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 18px;
+  color: var(--color-primary);
+  font-size: clamp(4rem, 12vw, 8.8rem);
+  line-height: 0.82;
+  letter-spacing: 0;
+}
+.hero h1 span:last-child {
+  font-size: clamp(2rem, 5.4vw, 4.1rem);
+  font-weight: 600;
+  line-height: 1;
+}
+.hero-slogan {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 620px;
+  font-size: clamp(1.05rem, 2.2vw, 1.55rem);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.hero-slogan::before,
+.hero-slogan::after {
+  content: "";
+  flex: 0 0 clamp(32px, 5vw, 58px);
+  height: 2px;
+  background: var(--color-accent);
+}
 .hero-description, .lead { font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.7; max-width: 700px; }
+.hero-description { max-width: 560px; color: var(--color-muted); }
 
 .section, .guide-page, .detail-page {
   width: min(1120px, calc(100% - 40px));
@@ -269,7 +312,10 @@ p { line-height: 1.65; }
 
 .admin-shell { min-height: 100svh; display: grid; grid-template-columns: 280px 1fr; background: #f7f5f1; }
 .admin-sidebar { padding: 20px; background: var(--color-primary); color: var(--color-white); }
-.admin-sidebar img { margin-bottom: 28px; }
+.admin-sidebar .brand-logo {
+  width: 104px;
+  margin-bottom: 28px;
+}
 .admin-sidebar nav { display: grid; gap: 6px; }
 .admin-sidebar a {
   display: flex;
@@ -400,11 +446,35 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
 .modal { width: min(520px, 100%); padding: 20px; border-radius: 8px; background: var(--color-white); }
 
 @media (max-width: 760px) {
-  .hero { min-height: 88svh; }
+  .hero {
+    min-height: 88svh;
+    padding-bottom: 42px;
+  }
   .hero-nav { align-items: flex-start; }
+  .hero-nav .brand-logo { width: 78px; }
+  .hero-brand-lockup {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    text-align: center;
+  }
+  .hero-mark {
+    width: min(58vw, 250px);
+    min-width: 0;
+    justify-self: center;
+  }
+  .hero-wordmark { margin: 0 auto; }
+  .hero-slogan {
+    justify-content: center;
+    margin-inline: auto;
+  }
+  .hero-slogan::before,
+  .hero-slogan::after {
+    flex-basis: 28px;
+  }
   .admin-shell { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; }
-  .admin-sidebar nav { grid-template-columns: repeat(2, 1fr); }
+  .admin-sidebar .brand-logo { width: 82px; }
+  .admin-sidebar nav { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .admin-main { padding: 18px; }
   .detail-actions, .detail-pagination, .admin-title-row { align-items: stretch; flex-direction: column; }
 }

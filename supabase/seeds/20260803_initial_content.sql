@@ -42,7 +42,7 @@ on conflict (language_id) do update set
   seo_description = excluded.seo_description;
 
 insert into public.media_assets (id, object_key, media_type, mime_type, original_name, file_size, width, height)
-values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'brand/logo-horizontal-placeholder.svg', 'image', 'image/svg+xml', 'logo-horizontal-placeholder.svg', 1024, 640, 180)
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'brand/logo-vive-utrera.png', 'image', 'image/png', 'logo-vive-utrera.png', 348481, 461, 524)
 on conflict (object_key) do update set mime_type = excluded.mime_type;
 
 insert into public.element_types (id, slug, icon, sort_order, is_active)
