@@ -70,7 +70,7 @@ button, input { font: inherit; }
 }
 .hero-wordmark { max-width: 700px; }
 .brand-kicker, .tag { color: var(--color-stone); font-weight: 800; text-transform: uppercase; letter-spacing: 0; }
-.hero h1 {
+.hero-wordmark-title {
   display: grid;
   gap: 4px;
   margin: 10px 0 18px;
@@ -78,8 +78,9 @@ button, input { font: inherit; }
   font-size: clamp(4rem, 12vw, 8.8rem);
   line-height: 0.82;
   letter-spacing: 0;
+  font-weight: 800;
 }
-.hero h1 span:last-child {
+.hero-wordmark-title span:last-child {
   font-size: clamp(2rem, 5.4vw, 4.1rem);
   font-weight: 600;
   line-height: 1;

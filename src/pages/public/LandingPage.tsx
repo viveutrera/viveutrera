@@ -52,10 +52,11 @@ export function LandingPage() {
           <img className="hero-mark" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
           <div className="hero-wordmark">
             <p className="brand-kicker">Vive Utrera</p>
-            <h1>
+            <h1 className="sr-only">{content.heroTitle}</h1>
+            <p className="hero-wordmark-title" aria-hidden="true">
               <span>VIVE</span>
               <span>UTRERA</span>
-            </h1>
+            </p>
             <p className="hero-slogan">{content.heroSlogan}</p>
             <p className="hero-description">{content.heroDescription}</p>
           </div>
