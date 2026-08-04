@@ -25,8 +25,8 @@ export function AdminLogin() {
       await signIn(email, password);
       const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/admin';
       navigate(from, { replace: true });
-    } catch {
-      setError('No se pudo iniciar sesion. Revisa las credenciales y la configuracion de Supabase.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo iniciar sesion. Revisa las credenciales y la configuracion de Supabase.');
     } finally {
       setSubmitting(false);
     }

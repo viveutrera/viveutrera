@@ -70,7 +70,7 @@ create table public.media_variants (
 
 create table public.element_types (
   id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
+  slug text not null unique constraint element_types_slug_format_chk check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   icon text,
   sort_order integer not null default 0,
   is_active boolean not null default true,
@@ -89,9 +89,9 @@ create table public.element_type_translations (
 
 create table public.elements (
   id uuid primary key default gen_random_uuid(),
-  slug text not null unique,
+  slug text not null unique constraint elements_slug_format_chk check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   element_type_id uuid not null references public.element_types(id),
-  maps_url text,
+  maps_url text constraint elements_maps_url_format_chk check (maps_url is null or maps_url ~* '^https?://'),
   latitude numeric,
   longitude numeric,
   status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
@@ -151,7 +151,7 @@ create table public.element_links (
   element_id uuid not null references public.elements(id) on delete cascade,
   language_id uuid not null references public.languages(id) on delete cascade,
   title text not null,
-  url text not null,
+  url text not null constraint element_links_url_format_chk check (url ~* '^https?://'),
   link_type text,
   sort_order integer not null default 0,
   is_published boolean not null default false
@@ -161,7 +161,7 @@ create table public.collaborators (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   media_asset_id uuid references public.media_assets(id),
-  url text,
+  url text constraint collaborators_url_format_chk check (url is null or url ~* '^https?://'),
   sort_order integer not null default 0,
   is_active boolean not null default true,
   is_special boolean not null default false,
@@ -213,43 +213,116 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists(select 1 from public.admin_profiles where user_id = auth.uid());
+  select auth.uid() is not null
+    and exists(select 1 from public.admin_profiles where user_id = auth.uid());
+$$;
+
+create or replace function public.is_active_language(language_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists(
+    select 1
+    from public.languages l
+    where l.id = language_uuid
+      and l.is_active
+  );
+$$;
+
+create or replace function public.can_read_media_asset(asset_uuid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists(
+    select 1
+    from public.element_images ei
+    join public.elements e on e.id = ei.element_id
+    where ei.media_asset_id = asset_uuid
+      and e.status = 'published'
+  )
+  or exists(
+    select 1
+    from public.element_audios ea
+    join public.elements e on e.id = ea.element_id
+    where ea.media_asset_id = asset_uuid
+      and ea.is_published
+      and e.status = 'published'
+      and public.is_active_language(ea.language_id)
+  )
+  or exists(
+    select 1
+    from public.collaborators c
+    where c.media_asset_id = asset_uuid
+      and c.is_active
+  );
 $$;
 
 create policy "Admins can manage admin profiles" on public.admin_profiles for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "Admins manage site settings" on public.site_settings for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "Public can read active languages" on public.languages for select using (is_active);
 create policy "Admins can manage languages" on public.languages for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read site translations for active languages" on public.site_translations for select using (exists(select 1 from public.languages l where l.id = language_id and l.is_active));
+create policy "Public can read site translations for active languages" on public.site_translations for select using (public.is_active_language(language_id));
 create policy "Admins manage all site translations" on public.site_translations for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "Public can read published elements" on public.elements for select using (status = 'published');
 create policy "Admins manage elements" on public.elements for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy "Public can read published element translations" on public.element_translations for select using (
-  is_published and exists(select 1 from public.elements e where e.id = element_id and e.status = 'published')
+  is_published
+  and public.is_active_language(language_id)
+  and exists(select 1 from public.elements e where e.id = element_id and e.status = 'published')
 );
 create policy "Admins manage element translations" on public.element_translations for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "Public can read active element types" on public.element_types for select using (is_active);
 create policy "Admins manage element types" on public.element_types for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read element type translations" on public.element_type_translations for select using (true);
+create policy "Public can read element type translations" on public.element_type_translations for select using (
+  public.is_active_language(language_id)
+  and exists(select 1 from public.element_types et where et.id = element_type_id and et.is_active)
+);
 create policy "Admins manage element type translations" on public.element_type_translations for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
-create policy "Public can read media metadata" on public.media_assets for select using (true);
+create policy "Public can read media metadata" on public.media_assets for select using (public.can_read_media_asset(id));
 create policy "Admins manage media metadata" on public.media_assets for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read media variants" on public.media_variants for select using (true);
+create policy "Public can read media variants" on public.media_variants for select using (public.can_read_media_asset(media_asset_id));
 create policy "Admins manage media variants" on public.media_variants for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "Public can read element images" on public.element_images for select using (exists(select 1 from public.elements e where e.id = element_id and e.status = 'published'));
 create policy "Admins manage element images" on public.element_images for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read image translations" on public.element_image_translations for select using (true);
+create policy "Public can read image translations" on public.element_image_translations for select using (
+  public.is_active_language(language_id)
+  and exists(
+    select 1
+    from public.element_images ei
+    join public.elements e on e.id = ei.element_id
+    where ei.id = element_image_id
+      and e.status = 'published'
+  )
+);
 create policy "Admins manage image translations" on public.element_image_translations for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
-create policy "Public can read published audios" on public.element_audios for select using (is_published);
+create policy "Public can read published audios" on public.element_audios for select using (
+  is_published
+  and public.is_active_language(language_id)
+  and exists(select 1 from public.elements e where e.id = element_id and e.status = 'published')
+);
 create policy "Admins manage audios" on public.element_audios for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read published links" on public.element_links for select using (is_published);
+create policy "Public can read published links" on public.element_links for select using (
+  is_published
+  and public.is_active_language(language_id)
+  and exists(select 1 from public.elements e where e.id = element_id and e.status = 'published')
+);
 create policy "Admins manage links" on public.element_links for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 create policy "Public can read active collaborators" on public.collaborators for select using (is_active);
 create policy "Admins manage collaborators" on public.collaborators for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "Public can read collaborator translations" on public.collaborator_translations for select using (true);
+create policy "Public can read collaborator translations" on public.collaborator_translations for select using (
+  public.is_active_language(language_id)
+  and exists(select 1 from public.collaborators c where c.id = collaborator_id and c.is_active)
+);
 create policy "Admins manage collaborator translations" on public.collaborator_translations for all to authenticated using (public.is_admin()) with check (public.is_admin());

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { AuthContext, type AuthContextValue } from './authContext';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [mockEmail, setMockEmail] = useState(() => sessionStorage.getItem('mock-admin-email') ?? undefined);
+  const [mockEmail, setMockEmail] = useState(() => supabase ? undefined : sessionStorage.getItem('mock-admin-email') ?? undefined);
   const [isLoading, setLoading] = useState(Boolean(supabase));
 
   useEffect(() => {
@@ -21,7 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq('user_id', data.session.user.id)
           .maybeSingle();
 
-        if (isMounted && profile) setMockEmail(email);
+        if (isMounted && profile) {
+          setMockEmail(email);
+        } else {
+          sessionStorage.removeItem('mock-admin-email');
+          await supabase!.auth.signOut();
+          if (isMounted) setMockEmail(undefined);
+        }
+      } else {
+        sessionStorage.removeItem('mock-admin-email');
+        if (isMounted) setMockEmail(undefined);
       }
       if (isMounted) setLoading(false);
     }
@@ -54,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await supabase.auth.signOut();
           throw new Error('El usuario no esta autorizado como administrador.');
         }
+        sessionStorage.removeItem('mock-admin-email');
+        setMockEmail(email);
+        return;
       }
       sessionStorage.setItem('mock-admin-email', email);
       setMockEmail(email);

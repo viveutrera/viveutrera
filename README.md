@@ -24,6 +24,7 @@ Fases implementadas:
 - Selector de idioma publico con persistencia de preferencia y fallback explicito a espanol.
 - SEO base en cliente: title, meta description, canonical, Open Graph, Twitter Cards, hreflang y JSON-LD inicial.
 - Detalle publico con estados vacios, aviso de traduccion alternativa y navegacion anterior/siguiente.
+- RLS endurecido para leer solo contenido activo/publicado y bloquear acceso admin sin `admin_profiles`.
 - Seed inicial sin multimedia real en `supabase/seeds/20260803_initial_content.sql`.
 
 ## Ejecucion local opcional
@@ -77,6 +78,7 @@ PUBLIC_MEDIA_BASE_URL=
 ## Supabase
 
 La migracion inicial esta en `supabase/migrations/20260803190000_initial_schema.sql`.
+El refuerzo de seguridad para bases ya creadas esta en `supabase/migrations/20260804173000_harden_rls_security.sql`.
 El contenido inicial esta en `supabase/seeds/20260803_initial_content.sql`.
 
 Incluye:
@@ -85,8 +87,9 @@ Incluye:
 - Idiomas, traducciones del sitio, tipos, elementos, imagenes, audios, enlaces y colaboradores.
 - `media_assets` y `media_variants` para guardar metadatos y claves de objetos R2.
 - RLS activado en las tablas publicas.
-- Politicas publicas de solo lectura para contenido activo y publicado.
+- Politicas publicas de solo lectura para contenido activo, publicado y en idiomas activos.
 - Politicas administrativas basadas en `public.is_admin()`.
+- Constraints de base de datos para slugs y URLs.
 
 Para crear administradores, primero crea usuarios en Supabase Auth y despues inserta su `auth.users.id` en `public.admin_profiles`.
 
@@ -116,7 +119,7 @@ La primera fase es una SPA para GitHub Pages. Esto permite despliegue simple, pe
 
 ## Siguientes pasos
 
-1. Ejecutar migracion y seed en Supabase.
+1. Ejecutar migraciones y seed en Supabase.
 2. Crear usuarios administradores y autorizar su UID en `admin_profiles`.
 3. Crear Cloudflare Worker para R2.
 4. Sustituir placeholders de marca e imagenes.
