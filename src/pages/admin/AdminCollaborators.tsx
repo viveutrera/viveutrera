@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { matchesSearch, validateOptionalUrl, validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
   id: string;
@@ -61,6 +62,10 @@ export function AdminCollaborators() {
   const [editingId, setEditingId] = useState<string>();
   const [deleteId, setDeleteId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
+  const [isSubmitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [specialFilter, setSpecialFilter] = useState('all');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -92,18 +97,29 @@ export function AdminCollaborators() {
     event.preventDefault();
     setError('');
     setSuccess('');
+
+    const validationError = validateCollaborator(form, languages);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await adminRepository.saveCollaborator({ id: editingId, ...form });
-      setEditingId(undefined);
-      setForm(emptyCollaborator(languages));
+      await adminRepository.saveCollaborator({ id: editingId, ...form, name: form.name.trim(), url: form.url.trim() });
+      resetForm();
       setSuccess('Colaborador guardado.');
       await load();
-    } catch {
-      setError('No se pudo guardar el colaborador.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo guardar el colaborador.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
   function edit(item: CollaboratorRow) {
+    setError('');
+    setSuccess('');
     setEditingId(item.id);
     setForm({
       name: item.name,
@@ -122,6 +138,12 @@ export function AdminCollaborators() {
     });
   }
 
+  function resetForm() {
+    setEditingId(undefined);
+    setForm(emptyCollaborator(languages));
+    setError('');
+  }
+
   function updateTranslation(languageId: string, field: keyof Omit<TranslationForm, 'language_id'>, value: string) {
     setForm((current) => ({
       ...current,
@@ -133,10 +155,31 @@ export function AdminCollaborators() {
 
   async function confirmDelete() {
     if (!deleteId) return;
-    await adminRepository.deleteCollaborator(deleteId);
-    setDeleteId(undefined);
-    await load();
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+      await adminRepository.deleteCollaborator(deleteId);
+      setDeleteId(undefined);
+      setSuccess('Colaborador borrado.');
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo borrar el colaborador.');
+    } finally {
+      setSubmitting(false);
+    }
   }
+
+  const filteredItems = items.filter((item) => (
+    matchesSearch([
+      item.name,
+      item.url,
+      ...(item.collaborator_translations?.flatMap((translation) => [translation.display_name, translation.thank_you_text]) ?? [])
+    ], search)
+    && (statusFilter === 'all' || (statusFilter === 'active' ? item.is_active : !item.is_active))
+    && (specialFilter === 'all' || (specialFilter === 'special' ? item.is_special : !item.is_special))
+  ));
+  const selectedCollaborator = items.find((item) => item.id === deleteId);
 
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura las variables remotas para editar colaboradores reales." />;
   if (isLoading) return <LoadingState />;
@@ -167,16 +210,35 @@ export function AdminCollaborators() {
               );
             })}
           </div>
-          <Button type="submit">{editingId ? 'Guardar cambios' : 'Crear colaborador'}</Button>
+          <div className="button-row">
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear colaborador'}</Button>
+            {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button> : null}
+          </div>
         </form>
       </Card>
+      <div className="admin-tools">
+        <label className="search-box">
+          <span className="sr-only">Buscar colaboradores</span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, URL o agradecimiento" />
+        </label>
+        <select className="admin-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar colaboradores por estado">
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
+        <select className="admin-filter" value={specialFilter} onChange={(event) => setSpecialFilter(event.target.value)} aria-label="Filtrar colaboradores por tipo">
+          <option value="all">Todos los tipos</option>
+          <option value="special">Especiales</option>
+          <option value="general">Generales</option>
+        </select>
+      </div>
       <div className="admin-table">
-        {items.map((item) => {
+        {filteredItems.map((item) => {
           const es = item.collaborator_translations?.find((translation) => getCode(translation.languages) === 'es');
           return (
             <Card key={item.id}>
               <h2>{es?.display_name ?? item.name}</h2>
-              <p>{item.is_active ? 'Activo' : 'Inactivo'} · {item.is_special ? 'Especial' : 'General'}</p>
+              <p>{item.is_active ? 'Activo' : 'Inactivo'} - {item.is_special ? 'Especial' : 'General'}</p>
               <div className="table-actions">
                 <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
                 <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
@@ -185,9 +247,26 @@ export function AdminCollaborators() {
           );
         })}
       </div>
-      <ConfirmDialog isOpen={Boolean(deleteId)} title="Borrar colaborador" message="Se eliminara el colaborador y sus textos traducidos. No se borraran archivos multimedia." confirmLabel="Borrar" onCancel={() => setDeleteId(undefined)} onConfirm={confirmDelete} />
+      <ConfirmDialog
+        isOpen={Boolean(deleteId)}
+        title="Borrar colaborador"
+        message={`Se eliminara ${selectedCollaborator?.name ?? 'este colaborador'} y sus textos traducidos. No se borraran archivos multimedia.`}
+        confirmLabel="Borrar"
+        onCancel={() => setDeleteId(undefined)}
+        onConfirm={confirmDelete}
+      />
     </section>
   );
+}
+
+function validateCollaborator(candidate: CollaboratorForm, languages: LanguageRow[]) {
+  const nameError = validateRequired(candidate.name, 'Nombre interno');
+  if (nameError) return nameError;
+  const urlError = validateOptionalUrl(candidate.url, 'La URL');
+  if (urlError) return urlError;
+  const spanish = languages.find((language) => language.code === 'es') ?? languages[0];
+  const spanishTranslation = candidate.translations.find((translation) => translation.language_id === spanish?.id);
+  return validateRequired(spanishTranslation?.display_name, `Nombre visible en ${spanish?.native_name ?? 'el idioma principal'}`);
 }
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {

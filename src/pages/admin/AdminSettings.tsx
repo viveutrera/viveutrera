@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
   id: string;
@@ -42,6 +43,7 @@ export function AdminSettings() {
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [translations, setTranslations] = useState<Record<string, SettingsTranslation>>({});
   const [isLoading, setLoading] = useState(true);
+  const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -85,11 +87,21 @@ export function AdminSettings() {
     event.preventDefault();
     setError('');
     setSuccess('');
+
+    const validationError = validateSettings(translations, languages);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await adminRepository.saveSiteTranslations(Object.values(translations));
       setSuccess('Configuracion multidioma guardada.');
-    } catch {
-      setError('No se pudo guardar la configuracion.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo guardar la configuracion.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -121,8 +133,29 @@ export function AdminSettings() {
             </Card>
           );
         })}
-        <Button type="submit">Guardar configuracion</Button>
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar configuracion'}</Button>
       </form>
     </section>
   );
+}
+
+function validateSettings(translations: Record<string, SettingsTranslation>, languages: LanguageRow[]) {
+  for (const language of languages) {
+    const translation = translations[language.id] ?? emptyTranslation(language.id);
+    const requiredError = [
+      validateRequired(translation.hero_title, `Titulo hero en ${language.native_name}`),
+      validateRequired(translation.hero_slogan, `Eslogan hero en ${language.native_name}`),
+      validateRequired(translation.hero_description, `Descripcion hero en ${language.native_name}`),
+      validateRequired(translation.city_title, `Titulo ciudad en ${language.native_name}`),
+      validateRequired(translation.city_text, `Texto ciudad en ${language.native_name}`),
+      validateRequired(translation.language_card_text, `Texto tarjeta idioma en ${language.native_name}`),
+      validateRequired(translation.language_card_button, `Boton tarjeta idioma en ${language.native_name}`),
+      validateRequired(translation.seo_title, `SEO titulo en ${language.native_name}`),
+      validateRequired(translation.seo_description, `SEO descripcion en ${language.native_name}`)
+    ].find(Boolean);
+
+    if (requiredError) return requiredError;
+  }
+
+  return '';
 }
