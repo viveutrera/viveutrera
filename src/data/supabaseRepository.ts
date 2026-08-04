@@ -295,7 +295,7 @@ export const adminRepository = {
     duration_seconds?: number | null;
   }) {
     const client = ensureSupabase();
-    const { error } = await client
+    const { data, error } = await client
       .from('media_assets')
       .upsert({
         id: input.id,
@@ -310,6 +310,28 @@ export const adminRepository = {
       })
       .select()
       .single();
+    if (error) throw error;
+    return data;
+  },
+  async saveMediaVariant(input: {
+    media_asset_id: string;
+    variant: string;
+    object_key: string;
+    file_size: number;
+    width?: number | null;
+    height?: number | null;
+  }) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('media_variants')
+      .upsert({
+        media_asset_id: input.media_asset_id,
+        variant: input.variant,
+        object_key: input.object_key,
+        file_size: input.file_size,
+        width: input.width ?? null,
+        height: input.height ?? null
+      }, { onConflict: 'media_asset_id,variant' });
     if (error) throw error;
   },
   async deleteMediaAsset(id: string) {

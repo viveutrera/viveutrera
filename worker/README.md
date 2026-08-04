@@ -11,6 +11,8 @@ Worker de Cloudflare para subir ficheros desde `Admin -> Multimedia` a R2.
 - Sube el fichero al bucket R2 enlazado como `MEDIA_BUCKET`.
 - Devuelve metadatos para registrar el asset en `public.media_assets`.
 
+Las imagenes se optimizan en el navegador antes de llamar al Worker: el admin envia una version principal de hasta 300 KB y una miniatura de hasta 50 KB, ambas en WebP. El Worker no reescala imagenes; solo valida y guarda lo recibido.
+
 ## Crear recursos en Cloudflare
 
 1. Crea un bucket R2 llamado `viveutrera-media`.

@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { prepareImageUpload } from '../../lib/imageCompression';
 import { mediaUrl } from '../../lib/media';
 import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
 import { matchesSearch, validateRequired } from '../../lib/validation';
@@ -108,15 +109,38 @@ export function AdminMedia() {
 
     setSubmitting(true);
     try {
-      const result = await uploadMediaFile(uploadFile, uploadTarget);
-      await adminRepository.saveMediaAsset({
-        ...result.asset,
-        width: null,
-        height: null,
-        duration_seconds: null
-      });
+      if (uploadFile.type.startsWith('image/')) {
+        const prepared = await prepareImageUpload(uploadFile);
+        const [mainResult, thumbnailResult] = await Promise.all([
+          uploadMediaFile(prepared.mainFile, uploadTarget),
+          uploadMediaFile(prepared.thumbnailFile, uploadTarget)
+        ]);
+        const saved = await adminRepository.saveMediaAsset({
+          ...mainResult.asset,
+          width: prepared.width,
+          height: prepared.height,
+          duration_seconds: null
+        }) as { id: string };
+        await adminRepository.saveMediaVariant({
+          media_asset_id: saved.id,
+          variant: 'thumbnail',
+          object_key: thumbnailResult.asset.object_key,
+          file_size: thumbnailResult.asset.file_size,
+          width: prepared.thumbnailWidth,
+          height: prepared.thumbnailHeight
+        });
+        setSuccess(`Imagen optimizada: ${Math.round(mainResult.asset.file_size / 1024)} KB y miniatura: ${Math.round(thumbnailResult.asset.file_size / 1024)} KB.`);
+      } else {
+        const result = await uploadMediaFile(uploadFile, uploadTarget);
+        await adminRepository.saveMediaAsset({
+          ...result.asset,
+          width: null,
+          height: null,
+          duration_seconds: null
+        });
+        setSuccess(`Fichero subido y registrado: ${result.asset.object_key}`);
+      }
       setUploadFile(undefined);
-      setSuccess(`Fichero subido y registrado: ${result.asset.object_key}`);
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el fichero.');
@@ -179,6 +203,7 @@ export function AdminMedia() {
           <div className="button-row">
             <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir a R2'}</Button>
           </div>
+          <p className="hint">Las imagenes se convierten a WebP: version principal hasta 300 KB y miniatura hasta 50 KB.</p>
           {!canUseUploadApi() ? <p className="hint">Configura VITE_UPLOAD_API_URL y despliega el Worker para activar la subida directa.</p> : null}
         </form>
       </Card>
