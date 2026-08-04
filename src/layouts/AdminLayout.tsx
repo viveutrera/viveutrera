@@ -1,6 +1,7 @@
 import { Image, Link as LinkIcon, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { publicPath } from '../lib/routing';
 import { useAuth } from '../routes/authContext';
 
 const links = [
@@ -19,7 +20,7 @@ export function AdminLayout() {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <img src={`${import.meta.env.BASE_URL}brand/logo-horizontal-placeholder.svg`} alt="Vive Utrera" />
+        <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
         <nav aria-label="Administracion">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/admin'}>

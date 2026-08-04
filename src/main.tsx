@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { routerBasename } from './lib/routing';
 import { AuthProvider } from './routes/useAuth';
 import './styles/global.css';
 
@@ -14,7 +15,7 @@ if (redirect) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <BrowserRouter basename={routerBasename()}>
       <AuthProvider>
         <App />
       </AuthProvider>

@@ -1,6 +1,8 @@
+import { publicPath } from './routing';
+
 export function mediaUrl(objectKey: string) {
   const baseUrl = import.meta.env.VITE_PUBLIC_MEDIA_BASE_URL?.replace(/\/$/, '');
-  if (!baseUrl) return `${import.meta.env.BASE_URL}${objectKey.replace(/^\//, '')}`;
+  if (!baseUrl) return publicPath(objectKey);
   return `${baseUrl}/${objectKey.replace(/^\//, '')}`;
 }
 

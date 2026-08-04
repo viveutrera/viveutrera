@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vive Utrera</title>
     <script>
+      var repositoryBase = '/viveutrera';
+      var isRepositoryPath = location.pathname === repositoryBase || location.pathname.indexOf(repositoryBase + '/') === 0;
+      var target = isRepositoryPath ? repositoryBase + '/' : '/';
       sessionStorage.redirect = location.href;
+      location.replace(target);
     </script>
-    <meta http-equiv="refresh" content="0;URL='/viveutrera/'" />
   </head>
   <body>
     Redirigiendo a Vive Utrera...

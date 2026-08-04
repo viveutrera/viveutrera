@@ -7,6 +7,7 @@ import { guideRepository } from '../../data/repositories';
 import type { Collaborator, Language, SiteContent } from '../../domain/types';
 import { getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
+import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
 
 export function LandingPage() {
@@ -45,7 +46,7 @@ export function LandingPage() {
     <>
       <header className="hero">
         <nav className="hero-nav" aria-label="Principal">
-          <img src={`${import.meta.env.BASE_URL}brand/logo-horizontal-placeholder.svg`} alt="Vive Utrera" />
+          <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
           <div className="hero-actions">
             <ButtonLink to={`/guia/${getPersistedLanguage() ?? 'es'}`} variant="secondary">Guia</ButtonLink>
             <ButtonLink to="/admin/login" variant="secondary">Admin</ButtonLink>

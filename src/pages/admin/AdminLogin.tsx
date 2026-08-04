@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
 import { ErrorState } from '../../components/ui/States';
+import { publicPath } from '../../lib/routing';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../routes/authContext';
 
@@ -35,7 +36,7 @@ export function AdminLogin() {
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <img src={`${import.meta.env.BASE_URL}brand/logo-horizontal-placeholder.svg`} alt="Vive Utrera" />
+        <img src={publicPath('brand/logo-horizontal-placeholder.svg')} alt="Vive Utrera" />
         <h1>Administracion</h1>
         {!isSupabaseConfigured ? (
           <p className="hint">Modo maqueta: se acepta cualquier correo y contrasena hasta configurar Supabase.</p>
