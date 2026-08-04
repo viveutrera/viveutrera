@@ -27,7 +27,7 @@ export interface ElementType {
 export interface MediaAsset {
   id: string;
   objectKey: string;
-  mediaType: 'image' | 'audio' | 'logo';
+  mediaType: 'image' | 'audio' | 'logo' | 'file';
   mimeType: string;
   originalName: string;
   fileSize: number;

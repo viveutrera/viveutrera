@@ -8,7 +8,7 @@ Fases implementadas:
 
 - Vite, React, TypeScript y React Router.
 - Rutas publicas: `/`, `/guia/:idioma`, `/guia/:idioma/elemento/:slug`.
-- Rutas admin: `/admin/login`, `/admin`, `/admin/configuracion`, `/admin/idiomas`, `/admin/tipos`, `/admin/elementos`, `/admin/colaboradores`.
+- Rutas admin: `/admin/login`, `/admin`, `/admin/configuracion`, `/admin/idiomas`, `/admin/tipos`, `/admin/elementos`, `/admin/multimedia`, `/admin/enlaces`, `/admin/colaboradores`.
 - Identidad visual base con variables CSS de Vive Utrera.
 - Componentes reutilizables de botones, tarjetas, formularios, modales, confirmacion y estados.
 - Datos simulados tipados y repositorios desacoplados.
@@ -19,7 +19,9 @@ Fases implementadas:
 - Repositorios publicos con Supabase real y fallback a mocks.
 - Login admin con Supabase Auth y comprobacion de `admin_profiles`.
 - CRUD textual basico de configuracion, idiomas, tipos, elementos, enlaces y colaboradores.
+- Biblioteca multimedia para registrar metadatos y `object_key` antes de activar subida real a R2.
 - Edicion multidioma de configuracion, tipos, elementos y colaboradores para ES, EN, FR y DE.
+- Colaboradores con logo/imagen asociable desde la biblioteca multimedia.
 - Detalle publico con enlaces complementarios reales por idioma desde Supabase.
 - Selector de idioma publico con persistencia de preferencia y fallback explicito a espanol.
 - SEO base en cliente: title, meta description, canonical, Open Graph, Twitter Cards, hreflang y JSON-LD inicial.
@@ -101,6 +103,8 @@ values ('UUID_DEL_USUARIO');
 ## Cloudflare R2 y Worker
 
 En esta fase no hay credenciales reales ni subida a R2. La app expone un contrato `StorageService` y un `mockStorageService`.
+
+Mientras R2 no este configurado, puedes subir un archivo por fuera y registrar su `object_key` en `Admin -> Multimedia`. Si `VITE_PUBLIC_MEDIA_BASE_URL` apunta al dominio publico del bucket/CDN, la web resolvera ese asset con `mediaUrl(object_key)`. Ese registro ya puede asociarse a colaboradores como logo.
 
 El Worker posterior debera:
 

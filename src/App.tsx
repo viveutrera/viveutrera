@@ -8,6 +8,7 @@ import { AdminElementTypes } from './pages/admin/AdminElementTypes';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
 import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
+import { AdminMedia } from './pages/admin/AdminMedia';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
@@ -37,6 +38,7 @@ export function App() {
         <Route path="idiomas" element={<AdminLanguages />} />
         <Route path="tipos" element={<AdminElementTypes />} />
         <Route path="elementos" element={<AdminElements />} />
+        <Route path="multimedia" element={<AdminMedia />} />
         <Route path="enlaces" element={<AdminLinks />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
       </Route>

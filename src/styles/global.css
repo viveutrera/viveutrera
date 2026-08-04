@@ -345,6 +345,36 @@ p { line-height: 1.65; }
   flex-wrap: wrap;
   gap: 10px;
 }
+.media-admin-row {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.media-admin-row img,
+.media-admin-icon {
+  width: 86px;
+  height: 64px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: rgba(216, 199, 166, 0.2);
+  object-fit: contain;
+}
+.media-admin-icon {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+.media-admin-row h2,
+.media-admin-row p {
+  overflow-wrap: anywhere;
+}
 .button-row {
   display: flex;
   flex-wrap: wrap;

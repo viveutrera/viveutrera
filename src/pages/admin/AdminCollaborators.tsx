@@ -2,9 +2,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { FormField, TextAreaField } from '../../components/ui/FormField';
+import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { mediaUrl } from '../../lib/media';
 import { matchesSearch, validateOptionalUrl, validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
@@ -24,11 +25,19 @@ interface CollaboratorTranslationRow {
 interface CollaboratorRow {
   id?: string;
   name: string;
+  media_asset_id?: string | null;
   url?: string | null;
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
   collaborator_translations?: CollaboratorTranslationRow[];
+}
+
+interface MediaAssetRow {
+  id: string;
+  object_key: string;
+  media_type: string;
+  original_name: string;
 }
 
 interface TranslationForm {
@@ -39,6 +48,7 @@ interface TranslationForm {
 
 interface CollaboratorForm {
   name: string;
+  media_asset_id: string;
   url: string;
   sort_order: number;
   is_active: boolean;
@@ -48,6 +58,7 @@ interface CollaboratorForm {
 
 const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
   name: '',
+  media_asset_id: '',
   url: '',
   sort_order: 0,
   is_active: true,
@@ -57,6 +68,7 @@ const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
 
 export function AdminCollaborators() {
   const [items, setItems] = useState<CollaboratorRow[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<CollaboratorForm>(emptyCollaborator([]));
   const [editingId, setEditingId] = useState<string>();
@@ -79,8 +91,10 @@ export function AdminCollaborators() {
       adminRepository.listCollaborators(),
       adminRepository.listLanguages()
     ]);
+    const mediaRows = await adminRepository.listMediaAssets();
     const nextLanguages = (languageRows as unknown as LanguageRow[]).sort((a, b) => a.sort_order - b.sort_order);
     setItems(collaboratorRows as unknown as CollaboratorRow[]);
+    setMediaAssets((mediaRows as unknown as MediaAssetRow[]).filter((asset) => asset.media_type === 'logo' || asset.media_type === 'image'));
     setLanguages(nextLanguages);
     setForm((current) => current.translations.length ? current : emptyCollaborator(nextLanguages));
     setLoading(false);
@@ -106,7 +120,7 @@ export function AdminCollaborators() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveCollaborator({ id: editingId, ...form, name: form.name.trim(), url: form.url.trim() });
+      await adminRepository.saveCollaborator({ id: editingId, ...form, name: form.name.trim(), url: form.url.trim(), media_asset_id: form.media_asset_id || null });
       resetForm();
       setSuccess('Colaborador guardado.');
       await load();
@@ -123,6 +137,7 @@ export function AdminCollaborators() {
     setEditingId(item.id);
     setForm({
       name: item.name,
+      media_asset_id: item.media_asset_id ?? '',
       url: item.url ?? '',
       sort_order: item.sort_order,
       is_active: item.is_active,
@@ -174,6 +189,7 @@ export function AdminCollaborators() {
     matchesSearch([
       item.name,
       item.url,
+      selectedMediaName(item.media_asset_id, mediaAssets),
       ...(item.collaborator_translations?.flatMap((translation) => [translation.display_name, translation.thank_you_text]) ?? [])
     ], search)
     && (statusFilter === 'all' || (statusFilter === 'active' ? item.is_active : !item.is_active))
@@ -193,6 +209,10 @@ export function AdminCollaborators() {
         <form className="stack-form" onSubmit={submit}>
           <div className="admin-form">
             <FormField label="Nombre interno" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+            <SelectField label="Logo / imagen" value={form.media_asset_id} onChange={(event) => setForm({ ...form, media_asset_id: event.target.value })}>
+              <option value="">Sin logo</option>
+              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+            </SelectField>
             <FormField label="URL" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
@@ -235,10 +255,16 @@ export function AdminCollaborators() {
       <div className="admin-table">
         {filteredItems.map((item) => {
           const es = item.collaborator_translations?.find((translation) => getCode(translation.languages) === 'es');
+          const media = mediaAssets.find((asset) => asset.id === item.media_asset_id);
           return (
             <Card key={item.id}>
-              <h2>{es?.display_name ?? item.name}</h2>
-              <p>{item.is_active ? 'Activo' : 'Inactivo'} - {item.is_special ? 'Especial' : 'General'}</p>
+              <div className="media-admin-row">
+                {media ? <img src={mediaUrl(media.object_key)} alt="" loading="lazy" /> : <div className="media-admin-icon">sin logo</div>}
+                <div>
+                  <h2>{es?.display_name ?? item.name}</h2>
+                  <p>{item.is_active ? 'Activo' : 'Inactivo'} - {item.is_special ? 'Especial' : 'General'}{media ? ` - ${media.original_name || media.object_key}` : ''}</p>
+                </div>
+              </div>
               <div className="table-actions">
                 <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
                 <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
@@ -271,4 +297,9 @@ function validateCollaborator(candidate: CollaboratorForm, languages: LanguageRo
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
   return Array.isArray(relation) ? relation[0]?.code : relation?.code;
+}
+
+function selectedMediaName(mediaAssetId: string | null | undefined, mediaAssets: MediaAssetRow[]) {
+  const media = mediaAssets.find((asset) => asset.id === mediaAssetId);
+  return media?.original_name ?? media?.object_key;
 }

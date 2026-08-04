@@ -60,6 +60,18 @@ interface ElementLinkRowRaw {
   is_published: boolean;
 }
 
+interface MediaAssetRowRaw {
+  id: string;
+  object_key: string;
+  media_type: 'image' | 'audio' | 'logo' | 'file';
+  mime_type: string;
+  original_name: string;
+  file_size: number;
+  width: number | null;
+  height: number | null;
+  duration_seconds: number | null;
+}
+
 function asLanguageCode(code: string): LanguageCode {
   return languageCodes.includes(code as LanguageCode) ? code as LanguageCode : 'es';
 }
@@ -231,7 +243,7 @@ export const supabaseGuideRepository = {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('collaborators')
-      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, collaborator_translations(display_name, thank_you_text, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -251,7 +263,7 @@ export const supabaseGuideRepository = {
         id: row.id,
         name: row.name,
         url: row.url ?? undefined,
-        mediaAsset: row.media_asset_id ? placeholderAsset : undefined,
+        mediaAsset: mapMediaAsset(row.media_assets) ?? (row.media_asset_id ? placeholderAsset : undefined),
         sortOrder: row.sort_order,
         isActive: row.is_active,
         isSpecial: row.is_special,
@@ -262,6 +274,50 @@ export const supabaseGuideRepository = {
 };
 
 export const adminRepository = {
+  async listMediaAssets() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('media_assets')
+      .select('id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveMediaAsset(input: {
+    id?: string;
+    object_key: string;
+    media_type: 'image' | 'audio' | 'logo' | 'file';
+    mime_type: string;
+    original_name: string;
+    file_size: number;
+    width?: number | null;
+    height?: number | null;
+    duration_seconds?: number | null;
+  }) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('media_assets')
+      .upsert({
+        id: input.id,
+        object_key: input.object_key,
+        media_type: input.media_type,
+        mime_type: input.mime_type,
+        original_name: input.original_name,
+        file_size: input.file_size,
+        width: input.width ?? null,
+        height: input.height ?? null,
+        duration_seconds: input.duration_seconds ?? null
+      })
+      .select()
+      .single();
+    if (error) throw error;
+  },
+  async deleteMediaAsset(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('media_assets').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   async listSiteTranslations() {
     const client = ensureSupabase();
     const { data, error } = await client.from('site_translations').select('*');
@@ -421,7 +477,7 @@ export const adminRepository = {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('collaborators')
-      .select('id, name, url, sort_order, is_active, is_special, collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
       .order('sort_order');
     if (error) throw error;
     return data ?? [];
@@ -430,6 +486,7 @@ export const adminRepository = {
     id?: string;
     name: string;
     url: string;
+    media_asset_id?: string | null;
     sort_order: number;
     is_active: boolean;
     is_special: boolean;
@@ -441,6 +498,7 @@ export const adminRepository = {
       .upsert({
         id: input.id,
         name: input.name,
+        media_asset_id: input.media_asset_id || null,
         url: input.url || null,
         sort_order: input.sort_order,
         is_active: input.is_active,
@@ -550,6 +608,23 @@ function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement
     images: mockElements[0]?.images ?? [],
     audios: [],
     links: []
+  };
+}
+
+function mapMediaAsset(relation: MediaAssetRowRaw | MediaAssetRowRaw[] | null | undefined): MediaAsset | undefined {
+  const asset = Array.isArray(relation) ? relation[0] : relation;
+  if (!asset) return undefined;
+
+  return {
+    id: asset.id,
+    objectKey: asset.object_key,
+    mediaType: asset.media_type,
+    mimeType: asset.mime_type,
+    originalName: asset.original_name,
+    fileSize: asset.file_size,
+    width: asset.width ?? undefined,
+    height: asset.height ?? undefined,
+    durationSeconds: asset.duration_seconds ?? undefined
   };
 }
 
