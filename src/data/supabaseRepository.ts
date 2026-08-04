@@ -262,15 +262,14 @@ export const supabaseGuideRepository = {
 };
 
 export const adminRepository = {
-  async getSpanishSiteTranslation() {
+  async listSiteTranslations() {
     const client = ensureSupabase();
-    const languageId = await getLanguageId('es');
-    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
-    const { data, error } = await client.from('site_translations').select('*').eq('language_id', languageId).maybeSingle();
+    const { data, error } = await client.from('site_translations').select('*');
     if (error) throw error;
-    return { language_id: languageId, ...(data ?? {}) };
+    return data ?? [];
   },
-  async saveSpanishSiteTranslation(input: {
+  async saveSiteTranslations(translations: Array<{
+    language_id: string;
     hero_title: string;
     hero_slogan: string;
     hero_description: string;
@@ -280,14 +279,9 @@ export const adminRepository = {
     language_card_button: string;
     seo_title: string;
     seo_description: string;
-  }) {
+  }>) {
     const client = ensureSupabase();
-    const languageId = await getLanguageId('es');
-    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
-    const { error } = await client.from('site_translations').upsert({
-      language_id: languageId,
-      ...input
-    }, { onConflict: 'language_id' });
+    const { error } = await client.from('site_translations').upsert(translations, { onConflict: 'language_id' });
     if (error) throw error;
   },
 
@@ -327,7 +321,14 @@ export const adminRepository = {
     if (error) throw error;
     return data ?? [];
   },
-  async saveElementType(input: { id?: string; slug: string; icon: string; name_es: string; description_es: string; sort_order: number; is_active: boolean }) {
+  async saveElementType(input: {
+    id?: string;
+    slug: string;
+    icon: string;
+    sort_order: number;
+    is_active: boolean;
+    translations: Array<{ language_id: string; name: string; description: string }>;
+  }) {
     const client = ensureSupabase();
     const { data: type, error } = await client
       .from('element_types')
@@ -336,17 +337,14 @@ export const adminRepository = {
       .single();
     if (error) throw error;
 
-    const languageId = await getLanguageId('es');
-    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
-
     const { error: translationError } = await client
       .from('element_type_translations')
-      .upsert({
+      .upsert(input.translations.filter((translation) => translation.name.trim()).map((translation) => ({
         element_type_id: type.id,
-        language_id: languageId,
-        name: input.name_es,
-        description: input.description_es
-      }, { onConflict: 'element_type_id,language_id' });
+        language_id: translation.language_id,
+        name: translation.name,
+        description: translation.description || null
+      })), { onConflict: 'element_type_id,language_id' });
     if (translationError) throw translationError;
   },
   async deleteElementType(id: string) {
@@ -372,10 +370,15 @@ export const adminRepository = {
     status: 'draft' | 'published';
     is_featured: boolean;
     sort_order: number;
-    name_es: string;
-    short_text_es: string;
-    long_text_es: string;
-    is_published_es: boolean;
+    translations: Array<{
+      language_id: string;
+      name: string;
+      short_text: string;
+      long_text: string;
+      seo_title: string;
+      seo_description: string;
+      is_published: boolean;
+    }>;
   }) {
     const client = ensureSupabase();
     const { data: element, error } = await client
@@ -394,21 +397,18 @@ export const adminRepository = {
       .single();
     if (error) throw error;
 
-    const languageId = await getLanguageId('es');
-    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
-
     const { error: translationError } = await client
       .from('element_translations')
-      .upsert({
+      .upsert(input.translations.filter((translation) => translation.name.trim() && translation.short_text.trim()).map((translation) => ({
         element_id: element.id,
-        language_id: languageId,
-        name: input.name_es,
-        short_text: input.short_text_es,
-        long_text: input.long_text_es,
-        seo_title: input.name_es,
-        seo_description: input.short_text_es,
-        is_published: input.is_published_es
-      }, { onConflict: 'element_id,language_id' });
+        language_id: translation.language_id,
+        name: translation.name,
+        short_text: translation.short_text,
+        long_text: translation.long_text || null,
+        seo_title: translation.seo_title || translation.name,
+        seo_description: translation.seo_description || translation.short_text,
+        is_published: translation.is_published
+      })), { onConflict: 'element_id,language_id' });
     if (translationError) throw translationError;
   },
   async deleteElement(id: string) {
@@ -433,8 +433,7 @@ export const adminRepository = {
     sort_order: number;
     is_active: boolean;
     is_special: boolean;
-    display_name_es: string;
-    thank_you_text_es: string;
+    translations: Array<{ language_id: string; display_name: string; thank_you_text: string }>;
   }) {
     const client = ensureSupabase();
     const { data: collaborator, error } = await client
@@ -451,17 +450,14 @@ export const adminRepository = {
       .single();
     if (error) throw error;
 
-    const languageId = await getLanguageId('es');
-    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
-
     const { error: translationError } = await client
       .from('collaborator_translations')
-      .upsert({
+      .upsert(input.translations.filter((translation) => translation.display_name.trim()).map((translation) => ({
         collaborator_id: collaborator.id,
-        language_id: languageId,
-        display_name: input.display_name_es,
-        thank_you_text: input.thank_you_text_es || null
-      }, { onConflict: 'collaborator_id,language_id' });
+        language_id: translation.language_id,
+        display_name: translation.display_name,
+        thank_you_text: translation.thank_you_text || null
+      })), { onConflict: 'collaborator_id,language_id' });
     if (translationError) throw translationError;
   },
   async deleteCollaborator(id: string) {

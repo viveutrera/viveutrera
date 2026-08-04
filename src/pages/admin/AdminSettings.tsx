@@ -5,7 +5,28 @@ import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 
-const emptySettings = {
+interface LanguageRow {
+  id: string;
+  code: string;
+  native_name: string;
+  sort_order: number;
+}
+
+interface SettingsTranslation {
+  language_id: string;
+  hero_title: string;
+  hero_slogan: string;
+  hero_description: string;
+  city_title: string;
+  city_text: string;
+  language_card_text: string;
+  language_card_button: string;
+  seo_title: string;
+  seo_description: string;
+}
+
+const emptyTranslation = (languageId: string): SettingsTranslation => ({
+  language_id: languageId,
   hero_title: '',
   hero_slogan: '',
   hero_description: '',
@@ -15,10 +36,11 @@ const emptySettings = {
   language_card_button: '',
   seo_title: '',
   seo_description: ''
-};
+});
 
 export function AdminSettings() {
-  const [form, setForm] = useState(emptySettings);
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
+  const [translations, setTranslations] = useState<Record<string, SettingsTranslation>>({});
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -28,33 +50,44 @@ export function AdminSettings() {
       setLoading(false);
       return;
     }
-    adminRepository.getSpanishSiteTranslation()
-      .then((data) => {
-        if (data) {
-          setForm({
-            hero_title: data.hero_title ?? '',
-            hero_slogan: data.hero_slogan ?? '',
-            hero_description: data.hero_description ?? '',
-            city_title: data.city_title ?? '',
-            city_text: data.city_text ?? '',
-            language_card_text: data.language_card_text ?? '',
-            language_card_button: data.language_card_button ?? '',
-            seo_title: data.seo_title ?? '',
-            seo_description: data.seo_description ?? ''
-          });
-        }
+
+    Promise.all([
+      adminRepository.listLanguages(),
+      adminRepository.listSiteTranslations()
+    ])
+      .then(([languageRows, translationRows]) => {
+        const activeLanguages = (languageRows as unknown as LanguageRow[]).sort((a, b) => a.sort_order - b.sort_order);
+        const nextTranslations: Record<string, SettingsTranslation> = {};
+
+        activeLanguages.forEach((language) => {
+          const saved = (translationRows as unknown as SettingsTranslation[]).find((item) => item.language_id === language.id);
+          nextTranslations[language.id] = saved ?? emptyTranslation(language.id);
+        });
+
+        setLanguages(activeLanguages);
+        setTranslations(nextTranslations);
       })
       .catch(() => setError('No se pudo cargar la configuracion.'))
       .finally(() => setLoading(false));
   }, []);
+
+  function update(languageId: string, field: keyof Omit<SettingsTranslation, 'language_id'>, value: string) {
+    setTranslations((current) => ({
+      ...current,
+      [languageId]: {
+        ...(current[languageId] ?? emptyTranslation(languageId)),
+        [field]: value
+      }
+    }));
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
     setSuccess('');
     try {
-      await adminRepository.saveSpanishSiteTranslation(form);
-      setSuccess('Configuracion guardada. El siguiente despliegue o recarga publica leera estos datos.');
+      await adminRepository.saveSiteTranslations(Object.values(translations));
+      setSuccess('Configuracion multidioma guardada.');
     } catch {
       setError('No se pudo guardar la configuracion.');
     }
@@ -68,20 +101,28 @@ export function AdminSettings() {
       <h1>Configuracion</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <Card>
-        <form className="admin-form admin-form-wide" onSubmit={submit}>
-          <FormField label="Titulo hero" value={form.hero_title} onChange={(event) => setForm({ ...form, hero_title: event.target.value })} required />
-          <FormField label="Eslogan hero" value={form.hero_slogan} onChange={(event) => setForm({ ...form, hero_slogan: event.target.value })} required />
-          <TextAreaField label="Descripcion hero" value={form.hero_description} onChange={(event) => setForm({ ...form, hero_description: event.target.value })} required />
-          <FormField label="Titulo ciudad" value={form.city_title} onChange={(event) => setForm({ ...form, city_title: event.target.value })} required />
-          <TextAreaField label="Texto ciudad" value={form.city_text} onChange={(event) => setForm({ ...form, city_text: event.target.value })} required />
-          <TextAreaField label="Texto tarjeta idioma" value={form.language_card_text} onChange={(event) => setForm({ ...form, language_card_text: event.target.value })} required />
-          <FormField label="Boton tarjeta idioma" value={form.language_card_button} onChange={(event) => setForm({ ...form, language_card_button: event.target.value })} required />
-          <FormField label="SEO titulo" value={form.seo_title} onChange={(event) => setForm({ ...form, seo_title: event.target.value })} required />
-          <TextAreaField label="SEO descripcion" value={form.seo_description} onChange={(event) => setForm({ ...form, seo_description: event.target.value })} required />
-          <Button type="submit">Guardar configuracion</Button>
-        </form>
-      </Card>
+      <form className="stack-form" onSubmit={submit}>
+        {languages.map((language) => {
+          const translation = translations[language.id] ?? emptyTranslation(language.id);
+          return (
+            <Card key={language.id}>
+              <h2>{language.native_name}</h2>
+              <div className="admin-form admin-form-wide">
+                <FormField label="Titulo hero" value={translation.hero_title} onChange={(event) => update(language.id, 'hero_title', event.target.value)} required />
+                <FormField label="Eslogan hero" value={translation.hero_slogan} onChange={(event) => update(language.id, 'hero_slogan', event.target.value)} required />
+                <TextAreaField label="Descripcion hero" value={translation.hero_description} onChange={(event) => update(language.id, 'hero_description', event.target.value)} required />
+                <FormField label="Titulo ciudad" value={translation.city_title} onChange={(event) => update(language.id, 'city_title', event.target.value)} required />
+                <TextAreaField label="Texto ciudad" value={translation.city_text} onChange={(event) => update(language.id, 'city_text', event.target.value)} required />
+                <TextAreaField label="Texto tarjeta idioma" value={translation.language_card_text} onChange={(event) => update(language.id, 'language_card_text', event.target.value)} required />
+                <FormField label="Boton tarjeta idioma" value={translation.language_card_button} onChange={(event) => update(language.id, 'language_card_button', event.target.value)} required />
+                <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => update(language.id, 'seo_title', event.target.value)} required />
+                <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => update(language.id, 'seo_description', event.target.value)} required />
+              </div>
+            </Card>
+          );
+        })}
+        <Button type="submit">Guardar configuracion</Button>
+      </form>
     </section>
   );
 }

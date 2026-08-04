@@ -6,6 +6,20 @@ import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 
+interface LanguageRow {
+  id: string;
+  code: string;
+  native_name: string;
+  sort_order: number;
+}
+
+interface CollaboratorTranslationRow {
+  display_name: string;
+  thank_you_text?: string | null;
+  language_id?: string;
+  languages?: { code: string } | { code: string }[] | null;
+}
+
 interface CollaboratorRow {
   id?: string;
   name: string;
@@ -13,26 +27,37 @@ interface CollaboratorRow {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
-  collaborator_translations?: Array<{
-    display_name: string;
-    thank_you_text?: string | null;
-    languages?: { code: string } | { code: string }[] | null;
-  }>;
+  collaborator_translations?: CollaboratorTranslationRow[];
 }
 
-const emptyCollaborator = {
+interface TranslationForm {
+  language_id: string;
+  display_name: string;
+  thank_you_text: string;
+}
+
+interface CollaboratorForm {
+  name: string;
+  url: string;
+  sort_order: number;
+  is_active: boolean;
+  is_special: boolean;
+  translations: TranslationForm[];
+}
+
+const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
   name: '',
   url: '',
   sort_order: 0,
   is_active: true,
   is_special: false,
-  display_name_es: '',
-  thank_you_text_es: ''
-};
+  translations: languages.map((language) => ({ language_id: language.id, display_name: '', thank_you_text: '' }))
+});
 
 export function AdminCollaborators() {
   const [items, setItems] = useState<CollaboratorRow[]>([]);
-  const [form, setForm] = useState({ ...emptyCollaborator });
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
+  const [form, setForm] = useState<CollaboratorForm>(emptyCollaborator([]));
   const [editingId, setEditingId] = useState<string>();
   const [deleteId, setDeleteId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
@@ -45,7 +70,14 @@ export function AdminCollaborators() {
       return;
     }
     setLoading(true);
-    setItems(await adminRepository.listCollaborators() as unknown as CollaboratorRow[]);
+    const [collaboratorRows, languageRows] = await Promise.all([
+      adminRepository.listCollaborators(),
+      adminRepository.listLanguages()
+    ]);
+    const nextLanguages = (languageRows as unknown as LanguageRow[]).sort((a, b) => a.sort_order - b.sort_order);
+    setItems(collaboratorRows as unknown as CollaboratorRow[]);
+    setLanguages(nextLanguages);
+    setForm((current) => current.translations.length ? current : emptyCollaborator(nextLanguages));
     setLoading(false);
   }
 
@@ -63,7 +95,7 @@ export function AdminCollaborators() {
     try {
       await adminRepository.saveCollaborator({ id: editingId, ...form });
       setEditingId(undefined);
-      setForm({ ...emptyCollaborator });
+      setForm(emptyCollaborator(languages));
       setSuccess('Colaborador guardado.');
       await load();
     } catch {
@@ -72,7 +104,6 @@ export function AdminCollaborators() {
   }
 
   function edit(item: CollaboratorRow) {
-    const es = item.collaborator_translations?.find((translation) => getCode(translation.languages) === 'es');
     setEditingId(item.id);
     setForm({
       name: item.name,
@@ -80,9 +111,24 @@ export function AdminCollaborators() {
       sort_order: item.sort_order,
       is_active: item.is_active,
       is_special: item.is_special,
-      display_name_es: es?.display_name ?? item.name,
-      thank_you_text_es: es?.thank_you_text ?? ''
+      translations: languages.map((language) => {
+        const saved = item.collaborator_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
+        return {
+          language_id: language.id,
+          display_name: saved?.display_name ?? '',
+          thank_you_text: saved?.thank_you_text ?? ''
+        };
+      })
     });
+  }
+
+  function updateTranslation(languageId: string, field: keyof Omit<TranslationForm, 'language_id'>, value: string) {
+    setForm((current) => ({
+      ...current,
+      translations: current.translations.map((translation) => (
+        translation.language_id === languageId ? { ...translation, [field]: value } : translation
+      ))
+    }));
   }
 
   async function confirmDelete() {
@@ -101,14 +147,26 @@ export function AdminCollaborators() {
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
       <Card>
-        <form className="admin-form admin-form-wide" onSubmit={submit}>
-          <FormField label="Nombre interno" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-          <FormField label="Nombre visible ES" value={form.display_name_es} onChange={(event) => setForm({ ...form, display_name_es: event.target.value })} required />
-          <FormField label="URL" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
-          <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
-          <TextAreaField label="Agradecimiento ES" value={form.thank_you_text_es} onChange={(event) => setForm({ ...form, thank_you_text_es: event.target.value })} />
-          <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
-          <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => setForm({ ...form, is_special: event.target.checked })} /> Especial</label>
+        <form className="stack-form" onSubmit={submit}>
+          <div className="admin-form">
+            <FormField label="Nombre interno" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+            <FormField label="URL" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
+            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
+            <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
+            <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => setForm({ ...form, is_special: event.target.checked })} /> Especial</label>
+          </div>
+          <div className="translation-grid">
+            {languages.map((language) => {
+              const translation = form.translations.find((item) => item.language_id === language.id) ?? { language_id: language.id, display_name: '', thank_you_text: '' };
+              return (
+                <fieldset className="translation-panel" key={language.id}>
+                  <legend>{language.native_name}</legend>
+                  <FormField label="Nombre visible" value={translation.display_name} onChange={(event) => updateTranslation(language.id, 'display_name', event.target.value)} required={language.code === 'es'} />
+                  <TextAreaField label="Agradecimiento" value={translation.thank_you_text} onChange={(event) => updateTranslation(language.id, 'thank_you_text', event.target.value)} />
+                </fieldset>
+              );
+            })}
+          </div>
           <Button type="submit">{editingId ? 'Guardar cambios' : 'Crear colaborador'}</Button>
         </form>
       </Card>

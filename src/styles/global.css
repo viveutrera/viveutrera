@@ -245,6 +245,28 @@ p { line-height: 1.65; }
   display: grid;
   gap: 14px;
 }
+.stack-form {
+  display: grid;
+  gap: 18px;
+}
+.translation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.translation-panel {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+}
+.translation-panel legend {
+  padding: 0 8px;
+  color: var(--color-primary);
+  font-weight: 800;
+}
 .table-actions {
   display: flex;
   flex-wrap: wrap;

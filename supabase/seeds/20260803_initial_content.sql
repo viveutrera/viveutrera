@@ -56,7 +56,16 @@ insert into public.element_type_translations (element_type_id, language_id, name
 values
   ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Monumentos', 'Edificios y espacios patrimoniales.'),
   ('66666666-6666-6666-6666-666666666666', '11111111-1111-1111-1111-111111111111', 'Calles', 'Calles y rincones con interes historico.'),
-  ('77777777-7777-7777-7777-777777777777', '11111111-1111-1111-1111-111111111111', 'Cultura', 'Espacios culturales y recursos para visitantes.')
+  ('77777777-7777-7777-7777-777777777777', '11111111-1111-1111-1111-111111111111', 'Cultura', 'Espacios culturales y recursos para visitantes.'),
+  ('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222222', 'Monuments', 'Heritage buildings and spaces.'),
+  ('66666666-6666-6666-6666-666666666666', '22222222-2222-2222-2222-222222222222', 'Streets', 'Streets and historic corners.'),
+  ('77777777-7777-7777-7777-777777777777', '22222222-2222-2222-2222-222222222222', 'Culture', 'Cultural spaces and visitor resources.'),
+  ('55555555-5555-5555-5555-555555555555', '33333333-3333-3333-3333-333333333333', 'Monuments', 'Batiments et espaces patrimoniaux.'),
+  ('66666666-6666-6666-6666-666666666666', '33333333-3333-3333-3333-333333333333', 'Rues', 'Rues et coins historiques.'),
+  ('77777777-7777-7777-7777-777777777777', '33333333-3333-3333-3333-333333333333', 'Culture', 'Espaces culturels et ressources pour visiteurs.'),
+  ('55555555-5555-5555-5555-555555555555', '44444444-4444-4444-4444-444444444444', 'Denkmaler', 'Bauwerke und Orte des Kulturerbes.'),
+  ('66666666-6666-6666-6666-666666666666', '44444444-4444-4444-4444-444444444444', 'Strassen', 'Strassen und historische Winkel.'),
+  ('77777777-7777-7777-7777-777777777777', '44444444-4444-4444-4444-444444444444', 'Kultur', 'Kulturorte und Ressourcen fur Besucher.')
 on conflict (element_type_id, language_id) do update set name = excluded.name, description = excluded.description;
 
 insert into public.elements (id, slug, element_type_id, maps_url, status, is_featured, sort_order, published_at)
@@ -74,7 +83,13 @@ on conflict (slug) do update set
 insert into public.element_translations (element_id, language_id, name, short_text, long_text, seo_title, seo_description, is_published)
 values
   ('88888888-8888-8888-8888-888888888888', '11111111-1111-1111-1111-111111111111', 'Parroquia de Santiago', 'Uno de los grandes hitos patrimoniales del centro historico.', 'Contenido inicial para validar la guia publica conectada a Supabase.', 'Parroquia de Santiago en Utrera', 'Informacion audiovisual de la Parroquia de Santiago.', true),
-  ('99999999-9999-9999-9999-999999999999', '11111111-1111-1111-1111-111111111111', 'Castillo de Utrera', 'Recinto historico vinculado a la memoria defensiva de la ciudad.', 'Contenido inicial para preparar la estructura editorial.', 'Castillo de Utrera', 'Guia audiovisual del Castillo de Utrera.', true)
+  ('99999999-9999-9999-9999-999999999999', '11111111-1111-1111-1111-111111111111', 'Castillo de Utrera', 'Recinto historico vinculado a la memoria defensiva de la ciudad.', 'Contenido inicial para preparar la estructura editorial.', 'Castillo de Utrera', 'Guia audiovisual del Castillo de Utrera.', true),
+  ('88888888-8888-8888-8888-888888888888', '22222222-2222-2222-2222-222222222222', 'Santiago Parish Church', 'One of the main heritage landmarks in the historic centre.', 'Initial content to validate the public guide connected to Supabase.', 'Santiago Parish Church in Utrera', 'Audiovisual information about Santiago Parish Church.', true),
+  ('99999999-9999-9999-9999-999999999999', '22222222-2222-2222-2222-222222222222', 'Utrera Castle', 'Historic site linked to the defensive memory of the city.', 'Initial content for the editorial structure.', 'Utrera Castle', 'Audiovisual guide to Utrera Castle.', true),
+  ('88888888-8888-8888-8888-888888888888', '33333333-3333-3333-3333-333333333333', 'Paroisse de Santiago', 'Un repere patrimonial majeur du centre historique.', 'Contenu initial pour valider le guide public connecte a Supabase.', 'Paroisse de Santiago a Utrera', 'Information audiovisuelle de la paroisse de Santiago.', true),
+  ('99999999-9999-9999-9999-999999999999', '33333333-3333-3333-3333-333333333333', 'Chateau d Utrera', 'Site historique lie a la memoire defensive de la ville.', 'Contenu initial pour preparer la structure editoriale.', 'Chateau d Utrera', 'Guide audiovisuel du chateau d Utrera.', true),
+  ('88888888-8888-8888-8888-888888888888', '44444444-4444-4444-4444-444444444444', 'Pfarrkirche Santiago', 'Ein wichtiges Kulturerbe im historischen Zentrum.', 'Erste Inhalte zur Validierung des offentlichen Guides mit Supabase.', 'Pfarrkirche Santiago in Utrera', 'Audiovisuelle Informationen zur Pfarrkirche Santiago.', true),
+  ('99999999-9999-9999-9999-999999999999', '44444444-4444-4444-4444-444444444444', 'Burg von Utrera', 'Historischer Ort der Stadtgeschichte.', 'Erste Inhalte fur die redaktionelle Struktur.', 'Burg von Utrera', 'Audiovisueller Guide zur Burg von Utrera.', true)
 on conflict (element_id, language_id) do update set
   name = excluded.name,
   short_text = excluded.short_text,
@@ -111,5 +126,9 @@ values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'Colaborador institucional', 'aa
 on conflict (id) do update set name = excluded.name, media_asset_id = excluded.media_asset_id, sort_order = excluded.sort_order, is_active = excluded.is_active, is_special = excluded.is_special;
 
 insert into public.collaborator_translations (collaborator_id, language_id, display_name, thank_you_text)
-values ('dddddddd-dddd-dddd-dddd-dddddddddddd', '11111111-1111-1111-1111-111111111111', 'Colaborador institucional', 'Agradecimiento especial pendiente de configurar.')
+values
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', '11111111-1111-1111-1111-111111111111', 'Colaborador institucional', 'Agradecimiento especial pendiente de configurar.'),
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', '22222222-2222-2222-2222-222222222222', 'Institutional collaborator', 'Special thanks pending configuration.'),
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', '33333333-3333-3333-3333-333333333333', 'Collaborateur institutionnel', 'Remerciement special a configurer.'),
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', '44444444-4444-4444-4444-444444444444', 'Institutioneller Partner', 'Besonderer Dank muss noch konfiguriert werden.')
 on conflict (collaborator_id, language_id) do update set display_name = excluded.display_name, thank_you_text = excluded.thank_you_text;
