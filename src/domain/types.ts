@@ -92,7 +92,7 @@ export interface Collaborator {
   id: string;
   name: string;
   url?: string;
-  mediaAsset: MediaAsset;
+  mediaAsset?: MediaAsset;
   sortOrder: number;
   isActive: boolean;
   isSpecial: boolean;

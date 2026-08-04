@@ -71,7 +71,7 @@ export function LandingPage() {
           <div className="collaborator-grid">
             {collaborators.map((collaborator) => (
               <a key={collaborator.id} className="collaborator" href={collaborator.url ?? '#'} aria-label={collaborator.name}>
-                <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={collaborator.translations.es.displayName} loading="lazy" />
+                {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={collaborator.translations.es.displayName} loading="lazy" /> : null}
                 <span>{collaborator.translations.es.displayName}</span>
                 {collaborator.url ? <ExternalLink size={14} /> : null}
               </a>

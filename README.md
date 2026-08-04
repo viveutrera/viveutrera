@@ -18,7 +18,8 @@ Fases implementadas:
 - Workflow de GitHub Pages.
 - Repositorios publicos con Supabase real y fallback a mocks.
 - Login admin con Supabase Auth y comprobacion de `admin_profiles`.
-- CRUD textual basico de configuracion, idiomas, tipos y elementos.
+- CRUD textual basico de configuracion, idiomas, tipos, elementos, enlaces y colaboradores.
+- Detalle publico con enlaces complementarios reales por idioma desde Supabase.
 - Seed inicial sin multimedia real en `supabase/seeds/20260803_initial_content.sql`.
 
 ## Ejecucion local opcional
@@ -113,7 +114,7 @@ La primera fase es una SPA para GitHub Pages. Esto permite despliegue simple, pe
 
 1. Ejecutar migracion y seed en Supabase.
 2. Crear usuarios administradores y autorizar su UID en `admin_profiles`.
-3. Completar CRUD de colaboradores y enlaces.
+3. Completar edicion multidioma avanzada para EN, FR y DE.
 4. Crear Cloudflare Worker para R2.
 5. Sustituir placeholders de marca e imagenes.
 6. Completar subida, borrado y optimizacion de multimedia.

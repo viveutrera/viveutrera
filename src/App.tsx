@@ -2,11 +2,12 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminCollaborators } from './pages/admin/AdminCollaborators';
 import { AdminElements } from './pages/admin/AdminElements';
 import { AdminElementTypes } from './pages/admin/AdminElementTypes';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
+import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
-import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
@@ -36,7 +37,8 @@ export function App() {
         <Route path="idiomas" element={<AdminLanguages />} />
         <Route path="tipos" element={<AdminElementTypes />} />
         <Route path="elementos" element={<AdminElements />} />
-        <Route path="colaboradores" element={<AdminPlaceholder title="Colaboradores" />} />
+        <Route path="enlaces" element={<AdminLinks />} />
+        <Route path="colaboradores" element={<AdminCollaborators />} />
       </Route>
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />

@@ -95,6 +95,17 @@ values
   ('cccccccc-cccc-cccc-cccc-cccccccccccc', '11111111-1111-1111-1111-111111111111', 'Imagen temporal', 'Marcador visual temporal de Vive Utrera', 'Imagen temporal pendiente de sustituir.')
 on conflict (element_image_id, language_id) do update set title = excluded.title, alt_text = excluded.alt_text, caption = excluded.caption;
 
+insert into public.element_links (id, element_id, language_id, title, url, link_type, sort_order, is_published)
+values
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '88888888-8888-8888-8888-888888888888', '11111111-1111-1111-1111-111111111111', 'Abrir ubicacion en Google Maps', 'https://maps.google.com/?q=Parroquia+de+Santiago+Utrera', 'mapa', 1, true),
+  ('ffffffff-ffff-ffff-ffff-ffffffffffff', '99999999-9999-9999-9999-999999999999', '11111111-1111-1111-1111-111111111111', 'Informacion turistica de Utrera', 'https://www.turismoutrera.org/', 'turismo', 1, true)
+on conflict (id) do update set
+  title = excluded.title,
+  url = excluded.url,
+  link_type = excluded.link_type,
+  sort_order = excluded.sort_order,
+  is_published = excluded.is_published;
+
 insert into public.collaborators (id, name, media_asset_id, url, sort_order, is_active, is_special)
 values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'Colaborador institucional', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', null, 1, true, true)
 on conflict (id) do update set name = excluded.name, media_asset_id = excluded.media_asset_id, sort_order = excluded.sort_order, is_active = excluded.is_active, is_special = excluded.is_special;

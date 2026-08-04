@@ -50,6 +50,16 @@ interface ElementRowRaw {
   };
 }
 
+interface ElementLinkRowRaw {
+  id: string;
+  language_id: string;
+  title: string;
+  url: string;
+  link_type: string | null;
+  sort_order: number;
+  is_published: boolean;
+}
+
 function asLanguageCode(code: string): LanguageCode {
   return languageCodes.includes(code as LanguageCode) ? code as LanguageCode : 'es';
 }
@@ -178,15 +188,50 @@ export const supabaseGuideRepository = {
   },
 
   async getElementBySlug(language: LanguageCode, slug: string): Promise<GuideElement | undefined> {
-    const elements = await this.getElements(language);
-    return elements.find((element) => element.slug === slug);
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return undefined;
+
+    const { data, error } = await client
+      .from('elements')
+      .select('id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .eq('element_translations.language_id', languageId)
+      .eq('element_translations.is_published', true)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return undefined;
+
+    const element = mapElementRow(data as unknown as ElementRowRaw, language);
+    const { data: links, error: linksError } = await client
+      .from('element_links')
+      .select('id, language_id, title, url, link_type, sort_order, is_published')
+      .eq('element_id', element.id)
+      .eq('language_id', languageId)
+      .eq('is_published', true)
+      .order('sort_order');
+
+    if (linksError) throw linksError;
+    element.links = ((links ?? []) as ElementLinkRowRaw[]).map((link) => ({
+      id: link.id,
+      languageCode: language,
+      title: link.title,
+      url: link.url,
+      linkType: link.link_type ?? undefined,
+      sortOrder: link.sort_order,
+      isPublished: link.is_published
+    }));
+
+    return element;
   },
 
   async getCollaborators(): Promise<Collaborator[]> {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('collaborators')
-      .select('id, name, url, sort_order, is_active, is_special, collaborator_translations(display_name, thank_you_text, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, collaborator_translations(display_name, thank_you_text, languages(code))')
       .eq('is_active', true)
       .order('sort_order');
 
@@ -206,7 +251,7 @@ export const supabaseGuideRepository = {
         id: row.id,
         name: row.name,
         url: row.url ?? undefined,
-        mediaAsset: placeholderAsset,
+        mediaAsset: row.media_asset_id ? placeholderAsset : undefined,
         sortOrder: row.sort_order,
         isActive: row.is_active,
         isSpecial: row.is_special,
@@ -369,6 +414,101 @@ export const adminRepository = {
   async deleteElement(id: string) {
     const client = ensureSupabase();
     const { error } = await client.from('elements').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async listCollaborators() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('collaborators')
+      .select('id, name, url, sort_order, is_active, is_special, collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+      .order('sort_order');
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveCollaborator(input: {
+    id?: string;
+    name: string;
+    url: string;
+    sort_order: number;
+    is_active: boolean;
+    is_special: boolean;
+    display_name_es: string;
+    thank_you_text_es: string;
+  }) {
+    const client = ensureSupabase();
+    const { data: collaborator, error } = await client
+      .from('collaborators')
+      .upsert({
+        id: input.id,
+        name: input.name,
+        url: input.url || null,
+        sort_order: input.sort_order,
+        is_active: input.is_active,
+        is_special: input.is_special
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+
+    const languageId = await getLanguageId('es');
+    if (!languageId) throw new Error('Falta el idioma espanol en Supabase.');
+
+    const { error: translationError } = await client
+      .from('collaborator_translations')
+      .upsert({
+        collaborator_id: collaborator.id,
+        language_id: languageId,
+        display_name: input.display_name_es,
+        thank_you_text: input.thank_you_text_es || null
+      }, { onConflict: 'collaborator_id,language_id' });
+    if (translationError) throw translationError;
+  },
+  async deleteCollaborator(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('collaborators').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async listLinks() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('element_links')
+      .select('id, element_id, language_id, title, url, link_type, sort_order, is_published, elements(slug), languages(code)')
+      .order('sort_order');
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveLink(input: {
+    id?: string;
+    element_id: string;
+    language_id: string;
+    title: string;
+    url: string;
+    link_type: string;
+    sort_order: number;
+    is_published: boolean;
+  }) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('element_links')
+      .upsert({
+        id: input.id,
+        element_id: input.element_id,
+        language_id: input.language_id,
+        title: input.title,
+        url: input.url,
+        link_type: input.link_type || null,
+        sort_order: input.sort_order,
+        is_published: input.is_published
+      })
+      .select()
+      .single();
+    if (error) throw error;
+  },
+  async deleteLink(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('element_links').delete().eq('id', id);
     if (error) throw error;
   }
 };
