@@ -21,6 +21,9 @@ Fases implementadas:
 - CRUD textual basico de configuracion, idiomas, tipos, elementos, enlaces y colaboradores.
 - Edicion multidioma de configuracion, tipos, elementos y colaboradores para ES, EN, FR y DE.
 - Detalle publico con enlaces complementarios reales por idioma desde Supabase.
+- Selector de idioma publico con persistencia de preferencia y fallback explicito a espanol.
+- SEO base en cliente: title, meta description, canonical, Open Graph, Twitter Cards, hreflang y JSON-LD inicial.
+- Detalle publico con estados vacios, aviso de traduccion alternativa y navegacion anterior/siguiente.
 - Seed inicial sin multimedia real en `supabase/seeds/20260803_initial_content.sql`.
 
 ## Ejecucion local opcional
@@ -118,5 +121,5 @@ La primera fase es una SPA para GitHub Pages. Esto permite despliegue simple, pe
 3. Crear Cloudflare Worker para R2.
 4. Sustituir placeholders de marca e imagenes.
 5. Completar subida, borrado y optimizacion de multimedia.
-6. Preparar selector/fallback de idioma mas avanzado.
-7. Preparar prerender o generacion estatica si el SEO organico pasa a ser prioritario.
+6. Preparar prerender o generacion estatica si el SEO organico pasa a ser prioritario.
+7. Anadir pruebas de accesibilidad y navegacion publica.

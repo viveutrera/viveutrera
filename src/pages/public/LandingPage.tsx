@@ -5,7 +5,9 @@ import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
 import type { Collaborator, Language, SiteContent } from '../../domain/types';
+import { getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
+import { setSeo } from '../../lib/seo';
 
 export function LandingPage() {
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -21,8 +23,19 @@ export function LandingPage() {
       setLanguages(languageData);
       setContent(siteData);
       setCollaborators(collaboratorData);
-      document.documentElement.lang = 'es';
-      document.title = siteData.seoTitle;
+      setSeo({
+        title: siteData.seoTitle,
+        description: siteData.seoDescription,
+        path: '/',
+        language: 'es',
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@type': 'TouristInformationCenter',
+          name: 'Vive Utrera',
+          description: siteData.seoDescription,
+          url: import.meta.env.VITE_SITE_URL || 'https://viveutrera.github.io/viveutrera'
+        }
+      });
     });
   }, []);
 
@@ -33,7 +46,10 @@ export function LandingPage() {
       <header className="hero">
         <nav className="hero-nav" aria-label="Principal">
           <img src={`${import.meta.env.BASE_URL}brand/logo-horizontal-placeholder.svg`} alt="Vive Utrera" />
-          <ButtonLink to="/admin/login" variant="secondary">Admin</ButtonLink>
+          <div className="hero-actions">
+            <ButtonLink to={`/guia/${getPersistedLanguage() ?? 'es'}`} variant="secondary">Guia</ButtonLink>
+            <ButtonLink to="/admin/login" variant="secondary">Admin</ButtonLink>
+          </div>
         </nav>
         <div className="hero-content">
           <p className="brand-kicker">Vive Utrera</p>
@@ -55,7 +71,7 @@ export function LandingPage() {
                 <span className="flag" aria-hidden="true">{language.flagCode}</span>
                 <h3>{language.nativeName}</h3>
                 <p>{language.cardText}</p>
-                <ButtonLink to={`/guia/${language.code}`} variant="primary">
+                <ButtonLink to={`/guia/${language.code}`} variant="primary" onClick={() => persistLanguage(language.code)}>
                   {language.cardButton} <ArrowRight size={16} />
                 </ButtonLink>
               </Card>

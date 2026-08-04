@@ -1,46 +1,81 @@
 import { MapPin, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { ElementType, GuideElement, LanguageCode, SiteContent } from '../../domain/types';
+import type { ElementType, GuideElement, Language, LanguageCode, SiteContent } from '../../domain/types';
 import { t } from '../../i18n/ui';
+import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
+import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function GuidePage() {
   const { idioma = 'es' } = useParams();
-  const language = idioma as LanguageCode;
+  const requestedLanguage = isLanguageCode(idioma) ? idioma : undefined;
   const [content, setContent] = useState<SiteContent>();
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [language, setLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
+  const [contentLanguage, setContentLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
   const [types, setTypes] = useState<ElementType[]>([]);
   const [elements, setElements] = useState<GuideElement[]>([]);
   const [query, setQuery] = useState('');
   const [typeId, setTypeId] = useState('all');
 
   useEffect(() => {
-    document.documentElement.lang = language;
-    Promise.all([
-      guideRepository.getSiteContent(language),
-      guideRepository.getElementTypes(),
-      guideRepository.getElements(language)
-    ]).then(([siteData, typeData, elementData]) => {
-      setContent(siteData);
-      setTypes(typeData);
-      setElements(elementData);
-      document.title = siteData.seoTitle;
+    guideRepository.getLanguages().then((languageData) => {
+      const resolved = resolveLanguage(idioma, languageData);
+      setLanguages(languageData);
+      setLanguage(resolved);
+      persistLanguage(resolved);
+
+      Promise.all([
+        guideRepository.getSiteContent(resolved),
+        guideRepository.getElementTypes(),
+        guideRepository.getElements(resolved)
+      ]).then(async ([siteData, typeData, elementData]) => {
+        let visibleElements = elementData;
+        let visibleLanguage = resolved;
+
+        if (visibleElements.length === 0 && resolved !== defaultLanguageCode) {
+          visibleElements = await guideRepository.getElements(defaultLanguageCode);
+          visibleLanguage = defaultLanguageCode;
+        }
+
+        setContent(siteData);
+        setTypes(typeData);
+        setElements(visibleElements);
+        setContentLanguage(visibleLanguage);
+        setSeo({
+          title: siteData.seoTitle,
+          description: siteData.seoDescription,
+          path: `/guia/${resolved}`,
+          language: resolved,
+          jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'TouristDestination',
+            name: siteData.cityTitle,
+            description: siteData.seoDescription
+          }
+        });
+        setAlternateLanguages((code) => `/guia/${code}`, languageData.map((item) => item.code));
+      });
     });
-  }, [language]);
+  }, [idioma]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return elements.filter((element) => {
-      const translation = element.translations[language];
+      const translation = element.translations[contentLanguage];
       const typeMatch = typeId === 'all' || element.typeId === typeId;
       const textMatch = !normalized || `${translation.name} ${translation.shortText}`.toLocaleLowerCase().includes(normalized);
       return typeMatch && textMatch;
     });
-  }, [elements, language, query, typeId]);
+  }, [contentLanguage, elements, query, typeId]);
+
+  if (!requestedLanguage) return <Navigate to={`/guia/${language}`} replace />;
 
   if (!content) return <LoadingState />;
 
@@ -48,9 +83,15 @@ export function GuidePage() {
     <main className="guide-page">
       <header className="guide-header">
         <Link to="/" className="text-link">Vive Utrera</Link>
+        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
         <h1>{content.cityTitle}</h1>
         <p>{content.cityText}</p>
       </header>
+      {contentLanguage !== language ? (
+        <div className="notice" role="status">
+          No hay elementos publicados en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
+        </div>
+      ) : null}
 
       <section className="guide-tools" aria-label="Filtros">
         <label className="search-box">
@@ -73,14 +114,14 @@ export function GuidePage() {
       ) : (
         <section className="element-grid">
           {filtered.map((element) => {
-            const translation = element.translations[language];
+            const translation = element.translations[contentLanguage];
             const cover = element.images.find((image) => image.isCover) ?? element.images[0];
             const type = types.find((item) => item.id === element.typeId);
             return (
               <Card key={element.id} className="element-card">
-                <img src={mediaUrl(cover.mediaAsset.objectKey)} alt={cover.translations[language].altText} loading="lazy" />
+                {cover ? <img src={mediaUrl(cover.mediaAsset.objectKey)} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
                 <div>
-                  <span className="tag">{type?.name[language]}</span>
+                  <span className="tag">{type?.name[contentLanguage]}</span>
                   <h2>{translation.name}</h2>
                   <p>{translation.shortText}</p>
                   <Link to={`/guia/${language}/elemento/${element.slug}`} className="text-link">Ver detalle</Link>
