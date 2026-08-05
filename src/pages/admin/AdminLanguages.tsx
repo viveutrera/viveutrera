@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { matchesSearch, validateRequired } from '../../lib/validation';
@@ -31,9 +33,11 @@ const emptyLanguage: LanguageRow = {
 };
 
 export function AdminLanguages() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<LanguageRow>(emptyLanguage);
   const [deleteId, setDeleteId] = useState<string>();
+  const [isCreateOpen, setCreateOpen] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
@@ -81,6 +85,7 @@ export function AdminLanguages() {
         flag_code: form.flag_code.trim()
       });
       setForm(emptyLanguage);
+      setCreateOpen(false);
       setSuccess('Idioma guardado.');
       await load();
     } catch (caught) {
@@ -109,6 +114,7 @@ export function AdminLanguages() {
 
   function resetForm() {
     setForm(emptyLanguage);
+    setCreateOpen(false);
     setError('');
   }
 
@@ -126,22 +132,6 @@ export function AdminLanguages() {
       <h1>Idiomas</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <Card>
-        <form className="admin-form" onSubmit={submit}>
-          <FormField label="Codigo" value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} required />
-          <FormField label="Locale" value={form.locale} onChange={(event) => setForm({ ...form, locale: event.target.value })} required />
-          <FormField label="Nombre" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-          <FormField label="Nombre nativo" value={form.native_name} onChange={(event) => setForm({ ...form, native_name: event.target.value })} required />
-          <FormField label="Bandera/codigo" value={form.flag_code} onChange={(event) => setForm({ ...form, flag_code: event.target.value })} />
-          <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
-          <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
-          <label className="check-field"><input type="checkbox" checked={form.is_default} onChange={(event) => setForm({ ...form, is_default: event.target.checked })} /> Por defecto</label>
-          <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : form.id ? 'Guardar cambios' : 'Crear idioma'}</Button>
-            {form.id ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button> : null}
-          </div>
-        </form>
-      </Card>
       <div className="admin-tools">
         <label className="search-box">
           <span className="sr-only">Buscar idiomas</span>
@@ -152,19 +142,47 @@ export function AdminLanguages() {
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
         </select>
+        <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear idioma</Button>
       </div>
-      <div className="admin-table">
+      <div className="admin-data-table" role="table" aria-label="Idiomas">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader">Codigo</span>
+          <span role="columnheader">Locale</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader" aria-label="Acciones" />
+        </div>
         {filteredItems.map((item) => (
-          <Card key={item.id}>
-            <h2>{item.native_name}</h2>
-            <p>{item.code} - {item.locale} - {item.is_active ? 'Activo' : 'Inactivo'}</p>
-            <div className="table-actions">
-              <Button type="button" variant="secondary" onClick={() => setForm(item)}>Editar</Button>
-              <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
-            </div>
-          </Card>
+          <div className="admin-data-row" role="row" key={item.id}>
+            <span role="cell"><strong>{item.native_name}</strong><small>{item.name}</small></span>
+            <span role="cell">{item.code}</span>
+            <span role="cell">{item.locale}</span>
+            <span role="cell">{item.is_default ? 'Por defecto' : item.is_active ? 'Activo' : 'Inactivo'}</span>
+            <span role="cell">{item.sort_order}</span>
+            <span className="row-actions" role="cell">
+              <button className="icon-button" type="button" aria-label={`Editar ${item.native_name}`} onClick={() => navigate(`/admin/idiomas/${item.id}`)}><Pencil size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.native_name}`} onClick={() => setDeleteId(item.id)}><Trash2 size={18} /></button>
+            </span>
+          </div>
         ))}
       </div>
+      <Modal title="Crear idioma" isOpen={isCreateOpen} onClose={resetForm}>
+        <form className="admin-form modal-form" onSubmit={submit}>
+          <FormField label="Codigo" value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} required />
+          <FormField label="Locale" value={form.locale} onChange={(event) => setForm({ ...form, locale: event.target.value })} required />
+          <FormField label="Nombre" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+          <FormField label="Nombre nativo" value={form.native_name} onChange={(event) => setForm({ ...form, native_name: event.target.value })} required />
+          <FormField label="Bandera/codigo" value={form.flag_code} onChange={(event) => setForm({ ...form, flag_code: event.target.value })} />
+          <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
+          <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
+          <label className="check-field"><input type="checkbox" checked={form.is_default} onChange={(event) => setForm({ ...form, is_default: event.target.checked })} /> Por defecto</label>
+          <div className="modal-actions">
+            <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </div>
+        </form>
+      </Modal>
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar idioma"

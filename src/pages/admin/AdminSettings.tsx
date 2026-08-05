@@ -6,6 +6,7 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { mediaUrl } from '../../lib/media';
+import { publicPath } from '../../lib/routing';
 import { validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
@@ -192,6 +193,7 @@ export function AdminSettings() {
                 className={activeLanguageId === language.id ? 'active' : ''}
                 onClick={() => setActiveLanguageId(language.id)}
               >
+                <img className="settings-tab-flag" src={publicPath(`flags/flag-${language.code}.png`)} alt="" />
                 {language.native_name}
               </button>
             ))}

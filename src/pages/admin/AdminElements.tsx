@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { matchesSearch, validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
@@ -81,12 +83,13 @@ const emptyElement = (languages: LanguageRow[]): ElementForm => ({
 });
 
 export function AdminElements() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<ElementRow[]>([]);
   const [types, setTypes] = useState<TypeRow[]>([]);
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<ElementForm>(emptyElement([]));
-  const [editingId, setEditingId] = useState<string>();
   const [deleteId, setDeleteId] = useState<string>();
+  const [isCreateOpen, setCreateOpen] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
@@ -127,7 +130,7 @@ export function AdminElements() {
     setError('');
     setSuccess('');
 
-    const validationError = validateElement(form, languages, items, editingId);
+    const validationError = validateElement(form, languages, items);
     if (validationError) {
       setError(validationError);
       return;
@@ -135,8 +138,9 @@ export function AdminElements() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElement({ id: editingId, ...form, slug: form.slug.trim(), maps_url: form.maps_url.trim() });
+      await adminRepository.saveElement({ ...form, slug: form.slug.trim(), maps_url: form.maps_url.trim() });
       resetForm();
+      setCreateOpen(false);
       setSuccess('Elemento guardado.');
       await load();
     } catch (caught) {
@@ -146,35 +150,9 @@ export function AdminElements() {
     }
   }
 
-  function edit(item: ElementRow) {
-    setError('');
-    setSuccess('');
-    setEditingId(item.id);
-    setForm({
-      slug: item.slug,
-      element_type_id: item.element_type_id,
-      maps_url: item.maps_url ?? '',
-      status: item.status,
-      is_featured: item.is_featured,
-      sort_order: item.sort_order,
-      translations: languages.map((language) => {
-        const saved = item.element_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
-        return {
-          language_id: language.id,
-          name: saved?.name ?? '',
-          short_text: saved?.short_text ?? '',
-          long_text: saved?.long_text ?? '',
-          seo_title: saved?.seo_title ?? '',
-          seo_description: saved?.seo_description ?? '',
-          is_published: saved?.is_published ?? false
-        };
-      })
-    });
-  }
-
   function resetForm() {
-    setEditingId(undefined);
     setForm(emptyElement(languages));
+    setCreateOpen(false);
     setError('');
   }
 
@@ -225,14 +203,57 @@ export function AdminElements() {
       <h1>Elementos</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <Card>
-        <form className="stack-form" onSubmit={submit}>
+      <div className="admin-tools">
+        <label className="search-box">
+          <span className="sr-only">Buscar elementos</span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, slug o texto" />
+        </label>
+        <select className="admin-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar elementos por estado">
+          <option value="all">Todos los estados</option>
+          <option value="draft">Borradores</option>
+          <option value="published">Publicados</option>
+        </select>
+        <select className="admin-filter" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrar elementos por tipo">
+          <option value="all">Todos los tipos</option>
+          {types.map((type) => <option key={type.id} value={type.id}>{typeName(type)}</option>)}
+        </select>
+        <select className="admin-filter" value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} aria-label="Filtrar elementos por idioma publicado">
+          <option value="all">Todos los idiomas</option>
+          {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
+        </select>
+        <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear elemento</Button>
+      </div>
+      <div className="admin-data-table" role="table" aria-label="Elementos">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader">Slug</span>
+          <span role="columnheader">Tipo</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader" aria-label="Acciones" />
+        </div>
+        {filteredItems.map((item) => (
+          <div className="admin-data-row" role="row" key={item.id}>
+            <span role="cell"><strong>{elementName(item)}</strong><small>{item.is_featured ? 'Destacado' : 'Normal'}</small></span>
+            <span role="cell">{item.slug}</span>
+            <span role="cell">{typeName(types.find((type) => type.id === item.element_type_id))}</span>
+            <span role="cell">{item.status === 'published' ? 'Publicado' : 'Borrador'}</span>
+            <span role="cell">{item.sort_order}</span>
+            <span className="row-actions" role="cell">
+              <button className="icon-button" type="button" aria-label={`Editar ${item.slug}`} onClick={() => navigate(`/admin/elementos/${item.id}`)}><Pencil size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.slug}`} onClick={() => setDeleteId(item.id)}><Trash2 size={18} /></button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <Modal title="Crear elemento" isOpen={isCreateOpen} onClose={resetForm}>
+        <form className="stack-form modal-form" onSubmit={submit}>
           <div className="admin-form">
             <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
             <SelectField label="Tipo" value={form.element_type_id} onChange={(event) => setForm({ ...form, element_type_id: event.target.value })} required>
               <option value="">Selecciona un tipo</option>
               {types.map((type) => (
-                <option key={type.id} value={type.id}>{type.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? type.slug}</option>
+                <option key={type.id} value={type.id}>{typeName(type)}</option>
               ))}
             </SelectField>
             <SelectField label="Estado" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as 'draft' | 'published' })}>
@@ -251,54 +272,16 @@ export function AdminElements() {
                   <legend>{language.native_name}</legend>
                   <FormField label="Nombre" value={translation.name} onChange={(event) => updateTranslation(language.id, 'name', event.target.value)} required={language.code === 'es'} />
                   <TextAreaField label="Texto corto" value={translation.short_text} onChange={(event) => updateTranslation(language.id, 'short_text', event.target.value)} required={language.code === 'es'} />
-                  <TextAreaField label="Texto largo" value={translation.long_text} onChange={(event) => updateTranslation(language.id, 'long_text', event.target.value)} />
-                  <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => updateTranslation(language.id, 'seo_title', event.target.value)} />
-                  <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => updateTranslation(language.id, 'seo_description', event.target.value)} />
-                  <label className="check-field"><input type="checkbox" checked={translation.is_published} onChange={(event) => updateTranslation(language.id, 'is_published', event.target.checked)} /> Publicada</label>
                 </fieldset>
               );
             })}
           </div>
-          <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear elemento'}</Button>
-            {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button> : null}
+          <div className="modal-actions">
+            <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         </form>
-      </Card>
-      <div className="admin-tools">
-        <label className="search-box">
-          <span className="sr-only">Buscar elementos</span>
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, slug o texto" />
-        </label>
-        <select className="admin-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar elementos por estado">
-          <option value="all">Todos los estados</option>
-          <option value="draft">Borradores</option>
-          <option value="published">Publicados</option>
-        </select>
-        <select className="admin-filter" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrar elementos por tipo">
-          <option value="all">Todos los tipos</option>
-          {types.map((type) => <option key={type.id} value={type.id}>{type.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? type.slug}</option>)}
-        </select>
-        <select className="admin-filter" value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} aria-label="Filtrar elementos por idioma publicado">
-          <option value="all">Todos los idiomas</option>
-          {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
-        </select>
-      </div>
-      <div className="admin-table">
-        {filteredItems.map((item) => {
-          const es = item.element_translations?.find((translation) => getCode(translation.languages) === 'es');
-          return (
-            <Card key={item.id}>
-              <h2>{es?.name ?? item.slug}</h2>
-              <p>{item.status} - {item.slug}</p>
-              <div className="table-actions">
-                <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
-                <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+      </Modal>
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar elemento"
@@ -331,4 +314,12 @@ function validateElement(candidate: ElementForm, languages: LanguageRow[], rows:
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
   return Array.isArray(relation) ? relation[0]?.code : relation?.code;
+}
+
+function typeName(type?: TypeRow) {
+  return type?.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? type?.slug ?? 'Sin tipo';
+}
+
+function elementName(element: ElementRow) {
+  return element.element_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? element.slug;
 }

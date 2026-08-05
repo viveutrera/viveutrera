@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, TextAreaField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { matchesSearch, validateRequired, validateSlug } from '../../lib/validation';
@@ -57,12 +59,13 @@ const emptyType = (languages: LanguageRow[]): ElementTypeForm => ({
 });
 
 export function AdminElementTypes() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<ElementTypeRow[]>([]);
   const [elements, setElements] = useState<ElementReference[]>([]);
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<ElementTypeForm>(emptyType([]));
-  const [editingId, setEditingId] = useState<string>();
   const [deleteId, setDeleteId] = useState<string>();
+  const [isCreateOpen, setCreateOpen] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
@@ -101,7 +104,7 @@ export function AdminElementTypes() {
     setError('');
     setSuccess('');
 
-    const validationError = validateType(form, languages, items, editingId);
+    const validationError = validateType(form, languages, items);
     if (validationError) {
       setError(validationError);
       return;
@@ -109,8 +112,9 @@ export function AdminElementTypes() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElementType({ id: editingId, ...form, slug: form.slug.trim(), icon: form.icon.trim() });
+      await adminRepository.saveElementType({ ...form, slug: form.slug.trim(), icon: form.icon.trim() });
       resetForm();
+      setCreateOpen(false);
       setSuccess('Tipo guardado.');
       await load();
     } catch (caught) {
@@ -120,29 +124,9 @@ export function AdminElementTypes() {
     }
   }
 
-  function edit(item: ElementTypeRow) {
-    setError('');
-    setSuccess('');
-    setEditingId(item.id);
-    setForm({
-      slug: item.slug,
-      icon: item.icon,
-      sort_order: item.sort_order,
-      is_active: item.is_active,
-      translations: languages.map((language) => {
-        const saved = item.element_type_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
-        return {
-          language_id: language.id,
-          name: saved?.name ?? '',
-          description: saved?.description ?? ''
-        };
-      })
-    });
-  }
-
   function resetForm() {
-    setEditingId(undefined);
     setForm(emptyType(languages));
+    setCreateOpen(false);
     setError('');
   }
 
@@ -197,8 +181,43 @@ export function AdminElementTypes() {
       <h1>Tipos de elementos</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <Card>
-        <form className="stack-form" onSubmit={submit}>
+      <div className="admin-tools">
+        <label className="search-box">
+          <span className="sr-only">Buscar tipos</span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por slug, icono o nombre" />
+        </label>
+        <select className="admin-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar tipos por estado">
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
+        <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear tipo</Button>
+      </div>
+      <div className="admin-data-table" role="table" aria-label="Tipos de elementos">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader">Slug</span>
+          <span role="columnheader">Icono</span>
+          <span role="columnheader">Elementos</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader" aria-label="Acciones" />
+        </div>
+        {filteredItems.map((item) => (
+          <div className="admin-data-row" role="row" key={item.id}>
+            <span role="cell"><strong>{item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? item.slug}</strong></span>
+            <span role="cell">{item.slug}</span>
+            <span role="cell">{item.icon}</span>
+            <span role="cell">{elements.filter((element) => element.element_type_id === item.id).length}</span>
+            <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
+            <span className="row-actions" role="cell">
+              <button className="icon-button" type="button" aria-label={`Editar ${item.slug}`} onClick={() => navigate(`/admin/tipos/${item.id}`)}><Pencil size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.slug}`} onClick={() => setDeleteId(item.id)}><Trash2 size={18} /></button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <Modal title="Crear tipo" isOpen={isCreateOpen} onClose={resetForm}>
+        <form className="stack-form modal-form" onSubmit={submit}>
           <div className="admin-form">
             <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
             <FormField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })} />
@@ -217,35 +236,12 @@ export function AdminElementTypes() {
               );
             })}
           </div>
-          <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear tipo'}</Button>
-            {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button> : null}
+          <div className="modal-actions">
+            <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         </form>
-      </Card>
-      <div className="admin-tools">
-        <label className="search-box">
-          <span className="sr-only">Buscar tipos</span>
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por slug, icono o nombre" />
-        </label>
-        <select className="admin-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar tipos por estado">
-          <option value="all">Todos los estados</option>
-          <option value="active">Activos</option>
-          <option value="inactive">Inactivos</option>
-        </select>
-      </div>
-      <div className="admin-table">
-        {filteredItems.map((item) => (
-          <Card key={item.id}>
-            <h2>{item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? item.slug}</h2>
-            <p>{item.slug} - {item.is_active ? 'Activo' : 'Inactivo'} - {elements.filter((element) => element.element_type_id === item.id).length} elementos</p>
-            <div className="table-actions">
-              <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
-              <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+      </Modal>
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar tipo"

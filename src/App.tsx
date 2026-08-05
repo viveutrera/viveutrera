@@ -4,7 +4,10 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
 import { AdminElements } from './pages/admin/AdminElements';
+import { AdminElementEdit } from './pages/admin/AdminElementEdit';
+import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
 import { AdminElementTypes } from './pages/admin/AdminElementTypes';
+import { AdminLanguageEdit } from './pages/admin/AdminLanguageEdit';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
 import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
@@ -36,8 +39,11 @@ export function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="configuracion" element={<AdminSettings />} />
         <Route path="idiomas" element={<AdminLanguages />} />
+        <Route path="idiomas/:id" element={<AdminLanguageEdit />} />
         <Route path="tipos" element={<AdminElementTypes />} />
+        <Route path="tipos/:id" element={<AdminElementTypeEdit />} />
         <Route path="elementos" element={<AdminElements />} />
+        <Route path="elementos/:id" element={<AdminElementEdit />} />
         <Route path="multimedia" element={<AdminMedia />} />
         <Route path="enlaces" element={<AdminLinks />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
