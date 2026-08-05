@@ -257,7 +257,7 @@ export function AdminSettings() {
 function MediaPreview({ title, asset, fallbackObjectKey }: { title: string; asset?: MediaAssetRow; fallbackObjectKey?: string }) {
   const objectKey = asset?.object_key ?? fallbackObjectKey;
   return (
-    <div className="media-picker-preview site-media-preview" aria-label={title}>
+    <div className="site-media-preview" aria-label={title}>
       {objectKey ? <img src={asset ? mediaUrl(objectKey) : publicPath(objectKey)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
     </div>
   );
