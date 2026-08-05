@@ -22,7 +22,7 @@ export function AdminLayout() {
       <aside className="admin-sidebar">
         <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         <nav aria-label="Administracion">
-          <a href={publicPath('')} target="_blank" rel="noreferrer">
+          <a href={publicPath('preview')} target="_blank" rel="noreferrer">
             <ExternalLink size={18} />
             <span>Web publica</span>
           </a>

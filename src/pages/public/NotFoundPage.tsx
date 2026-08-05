@@ -5,7 +5,7 @@ export function NotFoundPage() {
   return (
     <main className="section">
       <EmptyState title="Pagina no encontrada" message="La ruta solicitada no existe en Vive Utrera." />
-      <ButtonLink to="/">Volver al inicio</ButtonLink>
+      <ButtonLink to="/preview">Volver al inicio</ButtonLink>
     </main>
   );
 }

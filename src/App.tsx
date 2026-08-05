@@ -13,6 +13,7 @@ import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminMedia } from './pages/admin/AdminMedia';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { ComingSoonPage } from './pages/public/ComingSoonPage';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
 import { LandingPage } from './pages/public/LandingPage';
@@ -23,7 +24,8 @@ export function App() {
   return (
     <Routes>
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<ComingSoonPage />} />
+        <Route path="/preview" element={<LandingPage />} />
         <Route path="/guia/:idioma" element={<GuidePage />} />
         <Route path="/guia/:idioma/elemento/:slug" element={<ElementDetailPage />} />
       </Route>
