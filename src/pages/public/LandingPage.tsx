@@ -5,8 +5,8 @@ import { ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { Collaborator, Language, SiteContent } from '../../domain/types';
-import { persistLanguage } from '../../lib/language';
+import type { Collaborator, Language, LanguageCode, SiteContent } from '../../domain/types';
+import { defaultLanguageCode, getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
@@ -15,21 +15,26 @@ export function LandingPage() {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<SiteContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [landingLanguage, setLandingLanguage] = useState<LanguageCode>(getPersistedLanguage() ?? defaultLanguageCode);
 
   useEffect(() => {
     Promise.all([
       guideRepository.getLanguages(),
-      guideRepository.getSiteContent('es'),
       guideRepository.getCollaborators()
-    ]).then(([languageData, siteData, collaboratorData]) => {
+    ]).then(([languageData, collaboratorData]) => {
       setLanguages(languageData);
-      setContent(siteData);
       setCollaborators(collaboratorData);
+    });
+  }, []);
+
+  useEffect(() => {
+    guideRepository.getSiteContent(landingLanguage).then((siteData) => {
+      setContent(siteData);
       setSeo({
         title: siteData.seoTitle,
         description: siteData.seoDescription,
         path: '/',
-        language: 'es',
+        language: landingLanguage,
         jsonLd: {
           '@context': 'https://schema.org',
           '@type': 'TouristInformationCenter',
@@ -39,7 +44,12 @@ export function LandingPage() {
         }
       });
     });
-  }, []);
+  }, [landingLanguage]);
+
+  function changeLandingLanguage(language: LanguageCode) {
+    setLandingLanguage(language);
+    persistLanguage(language);
+  }
 
   if (!content) return <LoadingState label="Preparando Vive Utrera" />;
 
@@ -51,6 +61,20 @@ export function LandingPage() {
       >
         <nav className="hero-nav" aria-label="Principal">
           <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
+          <div className="landing-language-switcher" aria-label="Cambiar idioma de la pagina principal">
+            {languages.map((language) => (
+              <button
+                key={language.id}
+                type="button"
+                className={language.code === landingLanguage ? 'active' : ''}
+                onClick={() => changeLandingLanguage(language.code)}
+                aria-label={language.nativeName}
+                aria-pressed={language.code === landingLanguage}
+              >
+                <img src={publicPath(flagPath(language.code, false))} alt="" />
+              </button>
+            ))}
+          </div>
         </nav>
         <div className="hero-content hero-brand-lockup">
           <img className="hero-mark" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
@@ -76,7 +100,7 @@ export function LandingPage() {
           <div className="language-grid">
             {languages.map((language) => (
               <Card key={language.id} className="language-card">
-                <span className="flag" role="img" aria-label={language.nativeName}>{flagEmoji(language.flagCode)}</span>
+                <img className="flag" src={publicPath(flagPath(language.code, true))} alt={language.nativeName} />
                 <p>{language.cardText}</p>
                 <ButtonLink to={`/guia/${language.code}`} variant="primary" onClick={() => persistLanguage(language.code)}>
                   {language.cardButton} <ArrowRight size={16} />
@@ -106,10 +130,6 @@ export function LandingPage() {
   );
 }
 
-function flagEmoji(flagCode: string) {
-  const countryCode = flagCode.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(countryCode)) return flagCode;
-  return Array.from(countryCode)
-    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
-    .join('');
+function flagPath(language: LanguageCode, round: boolean) {
+  return `flags/flag-${language}${round ? '-round' : ''}.png`;
 }

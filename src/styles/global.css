@@ -59,6 +59,33 @@ button, input { font: inherit; }
 }
 
 .hero-nav .brand-logo { width: clamp(72px, 9vw, 118px); }
+.landing-language-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.landing-language-switcher button {
+  width: 46px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+.landing-language-switcher button.active,
+.landing-language-switcher button:hover {
+  border-color: var(--color-accent);
+}
+.landing-language-switcher img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .hero-content { width: 100%; }
 .hero-brand-lockup {
   display: grid;
@@ -149,11 +176,9 @@ p { line-height: 1.65; }
   margin: 0;
 }
 .flag {
-  display: grid;
-  place-items: center;
-  min-height: 64px;
-  font-size: 3.2rem;
-  line-height: 1;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
 }
 
 .button {
@@ -731,6 +756,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .hero-nav { align-items: flex-start; }
   .hero-nav .brand-logo { width: 78px; }
+  .landing-language-switcher {
+    max-width: 128px;
+  }
   .hero-brand-lockup {
     grid-template-columns: 1fr;
     gap: 18px;
