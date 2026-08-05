@@ -59,6 +59,7 @@ button, input { font: inherit; }
 }
 
 .hero-nav .brand-logo { width: clamp(72px, 9vw, 118px); }
+.hero-nav .landing-language-switcher { margin-left: auto; }
 .landing-language-switcher {
   display: flex;
   flex-wrap: wrap;

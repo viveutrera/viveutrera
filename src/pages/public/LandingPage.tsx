@@ -60,7 +60,6 @@ export function LandingPage() {
         style={content.heroImageObjectKey ? { '--hero-image': `url(${mediaUrl(content.heroImageObjectKey)})` } as CSSProperties : undefined}
       >
         <nav className="hero-nav" aria-label="Principal">
-          <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
           <div className="landing-language-switcher" aria-label="Cambiar idioma de la pagina principal">
             {languages.map((language) => (
               <button
