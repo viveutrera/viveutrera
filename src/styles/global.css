@@ -139,8 +139,22 @@ p { line-height: 1.65; }
   padding: 22px;
 }
 
-.language-card { display: grid; gap: 12px; }
-.flag { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: var(--color-stone); color: var(--color-primary); font-weight: 800; }
+.language-card {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.language-card p {
+  margin: 0;
+}
+.flag {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  font-size: 3.2rem;
+  line-height: 1;
+}
 
 .button {
   min-height: 44px;

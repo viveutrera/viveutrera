@@ -76,8 +76,7 @@ export function LandingPage() {
           <div className="language-grid">
             {languages.map((language) => (
               <Card key={language.id} className="language-card">
-                <span className="flag" aria-hidden="true">{language.flagCode}</span>
-                <h3>{language.nativeName}</h3>
+                <span className="flag" role="img" aria-label={language.nativeName}>{flagEmoji(language.flagCode)}</span>
                 <p>{language.cardText}</p>
                 <ButtonLink to={`/guia/${language.code}`} variant="primary" onClick={() => persistLanguage(language.code)}>
                   {language.cardButton} <ArrowRight size={16} />
@@ -105,4 +104,12 @@ export function LandingPage() {
       </main>
     </>
   );
+}
+
+function flagEmoji(flagCode: string) {
+  const countryCode = flagCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(countryCode)) return flagCode;
+  return Array.from(countryCode)
+    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+    .join('');
 }
