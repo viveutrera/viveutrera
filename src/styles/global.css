@@ -35,11 +35,11 @@ button, input { font: inherit; }
 }
 
 .hero {
-  min-height: 84svh;
+  min-height: 68svh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 22px clamp(20px, 6vw, 76px) 52px;
+  padding: 22px clamp(20px, 6vw, 76px) 40px;
   color: var(--color-primary);
   background:
     radial-gradient(circle at 16% 14%, rgba(216, 199, 166, 0.28), transparent 28%),
@@ -758,7 +758,13 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .hero-nav { align-items: flex-start; }
   .hero-nav .brand-logo { width: 78px; }
   .landing-language-switcher {
-    max-width: 128px;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .landing-language-switcher button {
+    width: 40px;
+    height: 30px;
+    padding: 2px;
   }
   .hero-brand-lockup {
     grid-template-columns: 1fr;
