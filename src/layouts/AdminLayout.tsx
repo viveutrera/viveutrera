@@ -5,7 +5,6 @@ import { publicPath } from '../lib/routing';
 import { useAuth } from '../routes/authContext';
 
 const links = [
-  { to: '/', label: 'Web publica', icon: ExternalLink },
   { to: '/admin', label: 'Panel', icon: LayoutDashboard },
   { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
   { to: '/admin/idiomas', label: 'Idiomas', icon: Languages },
@@ -23,8 +22,12 @@ export function AdminLayout() {
       <aside className="admin-sidebar">
         <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         <nav aria-label="Administracion">
+          <a href={publicPath('')} target="_blank" rel="noreferrer">
+            <ExternalLink size={18} />
+            <span>Web publica</span>
+          </a>
           {links.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === '/' || to === '/admin'}>
+            <NavLink key={to} to={to} end={to === '/admin'}>
               <Icon size={18} />
               <span>{label}</span>
             </NavLink>
