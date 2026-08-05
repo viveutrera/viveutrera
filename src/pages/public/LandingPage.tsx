@@ -76,7 +76,7 @@ export function LandingPage() {
           </div>
         </nav>
         <div className="hero-content hero-brand-lockup">
-          <img className="hero-mark" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
+          <img className="hero-mark" src={content.heroLogoObjectKey ? mediaUrl(content.heroLogoObjectKey) : publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
           <div className="hero-wordmark">
             <p className="brand-kicker">Vive Utrera</p>
             <h1 className="sr-only">{content.heroTitle}</h1>

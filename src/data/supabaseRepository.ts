@@ -191,6 +191,7 @@ export const supabaseGuideRepository = {
       cityText: data.city_text,
       seoTitle: data.seo_title,
       seoDescription: data.seo_description,
+      heroLogoObjectKey: mediaSettings.heroLogoObjectKey,
       heroImageObjectKey: mediaSettings.heroImageObjectKey,
       cityImageObjectKey: mediaSettings.cityImageObjectKey
     };
@@ -846,11 +847,12 @@ async function getSiteMediaSettings() {
   const { data, error } = await client
     .from('site_settings')
     .select('key, value_json')
-    .in('key', ['hero_media', 'city_media']);
+    .in('key', ['hero_logo_media', 'hero_media', 'city_media']);
   if (error) throw error;
 
   const rows = (data ?? []) as SiteSettingRowRaw[];
   return {
+    heroLogoObjectKey: settingObjectKey(rows.find((row) => row.key === 'hero_logo_media')?.value_json),
     heroImageObjectKey: settingObjectKey(rows.find((row) => row.key === 'hero_media')?.value_json),
     cityImageObjectKey: settingObjectKey(rows.find((row) => row.key === 'city_media')?.value_json)
   };

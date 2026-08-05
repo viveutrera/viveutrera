@@ -117,6 +117,7 @@ export interface SiteContent {
   cityText: string;
   seoTitle: string;
   seoDescription: string;
+  heroLogoObjectKey?: string;
   heroImageObjectKey?: string;
   cityImageObjectKey?: string;
 }

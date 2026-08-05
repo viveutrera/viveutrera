@@ -58,6 +58,7 @@ export function AdminSettings() {
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [translations, setTranslations] = useState<Record<string, SettingsTranslation>>({});
   const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
+  const [heroLogoMediaId, setHeroLogoMediaId] = useState('');
   const [heroMediaId, setHeroMediaId] = useState('');
   const [cityMediaId, setCityMediaId] = useState('');
   const [activeLanguageId, setActiveLanguageId] = useState('');
@@ -94,6 +95,7 @@ export function AdminSettings() {
         setTranslations(nextTranslations);
         setMediaAssets(imageRows);
         setActiveLanguageId(activeLanguages[0]?.id ?? '');
+        setHeroLogoMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_logo_media'), imageRows));
         setHeroMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_media'), imageRows));
         setCityMediaId(resolveMediaId(settings.find((setting) => setting.key === 'city_media'), imageRows));
       })
@@ -118,6 +120,7 @@ export function AdminSettings() {
     setSubmitting(true);
     try {
       await Promise.all([
+        adminRepository.saveSiteSetting('hero_logo_media', settingPayload(mediaAssets.find((asset) => asset.id === heroLogoMediaId))),
         adminRepository.saveSiteSetting('hero_media', settingPayload(mediaAssets.find((asset) => asset.id === heroMediaId))),
         adminRepository.saveSiteSetting('city_media', settingPayload(mediaAssets.find((asset) => asset.id === cityMediaId)))
       ]);
@@ -162,19 +165,28 @@ export function AdminSettings() {
         <Card>
           <h2>Imagenes principales</h2>
           <form className="stack-form" onSubmit={saveMediaSettings}>
-            <div className="admin-form">
-            <SelectField label="Imagen hero" value={heroMediaId} onChange={(event) => setHeroMediaId(event.target.value)}>
-              <option value="">Sin imagen administrable</option>
-              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-            </SelectField>
-            <SelectField label="Imagen ciudad / guia" value={cityMediaId} onChange={(event) => setCityMediaId(event.target.value)}>
-              <option value="">Sin imagen administrable</option>
-              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-            </SelectField>
-            </div>
-            <div className="media-picker-preview-grid site-media-preview-grid">
-              <MediaPreview title="Hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
-              <MediaPreview title="Ciudad" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
+            <div className="site-media-settings-grid">
+              <div className="site-media-setting">
+                <SelectField label="Imagen portada hero" value={heroLogoMediaId} onChange={(event) => setHeroLogoMediaId(event.target.value)}>
+                  <option value="">Logo por defecto</option>
+                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+                </SelectField>
+                <MediaPreview title="Portada hero" asset={mediaAssets.find((asset) => asset.id === heroLogoMediaId)} fallbackObjectKey="brand/logo-vive-utrera.png" />
+              </div>
+              <div className="site-media-setting">
+                <SelectField label="Imagen fondo hero" value={heroMediaId} onChange={(event) => setHeroMediaId(event.target.value)}>
+                  <option value="">Sin imagen administrable</option>
+                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+                </SelectField>
+                <MediaPreview title="Fondo hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
+              </div>
+              <div className="site-media-setting">
+                <SelectField label="Imagen ciudad / guia" value={cityMediaId} onChange={(event) => setCityMediaId(event.target.value)}>
+                  <option value="">Sin imagen administrable</option>
+                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+                </SelectField>
+                <MediaPreview title="Ciudad / guia" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
+              </div>
             </div>
             <div className="button-row">
               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar imagenes'}</Button>
@@ -242,11 +254,11 @@ export function AdminSettings() {
   );
 }
 
-function MediaPreview({ title, asset }: { title: string; asset?: MediaAssetRow }) {
+function MediaPreview({ title, asset, fallbackObjectKey }: { title: string; asset?: MediaAssetRow; fallbackObjectKey?: string }) {
+  const objectKey = asset?.object_key ?? fallbackObjectKey;
   return (
-    <div className="media-picker-preview site-media-preview">
-      <strong>{title}</strong>
-      {asset ? <img src={mediaUrl(asset.object_key)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
+    <div className="media-picker-preview site-media-preview" aria-label={title}>
+      {objectKey ? <img src={asset ? mediaUrl(objectKey) : publicPath(objectKey)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
     </div>
   );
 }
