@@ -7,7 +7,7 @@ import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
-import { matchesSearch, validateRequired, validateSlug } from '../../lib/validation';
+import { matchesSearch, slugify, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
   id: string;
@@ -104,7 +104,11 @@ export function AdminElementTypes() {
     setError('');
     setSuccess('');
 
-    const validationError = validateType(form, languages, items);
+    const candidate = {
+      ...form,
+      slug: uniqueSlug(slugify(primaryTranslationName(form, languages), 'tipo'), items)
+    };
+    const validationError = validateType(candidate, languages, items);
     if (validationError) {
       setError(validationError);
       return;
@@ -112,7 +116,7 @@ export function AdminElementTypes() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElementType({ ...form, slug: form.slug.trim(), icon: form.icon.trim() });
+      await adminRepository.saveElementType({ ...candidate, slug: candidate.slug.trim(), icon: candidate.icon.trim() });
       resetForm();
       setCreateOpen(false);
       setSuccess('Tipo guardado.');
@@ -219,7 +223,6 @@ export function AdminElementTypes() {
       <Modal title="Crear tipo" isOpen={isCreateOpen} onClose={resetForm}>
         <form className="stack-form modal-form" onSubmit={submit}>
           <div className="admin-form">
-            <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
             <FormField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
@@ -266,4 +269,17 @@ function validateType(candidate: ElementTypeForm, languages: LanguageRow[], rows
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
   return Array.isArray(relation) ? relation[0]?.code : relation?.code;
+}
+
+function primaryTranslationName(form: ElementTypeForm, languages: LanguageRow[]) {
+  const primary = languages.find((language) => language.code === 'es') ?? languages[0];
+  return form.translations.find((translation) => translation.language_id === primary?.id)?.name ?? '';
+}
+
+function uniqueSlug(base: string, rows: ElementTypeRow[]) {
+  const used = new Set(rows.map((row) => row.slug));
+  if (!used.has(base)) return base;
+  let suffix = 2;
+  while (used.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
 }

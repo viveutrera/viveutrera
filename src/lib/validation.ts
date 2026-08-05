@@ -30,6 +30,13 @@ export function normalizeText(value: string) {
     .toLowerCase();
 }
 
+export function slugify(value: string, fallback = 'item') {
+  const slug = normalizeText(value)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || fallback;
+}
+
 export function matchesSearch(values: Array<string | null | undefined>, query: string) {
   const needle = normalizeText(query.trim());
   if (!needle) return true;

@@ -7,7 +7,7 @@ import { FormField, SelectField, TextAreaField } from '../../components/ui/FormF
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
-import { matchesSearch, validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
+import { matchesSearch, slugify, validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
   id: string;
@@ -130,7 +130,11 @@ export function AdminElements() {
     setError('');
     setSuccess('');
 
-    const validationError = validateElement(form, languages, items);
+    const candidate = {
+      ...form,
+      slug: uniqueSlug(slugify(primaryTranslationName(form, languages), 'elemento'), items)
+    };
+    const validationError = validateElement(candidate, languages, items);
     if (validationError) {
       setError(validationError);
       return;
@@ -138,7 +142,7 @@ export function AdminElements() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElement({ ...form, slug: form.slug.trim(), maps_url: form.maps_url.trim() });
+      await adminRepository.saveElement({ ...candidate, slug: candidate.slug.trim(), maps_url: candidate.maps_url.trim() });
       resetForm();
       setCreateOpen(false);
       setSuccess('Elemento guardado.');
@@ -249,7 +253,6 @@ export function AdminElements() {
       <Modal title="Crear elemento" isOpen={isCreateOpen} onClose={resetForm}>
         <form className="stack-form modal-form" onSubmit={submit}>
           <div className="admin-form">
-            <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
             <SelectField label="Tipo" value={form.element_type_id} onChange={(event) => setForm({ ...form, element_type_id: event.target.value })} required>
               <option value="">Selecciona un tipo</option>
               {types.map((type) => (
@@ -322,4 +325,17 @@ function typeName(type?: TypeRow) {
 
 function elementName(element: ElementRow) {
   return element.element_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? element.slug;
+}
+
+function primaryTranslationName(form: ElementForm, languages: LanguageRow[]) {
+  const primary = languages.find((language) => language.code === 'es') ?? languages[0];
+  return form.translations.find((translation) => translation.language_id === primary?.id)?.name ?? '';
+}
+
+function uniqueSlug(base: string, rows: ElementRow[]) {
+  const used = new Set(rows.map((row) => row.slug));
+  if (!used.has(base)) return base;
+  let suffix = 2;
+  while (used.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
 }
