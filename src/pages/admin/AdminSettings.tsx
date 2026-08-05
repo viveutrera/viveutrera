@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { mediaUrl } from '../../lib/media';
@@ -58,10 +59,12 @@ export function AdminSettings() {
   const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
   const [heroMediaId, setHeroMediaId] = useState('');
   const [cityMediaId, setCityMediaId] = useState('');
+  const [activeLanguageId, setActiveLanguageId] = useState('');
+  const [editingLanguageId, setEditingLanguageId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [successModal, setSuccessModal] = useState('');
 
   useEffect(() => {
     if (!canUseSupabase()) {
@@ -89,6 +92,7 @@ export function AdminSettings() {
         setLanguages(activeLanguages);
         setTranslations(nextTranslations);
         setMediaAssets(imageRows);
+        setActiveLanguageId(activeLanguages[0]?.id ?? '');
         setHeroMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_media'), imageRows));
         setCityMediaId(resolveMediaId(settings.find((setting) => setting.key === 'city_media'), imageRows));
       })
@@ -106,12 +110,29 @@ export function AdminSettings() {
     }));
   }
 
-  async function submit(event: FormEvent) {
+  async function saveMediaSettings(event: FormEvent) {
     event.preventDefault();
     setError('');
-    setSuccess('');
 
-    const validationError = validateSettings(translations, languages);
+    setSubmitting(true);
+    try {
+      await Promise.all([
+        adminRepository.saveSiteSetting('hero_media', settingPayload(mediaAssets.find((asset) => asset.id === heroMediaId))),
+        adminRepository.saveSiteSetting('city_media', settingPayload(mediaAssets.find((asset) => asset.id === cityMediaId)))
+      ]);
+      setSuccessModal('Imagenes principales guardadas correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudieron guardar las imagenes principales.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function saveTranslation(event: FormEvent, language: LanguageRow) {
+    event.preventDefault();
+    setError('');
+
+    const validationError = validateTranslation(translations[language.id] ?? emptyTranslation(language.id), language);
     if (validationError) {
       setError(validationError);
       return;
@@ -119,14 +140,11 @@ export function AdminSettings() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveSiteTranslations(Object.values(translations));
-      await Promise.all([
-        adminRepository.saveSiteSetting('hero_media', settingPayload(mediaAssets.find((asset) => asset.id === heroMediaId))),
-        adminRepository.saveSiteSetting('city_media', settingPayload(mediaAssets.find((asset) => asset.id === cityMediaId)))
-      ]);
-      setSuccess('Configuracion multidioma guardada.');
+      await adminRepository.saveSiteTranslations([translations[language.id] ?? emptyTranslation(language.id)]);
+      setEditingLanguageId(undefined);
+      setSuccessModal(`Textos de ${language.native_name} guardados correctamente.`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No se pudo guardar la configuracion.');
+      setError(caught instanceof Error ? caught.message : 'No se pudieron guardar los textos.');
     } finally {
       setSubmitting(false);
     }
@@ -139,11 +157,11 @@ export function AdminSettings() {
     <section className="admin-section">
       <h1>Configuracion</h1>
       {error ? <ErrorState message={error} /> : null}
-      {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <form className="stack-form" onSubmit={submit}>
+      <div className="stack-form">
         <Card>
           <h2>Imagenes principales</h2>
-          <div className="admin-form">
+          <form className="stack-form" onSubmit={saveMediaSettings}>
+            <div className="admin-form">
             <SelectField label="Imagen hero" value={heroMediaId} onChange={(event) => setHeroMediaId(event.target.value)}>
               <option value="">Sin imagen administrable</option>
               {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
@@ -152,40 +170,79 @@ export function AdminSettings() {
               <option value="">Sin imagen administrable</option>
               {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
             </SelectField>
-          </div>
-          <div className="media-picker-preview-grid">
-            <MediaPreview title="Hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
-            <MediaPreview title="Ciudad" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
-          </div>
+            </div>
+            <div className="media-picker-preview-grid site-media-preview-grid">
+              <MediaPreview title="Hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
+              <MediaPreview title="Ciudad" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
+            </div>
+            <div className="button-row">
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar imagenes'}</Button>
+            </div>
+          </form>
         </Card>
-        {languages.map((language) => {
-          const translation = translations[language.id] ?? emptyTranslation(language.id);
-          return (
-            <Card key={language.id}>
-              <h2>{language.native_name}</h2>
+        <Card>
+          <h2>Textos por idioma</h2>
+          <div className="settings-tabs" role="tablist" aria-label="Idiomas de configuracion">
+            {languages.map((language) => (
+              <button
+                key={language.id}
+                type="button"
+                role="tab"
+                aria-selected={activeLanguageId === language.id}
+                className={activeLanguageId === language.id ? 'active' : ''}
+                onClick={() => setActiveLanguageId(language.id)}
+              >
+                {language.native_name}
+              </button>
+            ))}
+          </div>
+          {languages.map((language) => {
+            const translation = translations[language.id] ?? emptyTranslation(language.id);
+            const isActive = activeLanguageId === language.id;
+            const isEditing = editingLanguageId === language.id;
+            return (
+              <form
+                key={language.id}
+                className={isActive ? 'settings-language-panel stack-form' : 'settings-language-panel stack-form hidden'}
+                role="tabpanel"
+                onSubmit={(event) => saveTranslation(event, language)}
+              >
+                <div className="admin-title-row">
+                  <h3>{language.native_name}</h3>
+                  <div className="button-row">
+                    <Button type="button" variant="secondary" disabled={isEditing || isSubmitting} onClick={() => setEditingLanguageId(language.id)}>Editar</Button>
+                    <Button type="submit" disabled={!isEditing || isSubmitting}>{isSubmitting && isEditing ? 'Guardando...' : 'Guardar'}</Button>
+                  </div>
+                </div>
               <div className="admin-form admin-form-wide">
-                <FormField label="Titulo hero" value={translation.hero_title} onChange={(event) => update(language.id, 'hero_title', event.target.value)} required />
-                <FormField label="Eslogan hero" value={translation.hero_slogan} onChange={(event) => update(language.id, 'hero_slogan', event.target.value)} required />
-                <TextAreaField label="Descripcion hero" value={translation.hero_description} onChange={(event) => update(language.id, 'hero_description', event.target.value)} required />
-                <FormField label="Titulo ciudad" value={translation.city_title} onChange={(event) => update(language.id, 'city_title', event.target.value)} required />
-                <TextAreaField label="Texto ciudad" value={translation.city_text} onChange={(event) => update(language.id, 'city_text', event.target.value)} required />
-                <TextAreaField label="Texto tarjeta idioma" value={translation.language_card_text} onChange={(event) => update(language.id, 'language_card_text', event.target.value)} required />
-                <FormField label="Boton tarjeta idioma" value={translation.language_card_button} onChange={(event) => update(language.id, 'language_card_button', event.target.value)} required />
-                <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => update(language.id, 'seo_title', event.target.value)} required />
-                <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => update(language.id, 'seo_description', event.target.value)} required />
+                <FormField label="Titulo hero" value={translation.hero_title} onChange={(event) => update(language.id, 'hero_title', event.target.value)} required readOnly={!isEditing} />
+                <FormField className="wide-input" label="Eslogan hero" value={translation.hero_slogan} onChange={(event) => update(language.id, 'hero_slogan', event.target.value)} required readOnly={!isEditing} />
+                <TextAreaField label="Descripcion hero" value={translation.hero_description} onChange={(event) => update(language.id, 'hero_description', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Titulo ciudad" value={translation.city_title} onChange={(event) => update(language.id, 'city_title', event.target.value)} required readOnly={!isEditing} />
+                <TextAreaField label="Texto ciudad" value={translation.city_text} onChange={(event) => update(language.id, 'city_text', event.target.value)} required readOnly={!isEditing} />
+                <TextAreaField label="Texto tarjeta idioma" value={translation.language_card_text} onChange={(event) => update(language.id, 'language_card_text', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Boton tarjeta idioma" value={translation.language_card_button} onChange={(event) => update(language.id, 'language_card_button', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => update(language.id, 'seo_title', event.target.value)} required readOnly={!isEditing} />
+                <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => update(language.id, 'seo_description', event.target.value)} required readOnly={!isEditing} />
               </div>
-            </Card>
-          );
-        })}
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar configuracion'}</Button>
-      </form>
+              </form>
+            );
+          })}
+        </Card>
+      </div>
+      <Modal title="Configuracion guardada" isOpen={Boolean(successModal)} onClose={() => setSuccessModal('')}>
+        <p>{successModal}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
+        </div>
+      </Modal>
     </section>
   );
 }
 
 function MediaPreview({ title, asset }: { title: string; asset?: MediaAssetRow }) {
   return (
-    <div className="media-picker-preview">
+    <div className="media-picker-preview site-media-preview">
       <strong>{title}</strong>
       {asset ? <img src={mediaUrl(asset.object_key)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
     </div>
@@ -203,23 +260,16 @@ function resolveMediaId(setting: SiteSettingRow | undefined, mediaAssets: MediaA
   return mediaAssets.find((asset) => asset.object_key === objectKey)?.id ?? '';
 }
 
-function validateSettings(translations: Record<string, SettingsTranslation>, languages: LanguageRow[]) {
-  for (const language of languages) {
-    const translation = translations[language.id] ?? emptyTranslation(language.id);
-    const requiredError = [
-      validateRequired(translation.hero_title, `Titulo hero en ${language.native_name}`),
-      validateRequired(translation.hero_slogan, `Eslogan hero en ${language.native_name}`),
-      validateRequired(translation.hero_description, `Descripcion hero en ${language.native_name}`),
-      validateRequired(translation.city_title, `Titulo ciudad en ${language.native_name}`),
-      validateRequired(translation.city_text, `Texto ciudad en ${language.native_name}`),
-      validateRequired(translation.language_card_text, `Texto tarjeta idioma en ${language.native_name}`),
-      validateRequired(translation.language_card_button, `Boton tarjeta idioma en ${language.native_name}`),
-      validateRequired(translation.seo_title, `SEO titulo en ${language.native_name}`),
-      validateRequired(translation.seo_description, `SEO descripcion en ${language.native_name}`)
-    ].find(Boolean);
-
-    if (requiredError) return requiredError;
-  }
-
-  return '';
+function validateTranslation(translation: SettingsTranslation, language: LanguageRow) {
+  return [
+    validateRequired(translation.hero_title, `Titulo hero en ${language.native_name}`),
+    validateRequired(translation.hero_slogan, `Eslogan hero en ${language.native_name}`),
+    validateRequired(translation.hero_description, `Descripcion hero en ${language.native_name}`),
+    validateRequired(translation.city_title, `Titulo ciudad en ${language.native_name}`),
+    validateRequired(translation.city_text, `Texto ciudad en ${language.native_name}`),
+    validateRequired(translation.language_card_text, `Texto tarjeta idioma en ${language.native_name}`),
+    validateRequired(translation.language_card_button, `Boton tarjeta idioma en ${language.native_name}`),
+    validateRequired(translation.seo_title, `SEO titulo en ${language.native_name}`),
+    validateRequired(translation.seo_description, `SEO descripcion en ${language.native_name}`)
+  ].find(Boolean) ?? '';
 }
