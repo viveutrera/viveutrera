@@ -543,7 +543,22 @@ p { line-height: 1.65; }
 .admin-sidebar { padding: 20px; background: var(--color-primary); color: var(--color-white); }
 .admin-sidebar .brand-logo {
   width: 104px;
+  margin-bottom: 16px;
+}
+.admin-sidebar-title {
+  display: grid;
+  gap: 4px;
   margin-bottom: 28px;
+  color: var(--color-white);
+}
+.admin-sidebar-title strong {
+  font-size: 1.12rem;
+  font-weight: 800;
+}
+.admin-sidebar-title span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 .admin-sidebar nav { display: grid; gap: 6px; }
 .admin-sidebar a {
