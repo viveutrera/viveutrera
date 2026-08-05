@@ -6,7 +6,9 @@ import { Card } from '../../components/ui/Card';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { prepareImageUpload } from '../../lib/imageCompression';
 import { mediaUrl } from '../../lib/media';
+import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
 import { validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
@@ -68,7 +70,12 @@ interface MediaAssetRow {
   id: string;
   object_key: string;
   media_type: 'image' | 'audio' | 'logo' | 'file';
+  mime_type?: string;
   original_name: string;
+  file_size?: number;
+  width?: number | null;
+  height?: number | null;
+  duration_seconds?: number | null;
 }
 
 interface ElementImageRow {
@@ -163,6 +170,8 @@ export function AdminElementEdit() {
   const [imageForm, setImageForm] = useState({ ...emptyImage });
   const [audioForm, setAudioForm] = useState({ ...emptyAudio });
   const [linkForm, setLinkForm] = useState({ ...emptyLink });
+  const [imageUploadFile, setImageUploadFile] = useState<File>();
+  const [audioUploadFile, setAudioUploadFile] = useState<File>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -250,16 +259,17 @@ export function AdminElementEdit() {
   async function addImage(event: FormEvent) {
     event.preventDefault();
     if (!id) return;
-    if (!imageForm.media_asset_id) {
-      setError('Selecciona una imagen.');
+    if (!imageForm.media_asset_id && !imageUploadFile) {
+      setError('Selecciona una imagen subida o un fichero nuevo.');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
+      const mediaAssetId = imageUploadFile ? await uploadAsset(imageUploadFile, 'element-image') : imageForm.media_asset_id;
       await adminRepository.saveElementImage({
         element_id: id,
-        media_asset_id: imageForm.media_asset_id,
+        media_asset_id: mediaAssetId,
         is_cover: imageForm.is_cover,
         sort_order: imageForm.sort_order,
         translations: languages.map((language) => ({
@@ -270,6 +280,7 @@ export function AdminElementEdit() {
         }))
       });
       setImageForm({ ...emptyImage });
+      setImageUploadFile(undefined);
       setSuccess('Imagen asociada.');
       await load();
     } catch (caught) {
@@ -283,15 +294,22 @@ export function AdminElementEdit() {
     event.preventDefault();
     if (!id) return;
     const requiredError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.media_asset_id, 'Audio') || validateRequired(audioForm.title, 'Titulo');
-    if (requiredError) {
-      setError(requiredError);
+    const requiredUploadError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.title, 'Titulo');
+    if (!audioForm.media_asset_id && !audioUploadFile) {
+      setError('Selecciona un audio subido o un fichero nuevo.');
+      return;
+    }
+    if (audioForm.media_asset_id ? requiredError : requiredUploadError) {
+      setError(audioForm.media_asset_id ? requiredError : requiredUploadError);
       return;
     }
     setSubmitting(true);
     setError('');
     try {
-      await adminRepository.saveElementAudio({ id: undefined, element_id: id, ...audioForm, title: audioForm.title.trim() });
+      const mediaAssetId = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio') : audioForm.media_asset_id;
+      await adminRepository.saveElementAudio({ id: undefined, element_id: id, ...audioForm, media_asset_id: mediaAssetId, title: audioForm.title.trim() });
       setAudioForm({ ...emptyAudio, language_id: languages[0]?.id ?? '' });
+      setAudioUploadFile(undefined);
       setSuccess('Audio asociado.');
       await load();
     } catch (caught) {
@@ -299,6 +317,45 @@ export function AdminElementEdit() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function uploadAsset(file: File, target: string) {
+    if (!canUseUploadApi()) throw new Error('Falta configurar VITE_UPLOAD_API_URL para subir ficheros desde esta pantalla.');
+
+    if (file.type.startsWith('image/')) {
+      const prepared = await prepareImageUpload(file);
+      const [mainResult, thumbnailResult] = await Promise.all([
+        uploadMediaFile(prepared.mainFile, target),
+        uploadMediaFile(prepared.thumbnailFile, target)
+      ]);
+      const saved = await adminRepository.saveMediaAsset({
+        ...mainResult.asset,
+        mime_type: prepared.mainFile.type,
+        original_name: prepared.mainFile.name,
+        file_size: prepared.mainFile.size,
+        width: prepared.width,
+        height: prepared.height,
+        duration_seconds: null
+      }) as { id: string };
+      await adminRepository.saveMediaVariant({
+        media_asset_id: saved.id,
+        variant: 'thumbnail',
+        object_key: thumbnailResult.asset.object_key,
+        file_size: prepared.thumbnailFile.size,
+        width: prepared.thumbnailWidth,
+        height: prepared.thumbnailHeight
+      });
+      return saved.id;
+    }
+
+    const result = await uploadMediaFile(file, target);
+    const saved = await adminRepository.saveMediaAsset({
+      ...result.asset,
+      width: null,
+      height: null,
+      duration_seconds: null
+    }) as { id: string };
+    return saved.id;
   }
 
   async function addLink(event: FormEvent) {
@@ -407,19 +464,23 @@ export function AdminElementEdit() {
       <ElementImagesSection
         assets={imageAssets}
         form={imageForm}
+        uploadFile={imageUploadFile}
         images={images}
         isSubmitting={isSubmitting}
         onChange={setImageForm}
+        onUploadFileChange={setImageUploadFile}
         onDelete={(associationId) => deleteAssociation('image', associationId)}
         onSubmit={addImage}
       />
       <ElementAudiosSection
         assets={audioAssets}
         form={audioForm}
+        uploadFile={audioUploadFile}
         audios={audios}
         languages={languages}
         isSubmitting={isSubmitting}
         onChange={setAudioForm}
+        onUploadFileChange={setAudioUploadFile}
         onDelete={(associationId) => deleteAssociation('audio', associationId)}
         onSubmit={addAudio}
       />
@@ -436,12 +497,14 @@ export function AdminElementEdit() {
   );
 }
 
-function ElementImagesSection({ assets, form, images, isSubmitting, onChange, onDelete, onSubmit }: {
+function ElementImagesSection({ assets, form, uploadFile, images, isSubmitting, onChange, onUploadFileChange, onDelete, onSubmit }: {
   assets: MediaAssetRow[];
   form: typeof emptyImage;
+  uploadFile?: File;
   images: ElementImageRow[];
   isSubmitting: boolean;
   onChange: (next: typeof emptyImage) => void;
+  onUploadFileChange: (file?: File) => void;
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
@@ -449,7 +512,12 @@ function ElementImagesSection({ assets, form, images, isSubmitting, onChange, on
     <Card>
       <h2>Imagenes del elemento</h2>
       <form className="admin-form" onSubmit={onSubmit}>
-        <SelectField label="Imagen" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} required>
+        <label className="form-field">
+          <span>Subir nueva imagen</span>
+          <input type="file" accept="image/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} />
+          {uploadFile ? <small>{uploadFile.name}</small> : null}
+        </label>
+        <SelectField label="Imagen ya subida" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
           <option value="">Selecciona imagen subida</option>
           {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
         </SelectField>
@@ -458,7 +526,7 @@ function ElementImagesSection({ assets, form, images, isSubmitting, onChange, on
         <FormField label="Pie" value={form.caption} onChange={(event) => onChange({ ...form, caption: event.target.value })} />
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_cover} onChange={(event) => onChange({ ...form, is_cover: event.target.checked })} /> Portada</label>
-        <div className="button-row"><Button type="submit" disabled={isSubmitting}>Asociar imagen</Button></div>
+        <div className="button-row"><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Subir/asociar imagen'}</Button></div>
       </form>
       <div className="association-list">
         {images.map((image) => {
@@ -476,13 +544,15 @@ function ElementImagesSection({ assets, form, images, isSubmitting, onChange, on
   );
 }
 
-function ElementAudiosSection({ assets, form, audios, languages, isSubmitting, onChange, onDelete, onSubmit }: {
+function ElementAudiosSection({ assets, form, uploadFile, audios, languages, isSubmitting, onChange, onUploadFileChange, onDelete, onSubmit }: {
   assets: MediaAssetRow[];
   form: typeof emptyAudio;
+  uploadFile?: File;
   audios: ElementAudioRow[];
   languages: LanguageRow[];
   isSubmitting: boolean;
   onChange: (next: typeof emptyAudio) => void;
+  onUploadFileChange: (file?: File) => void;
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
@@ -490,11 +560,16 @@ function ElementAudiosSection({ assets, form, audios, languages, isSubmitting, o
     <Card>
       <h2>Audios</h2>
       <form className="admin-form" onSubmit={onSubmit}>
+        <label className="form-field">
+          <span>Subir nuevo audio</span>
+          <input type="file" accept="audio/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} />
+          {uploadFile ? <small>{uploadFile.name}</small> : null}
+        </label>
         <SelectField label="Idioma" value={form.language_id} onChange={(event) => onChange({ ...form, language_id: event.target.value })} required>
           <option value="">Selecciona idioma</option>
           {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
         </SelectField>
-        <SelectField label="Audio" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} required>
+        <SelectField label="Audio ya subido" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
           <option value="">Selecciona audio subido</option>
           {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
         </SelectField>
@@ -502,7 +577,7 @@ function ElementAudiosSection({ assets, form, audios, languages, isSubmitting, o
         <FormField label="Transcripcion" value={form.transcript} onChange={(event) => onChange({ ...form, transcript: event.target.value })} />
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} /> Publicado</label>
-        <div className="button-row"><Button type="submit" disabled={isSubmitting}>Asociar audio</Button></div>
+        <div className="button-row"><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Subir/asociar audio'}</Button></div>
       </form>
       <div className="association-list">
         {audios.map((audio) => {
