@@ -1,4 +1,5 @@
 import { ArrowRight, ExternalLink } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -44,7 +45,10 @@ export function LandingPage() {
 
   return (
     <>
-      <header className="hero">
+      <header
+        className={`hero ${content.heroImageObjectKey ? 'hero-with-media' : ''}`}
+        style={content.heroImageObjectKey ? { '--hero-image': `url(${mediaUrl(content.heroImageObjectKey)})` } as CSSProperties : undefined}
+      >
         <nav className="hero-nav" aria-label="Principal">
           <img className="brand-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
         </nav>

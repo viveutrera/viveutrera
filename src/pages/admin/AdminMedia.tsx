@@ -78,6 +78,13 @@ interface ElementImageAssociationRow {
   sort_order: number;
   elements?: { slug: string } | { slug: string }[] | null;
   media_assets?: MediaAssetRow | MediaAssetRow[] | null;
+  element_image_translations?: Array<{
+    title?: string | null;
+    alt_text: string;
+    caption?: string | null;
+    language_id?: string;
+    languages?: { code: string } | { code: string }[] | null;
+  }>;
 }
 
 interface ElementAudioAssociationRow {
@@ -136,6 +143,7 @@ export function AdminMedia() {
   const [form, setForm] = useState<MediaAssetRow>(emptyMedia);
   const [imageAssociation, setImageAssociation] = useState<ImageAssociationForm>(emptyImageAssociation([]));
   const [audioAssociation, setAudioAssociation] = useState<AudioAssociationForm>(emptyAudioAssociation([]));
+  const [editingImageAssociationId, setEditingImageAssociationId] = useState<string>();
   const [deleteId, setDeleteId] = useState<string>();
   const [deleteImageId, setDeleteImageId] = useState<string>();
   const [deleteAudioId, setDeleteAudioId] = useState<string>();
@@ -283,9 +291,9 @@ export function AdminMedia() {
     setSuccess('');
     try {
       const usage = await adminRepository.getMediaAssetUsage(asset.id);
-      const totalUsage = usage.images + usage.audios + usage.collaborators;
+      const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
       if (totalUsage > 0) {
-        setError(`No se puede borrar: esta usado en ${usage.images} imagenes de elementos, ${usage.audios} audios y ${usage.collaborators} colaboradores. Quita primero esas asociaciones.`);
+        setError(`No se puede borrar: esta usado en ${usage.images} imagenes de elementos, ${usage.audios} audios, ${usage.collaborators} colaboradores y ${usage.siteSettings} ajustes del sitio. Quita primero esas asociaciones.`);
         return;
       }
 
@@ -319,9 +327,10 @@ export function AdminMedia() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElementImage(imageAssociation);
+      await adminRepository.saveElementImage({ id: editingImageAssociationId, ...imageAssociation });
+      setEditingImageAssociationId(undefined);
       setImageAssociation(emptyImageAssociation(languages));
-      setSuccess('Imagen asociada al elemento.');
+      setSuccess(editingImageAssociationId ? 'Asociacion de imagen actualizada.' : 'Imagen asociada al elemento.');
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo asociar la imagen.');
@@ -407,6 +416,56 @@ export function AdminMedia() {
     }));
   }
 
+  function selectImageAsset(assetId: string) {
+    const asset = imageAssets.find((item) => item.id === assetId);
+    setImageAssociation((current) => ({
+      ...current,
+      media_asset_id: assetId,
+      translations: current.translations.map((translation) => ({
+        ...translation,
+        title: translation.title || asset?.original_name?.replace(/\.[^.]+$/, '') || '',
+        alt_text: translation.alt_text || selectedElementName(current.element_id, elements, languages)
+      }))
+    }));
+  }
+
+  function selectImageElement(elementId: string) {
+    setImageAssociation((current) => ({
+      ...current,
+      element_id: elementId,
+      translations: current.translations.map((translation) => ({
+        ...translation,
+        alt_text: translation.alt_text || selectedElementName(elementId, elements, languages)
+      }))
+    }));
+  }
+
+  function editImageAssociation(association: ElementImageAssociationRow) {
+    setError('');
+    setSuccess('');
+    setEditingImageAssociationId(association.id);
+    setImageAssociation({
+      element_id: association.element_id,
+      media_asset_id: association.media_asset_id,
+      is_cover: association.is_cover,
+      sort_order: association.sort_order,
+      translations: languages.map((language) => {
+        const saved = association.element_image_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
+        return {
+          language_id: language.id,
+          title: saved?.title ?? '',
+          alt_text: saved?.alt_text ?? '',
+          caption: saved?.caption ?? ''
+        };
+      })
+    });
+  }
+
+  function resetImageAssociation() {
+    setEditingImageAssociationId(undefined);
+    setImageAssociation(emptyImageAssociation(languages));
+  }
+
   const filteredItems = items.filter((item) => (
     matchesSearch([item.object_key, item.original_name, item.mime_type, item.media_type], search)
     && (typeFilter === 'all' || item.media_type === typeFilter)
@@ -416,6 +475,7 @@ export function AdminMedia() {
   const audioAssets = items.filter((item) => item.id && item.media_type === 'audio');
   const selectedImageAssociation = elementImages.find((item) => item.id === deleteImageId);
   const selectedAudioAssociation = elementAudios.find((item) => item.id === deleteAudioId);
+  const selectedImageAsset = imageAssets.find((item) => item.id === imageAssociation.media_asset_id);
 
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura las variables remotas para registrar multimedia real." />;
   if (isLoading) return <LoadingState />;
@@ -443,18 +503,45 @@ export function AdminMedia() {
       </Card>
       <Card>
         <form className="stack-form" onSubmit={saveImageAssociation}>
-          <h2>Asociar imagen a elemento</h2>
+          <div className="admin-title-row">
+            <h2>{editingImageAssociationId ? 'Editar imagen de elemento' : 'Asociar imagen a elemento'}</h2>
+            {editingImageAssociationId ? <Button type="button" variant="ghost" onClick={resetImageAssociation}>Cancelar edicion</Button> : null}
+          </div>
           <div className="admin-form">
-            <SelectField label="Elemento" value={imageAssociation.element_id} onChange={(event) => setImageAssociation({ ...imageAssociation, element_id: event.target.value })} required>
+            <SelectField label="Elemento" value={imageAssociation.element_id} onChange={(event) => selectImageElement(event.target.value)} required>
               <option value="">Selecciona un elemento</option>
               {elements.map((element) => <option key={element.id} value={element.id}>{elementLabel(element, languages)}</option>)}
             </SelectField>
-            <SelectField label="Imagen" value={imageAssociation.media_asset_id} onChange={(event) => setImageAssociation({ ...imageAssociation, media_asset_id: event.target.value })} required>
+            <SelectField label="Imagen" value={imageAssociation.media_asset_id} onChange={(event) => selectImageAsset(event.target.value)} required>
               <option value="">Selecciona una imagen subida</option>
               {imageAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
             </SelectField>
             <FormField label="Orden" type="number" value={imageAssociation.sort_order} onChange={(event) => setImageAssociation({ ...imageAssociation, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={imageAssociation.is_cover} onChange={(event) => setImageAssociation({ ...imageAssociation, is_cover: event.target.checked })} /> Imagen principal</label>
+          </div>
+          <div className="media-association-workbench">
+            <div className="media-asset-picker" aria-label="Imagenes disponibles">
+              {imageAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  type="button"
+                  className={asset.id === imageAssociation.media_asset_id ? 'media-asset-option active' : 'media-asset-option'}
+                  onClick={() => selectImageAsset(asset.id ?? '')}
+                >
+                  <img src={mediaUrl(asset.media_variants?.find((variant) => variant.variant === 'thumbnail')?.object_key ?? asset.object_key)} alt="" loading="lazy" />
+                  <span>{asset.original_name || asset.object_key}</span>
+                </button>
+              ))}
+            </div>
+            <div className="media-selected-preview">
+              <strong>Seleccion actual</strong>
+              {selectedImageAsset ? (
+                <>
+                  <img src={mediaUrl(selectedImageAsset.object_key)} alt="" loading="lazy" />
+                  <span>{selectedImageAsset.original_name || selectedImageAsset.object_key}</span>
+                </>
+              ) : <span>Selecciona una imagen para asociarla.</span>}
+            </div>
           </div>
           <div className="translation-grid">
             {languages.map((language) => {
@@ -470,14 +557,18 @@ export function AdminMedia() {
             })}
           </div>
           <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>Asociar imagen</Button>
+            <Button type="submit" disabled={isSubmitting}>{editingImageAssociationId ? 'Guardar asociacion' : 'Asociar imagen'}</Button>
           </div>
         </form>
         <div className="association-list">
           {elementImages.map((association) => (
             <div key={association.id} className="association-row">
-              <span>{relationSlug(association.elements)} - {relationAsset(association.media_assets)?.original_name ?? relationAsset(association.media_assets)?.object_key}</span>
-              <Button type="button" variant="danger" onClick={() => setDeleteImageId(association.id)}>Quitar</Button>
+              {relationAsset(association.media_assets) ? <img src={mediaUrl(relationAsset(association.media_assets)?.object_key ?? '')} alt="" loading="lazy" /> : null}
+              <span>{relationSlug(association.elements)} - {relationAsset(association.media_assets)?.original_name ?? relationAsset(association.media_assets)?.object_key}{association.is_cover ? ' - portada' : ''}</span>
+              <div className="table-actions">
+                <Button type="button" variant="secondary" onClick={() => editImageAssociation(association)}>Editar</Button>
+                <Button type="button" variant="danger" onClick={() => setDeleteImageId(association.id)}>Quitar</Button>
+              </div>
             </div>
           ))}
         </div>
@@ -559,6 +650,7 @@ export function AdminMedia() {
             </div>
             <div className="table-actions">
               <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
+              {(item.media_type === 'image' || item.media_type === 'logo') && item.id ? <Button type="button" variant="secondary" onClick={() => selectImageAsset(item.id ?? '')}>Asociar</Button> : null}
               <Button type="button" variant="ghost" onClick={() => window.open(mediaUrl(item.object_key), '_blank', 'noopener,noreferrer')}>Abrir</Button>
               <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
             </div>
@@ -609,6 +701,11 @@ function elementLabel(element: ElementOptionRow, languages: LanguageRow[]) {
   const spanish = languages.find((language) => language.code === 'es') ?? languages[0];
   const translation = element.element_translations?.find((item) => item.language_id === spanish?.id || getCode(item.languages) === spanish?.code);
   return translation?.name ?? element.slug;
+}
+
+function selectedElementName(elementId: string, elements: ElementOptionRow[], languages: LanguageRow[]) {
+  const element = elements.find((item) => item.id === elementId);
+  return element ? elementLabel(element, languages) : '';
 }
 
 function getLanguageCode(languageId: string, languages: LanguageRow[]) {

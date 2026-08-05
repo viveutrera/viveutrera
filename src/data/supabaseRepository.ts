@@ -107,6 +107,11 @@ interface ElementAudioRowRaw {
   media_assets: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
 }
 
+interface SiteSettingRowRaw {
+  key: string;
+  value_json: unknown;
+}
+
 function asLanguageCode(code: string): LanguageCode {
   return languageCodes.includes(code as LanguageCode) ? code as LanguageCode : 'es';
 }
@@ -176,6 +181,7 @@ export const supabaseGuideRepository = {
 
     if (error) throw error;
     if (!data) return mockSiteContent.es;
+    const mediaSettings = await getSiteMediaSettings();
 
     return {
       heroTitle: data.hero_title,
@@ -184,7 +190,9 @@ export const supabaseGuideRepository = {
       cityTitle: data.city_title,
       cityText: data.city_text,
       seoTitle: data.seo_title,
-      seoDescription: data.seo_description
+      seoDescription: data.seo_description,
+      heroImageObjectKey: mediaSettings.heroImageObjectKey,
+      cityImageObjectKey: mediaSettings.cityImageObjectKey
     };
   },
 
@@ -379,17 +387,19 @@ export const adminRepository = {
   },
   async getMediaAssetUsage(id: string) {
     const client = ensureSupabase();
-    const [images, audios, collaborators] = await Promise.all([
+    const [images, audios, collaborators, siteSettings] = await Promise.all([
       client.from('element_images').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
       client.from('element_audios').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
-      client.from('collaborators').select('id', { count: 'exact', head: true }).eq('media_asset_id', id)
+      client.from('collaborators').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
+      client.from('site_settings').select('id', { count: 'exact', head: true }).contains('value_json', { media_asset_id: id })
     ]);
-    const error = images.error ?? audios.error ?? collaborators.error;
+    const error = images.error ?? audios.error ?? collaborators.error ?? siteSettings.error;
     if (error) throw error;
     return {
       images: images.count ?? 0,
       audios: audios.count ?? 0,
-      collaborators: collaborators.count ?? 0
+      collaborators: collaborators.count ?? 0,
+      siteSettings: siteSettings.count ?? 0
     };
   },
 
@@ -398,6 +408,19 @@ export const adminRepository = {
     const { data, error } = await client.from('site_translations').select('*');
     if (error) throw error;
     return data ?? [];
+  },
+  async listSiteSettings() {
+    const client = ensureSupabase();
+    const { data, error } = await client.from('site_settings').select('key, value_json');
+    if (error) throw error;
+    return data ?? [];
+  },
+  async saveSiteSetting(key: string, value: Record<string, unknown>) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('site_settings')
+      .upsert({ key, value_json: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) throw error;
   },
   async saveSiteTranslations(translations: Array<{
     language_id: string;
@@ -566,6 +589,14 @@ export const adminRepository = {
     translations: Array<{ language_id: string; title: string; alt_text: string; caption: string }>;
   }) {
     const client = ensureSupabase();
+    if (input.is_cover) {
+      const { error: coverError } = await client
+        .from('element_images')
+        .update({ is_cover: false })
+        .eq('element_id', input.element_id);
+      if (coverError) throw coverError;
+    }
+
     const { data: image, error } = await client
       .from('element_images')
       .upsert({
@@ -808,6 +839,27 @@ async function hydrateElementMedia(elements: GuideElement[], languageId: string,
     element.images = images.length ? images : element.images;
     element.audios = audios;
   });
+}
+
+async function getSiteMediaSettings() {
+  const client = ensureSupabase();
+  const { data, error } = await client
+    .from('site_settings')
+    .select('key, value_json')
+    .in('key', ['hero_media', 'city_media']);
+  if (error) throw error;
+
+  const rows = (data ?? []) as SiteSettingRowRaw[];
+  return {
+    heroImageObjectKey: settingObjectKey(rows.find((row) => row.key === 'hero_media')?.value_json),
+    cityImageObjectKey: settingObjectKey(rows.find((row) => row.key === 'city_media')?.value_json)
+  };
+}
+
+function settingObjectKey(value: unknown) {
+  if (!value || typeof value !== 'object' || !('object_key' in value)) return undefined;
+  const objectKey = (value as { object_key?: unknown }).object_key;
+  return typeof objectKey === 'string' && objectKey.trim() ? objectKey : undefined;
 }
 
 function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement {

@@ -117,6 +117,8 @@ export interface SiteContent {
   cityText: string;
   seoTitle: string;
   seoDescription: string;
+  heroImageObjectKey?: string;
+  cityImageObjectKey?: string;
 }
 
 export interface UploadRequest {

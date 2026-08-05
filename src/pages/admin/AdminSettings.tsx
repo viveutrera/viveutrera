@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { FormField, TextAreaField } from '../../components/ui/FormField';
+import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { mediaUrl } from '../../lib/media';
 import { validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
@@ -26,6 +27,18 @@ interface SettingsTranslation {
   seo_description: string;
 }
 
+interface MediaAssetRow {
+  id?: string;
+  object_key: string;
+  media_type: 'image' | 'audio' | 'logo' | 'file';
+  original_name: string;
+}
+
+interface SiteSettingRow {
+  key: string;
+  value_json: { media_asset_id?: string; object_key?: string } | null;
+}
+
 const emptyTranslation = (languageId: string): SettingsTranslation => ({
   language_id: languageId,
   hero_title: '',
@@ -42,6 +55,9 @@ const emptyTranslation = (languageId: string): SettingsTranslation => ({
 export function AdminSettings() {
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [translations, setTranslations] = useState<Record<string, SettingsTranslation>>({});
+  const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
+  const [heroMediaId, setHeroMediaId] = useState('');
+  const [cityMediaId, setCityMediaId] = useState('');
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -55,11 +71,15 @@ export function AdminSettings() {
 
     Promise.all([
       adminRepository.listLanguages(),
-      adminRepository.listSiteTranslations()
+      adminRepository.listSiteTranslations(),
+      adminRepository.listMediaAssets(),
+      adminRepository.listSiteSettings()
     ])
-      .then(([languageRows, translationRows]) => {
+      .then(([languageRows, translationRows, mediaRows, settingRows]) => {
         const activeLanguages = (languageRows as unknown as LanguageRow[]).sort((a, b) => a.sort_order - b.sort_order);
         const nextTranslations: Record<string, SettingsTranslation> = {};
+        const imageRows = (mediaRows as unknown as MediaAssetRow[]).filter((item) => item.media_type === 'image' || item.media_type === 'logo');
+        const settings = settingRows as unknown as SiteSettingRow[];
 
         activeLanguages.forEach((language) => {
           const saved = (translationRows as unknown as SettingsTranslation[]).find((item) => item.language_id === language.id);
@@ -68,6 +88,9 @@ export function AdminSettings() {
 
         setLanguages(activeLanguages);
         setTranslations(nextTranslations);
+        setMediaAssets(imageRows);
+        setHeroMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_media'), imageRows));
+        setCityMediaId(resolveMediaId(settings.find((setting) => setting.key === 'city_media'), imageRows));
       })
       .catch(() => setError('No se pudo cargar la configuracion.'))
       .finally(() => setLoading(false));
@@ -97,6 +120,10 @@ export function AdminSettings() {
     setSubmitting(true);
     try {
       await adminRepository.saveSiteTranslations(Object.values(translations));
+      await Promise.all([
+        adminRepository.saveSiteSetting('hero_media', settingPayload(mediaAssets.find((asset) => asset.id === heroMediaId))),
+        adminRepository.saveSiteSetting('city_media', settingPayload(mediaAssets.find((asset) => asset.id === cityMediaId)))
+      ]);
       setSuccess('Configuracion multidioma guardada.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo guardar la configuracion.');
@@ -114,6 +141,23 @@ export function AdminSettings() {
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
       <form className="stack-form" onSubmit={submit}>
+        <Card>
+          <h2>Imagenes principales</h2>
+          <div className="admin-form">
+            <SelectField label="Imagen hero" value={heroMediaId} onChange={(event) => setHeroMediaId(event.target.value)}>
+              <option value="">Sin imagen administrable</option>
+              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+            </SelectField>
+            <SelectField label="Imagen ciudad / guia" value={cityMediaId} onChange={(event) => setCityMediaId(event.target.value)}>
+              <option value="">Sin imagen administrable</option>
+              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+            </SelectField>
+          </div>
+          <div className="media-picker-preview-grid">
+            <MediaPreview title="Hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
+            <MediaPreview title="Ciudad" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
+          </div>
+        </Card>
         {languages.map((language) => {
           const translation = translations[language.id] ?? emptyTranslation(language.id);
           return (
@@ -137,6 +181,26 @@ export function AdminSettings() {
       </form>
     </section>
   );
+}
+
+function MediaPreview({ title, asset }: { title: string; asset?: MediaAssetRow }) {
+  return (
+    <div className="media-picker-preview">
+      <strong>{title}</strong>
+      {asset ? <img src={mediaUrl(asset.object_key)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
+    </div>
+  );
+}
+
+function settingPayload(asset?: MediaAssetRow): Record<string, unknown> {
+  return asset?.id ? { media_asset_id: asset.id, object_key: asset.object_key } : {};
+}
+
+function resolveMediaId(setting: SiteSettingRow | undefined, mediaAssets: MediaAssetRow[]) {
+  const mediaId = setting?.value_json?.media_asset_id;
+  if (mediaId && mediaAssets.some((asset) => asset.id === mediaId)) return mediaId;
+  const objectKey = setting?.value_json?.object_key;
+  return mediaAssets.find((asset) => asset.object_key === objectKey)?.id ?? '';
 }
 
 function validateSettings(translations: Record<string, SettingsTranslation>, languages: LanguageRow[]) {
