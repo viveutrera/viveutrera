@@ -3,10 +3,11 @@ import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { FormField, TextAreaField } from '../../components/ui/FormField';
+import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { elementTypeIconLabel, elementTypeIconOptions, isElementTypeIcon } from '../../lib/typeIcons';
 import { matchesSearch, slugify, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
@@ -210,7 +211,7 @@ export function AdminElementTypes() {
           <div className="admin-data-row" role="row" key={item.id}>
             <span role="cell"><strong>{item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? item.slug}</strong></span>
             <span role="cell">{item.slug}</span>
-            <span role="cell">{item.icon}</span>
+            <span role="cell">{elementTypeIconLabel(item.icon)}</span>
             <span role="cell">{elements.filter((element) => element.element_type_id === item.id).length}</span>
             <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
             <span className="row-actions" role="cell">
@@ -223,7 +224,9 @@ export function AdminElementTypes() {
       <Modal title="Crear tipo" isOpen={isCreateOpen} onClose={resetForm}>
         <form className="stack-form modal-form" onSubmit={submit}>
           <div className="admin-form">
-            <FormField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })} />
+            <SelectField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })}>
+              {elementTypeIconOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </SelectField>
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
           </div>
@@ -260,6 +263,7 @@ export function AdminElementTypes() {
 function validateType(candidate: ElementTypeForm, languages: LanguageRow[], rows: ElementTypeRow[], editingId?: string) {
   const slugError = validateSlug(candidate.slug);
   if (slugError) return slugError;
+  if (!isElementTypeIcon(candidate.icon)) return 'Selecciona un icono valido.';
   const duplicated = rows.some((item) => item.id !== editingId && item.slug === candidate.slug.trim());
   if (duplicated) return 'Ya existe un tipo con ese slug.';
   const spanish = languages.find((language) => language.code === 'es') ?? languages[0];

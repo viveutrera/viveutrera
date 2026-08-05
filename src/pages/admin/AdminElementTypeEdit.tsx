@@ -2,9 +2,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { FormField, TextAreaField } from '../../components/ui/FormField';
+import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { elementTypeIconOptions, isElementTypeIcon } from '../../lib/typeIcons';
 import { validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
@@ -135,7 +136,9 @@ export function AdminElementTypeEdit() {
         <form className="stack-form" onSubmit={submit}>
           <div className="admin-form">
             <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
-            <FormField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })} />
+            <SelectField label="Icono" value={form.icon} onChange={(event) => setForm({ ...form, icon: event.target.value })}>
+              {elementTypeIconOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </SelectField>
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
           </div>
@@ -163,6 +166,7 @@ export function AdminElementTypeEdit() {
 function validateType(candidate: ElementTypeForm, languages: LanguageRow[], rows: ElementTypeRow[], editingId?: string) {
   const slugError = validateSlug(candidate.slug);
   if (slugError) return slugError;
+  if (!isElementTypeIcon(candidate.icon)) return 'Selecciona un icono valido.';
   const duplicated = rows.some((item) => item.id !== editingId && item.slug === candidate.slug.trim());
   if (duplicated) return 'Ya existe un tipo con ese slug.';
   const spanish = languages.find((language) => language.code === 'es') ?? languages[0];
