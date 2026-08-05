@@ -270,19 +270,25 @@ p { line-height: 1.65; }
   margin: 18px 0;
 }
 .language-selector a {
-  min-width: 44px;
-  min-height: 40px;
+  width: 46px;
+  height: 34px;
   display: inline-grid;
   place-items: center;
-  border: 1px solid rgba(216, 199, 166, 0.75);
+  padding: 3px;
+  border: 2px solid rgba(216, 199, 166, 0.75);
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
   color: inherit;
   text-decoration: none;
-  font-weight: 800;
 }
 .language-selector a.active {
-  background: var(--color-stone);
-  color: var(--color-primary);
+  border-color: var(--color-accent);
+  background: var(--color-white);
+}
+.language-selector img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .guide-header .language-selector {
   color: var(--color-white);
