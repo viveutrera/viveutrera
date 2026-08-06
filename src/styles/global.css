@@ -223,9 +223,14 @@ button, input { font: inherit; }
 h1, h2, h3 { color: var(--color-primary); margin: 0 0 12px; line-height: 1.12; letter-spacing: 0; }
 p { line-height: 1.65; }
 
-.language-grid, .element-grid, .collaborator-grid, .admin-grid {
+.language-grid, .collaborator-grid, .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+.element-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -345,21 +350,25 @@ p { line-height: 1.65; }
 }
 .guide-header h1, .guide-header .text-link { color: var(--color-white); }
 .guide-brand-link {
-  display: grid;
-  width: min(100%, 330px);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.32em;
+  width: auto;
+  max-width: 100%;
   margin: 0 0 14px;
   color: var(--color-white);
-  font-size: clamp(2.2rem, 7vw, 4rem);
-  line-height: 0.86;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
   text-decoration: none;
+  white-space: nowrap;
 }
 .guide-brand-link span:first-child {
   font-weight: 500;
-  letter-spacing: 0.31em;
+  letter-spacing: 0.08em;
 }
 .guide-brand-link span:last-child {
   font-weight: 800;
-  letter-spacing: 0.065em;
+  letter-spacing: 0.03em;
 }
 .guide-cover {
   width: 100%;
@@ -1007,6 +1016,18 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   margin-top: 14px;
 }
 
+@media (max-width: 1120px) {
+  .element-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .element-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .hero {
     min-height: auto;
@@ -1079,6 +1100,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .landing-language-section .language-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+  .element-grid {
+    grid-template-columns: 1fr;
   }
   .language-card {
     gap: 10px;
