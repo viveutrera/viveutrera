@@ -113,25 +113,33 @@ export function ElementDetailPage() {
 
   return (
     <main className="detail-page">
-      <Link to={`/guia/${language}`} className="text-link">{t(language, 'back')}</Link>
-      <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
+      <div className="detail-language-bar">
+        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
+      </div>
       {contentLanguage !== language ? (
         <div className="notice" role="status">
           Esta ficha no esta publicada en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
         </div>
       ) : null}
-      <span className="tag">{type?.name[contentLanguage]}</span>
+      <div className="detail-kicker-row">
+        <span className="tag">{type?.name[contentLanguage]}</span>
+        <Link to={`/guia/${language}`} className="text-link">{t(language, 'back')}</Link>
+      </div>
       <h1>{translation.name}</h1>
       <p className="lead">{translation.shortText}</p>
-      <div className="detail-actions">
-        <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
-        {element.mapsUrl ? (
-          <a className="button button-primary" href={element.mapsUrl} target="_blank" rel="noreferrer">
-            <MapPin size={18} />
-            <span>{t(language, 'location')}</span>
-          </a>
-        ) : null}
-      </div>
+      {!element.showLongTextDefault || element.mapsUrl ? (
+        <div className="detail-actions">
+          {!element.showLongTextDefault ? (
+            <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
+          ) : null}
+          {element.mapsUrl ? (
+            <a className="button button-primary" href={element.mapsUrl} target="_blank" rel="noreferrer">
+              <MapPin size={18} />
+              <span>{t(language, 'location')}</span>
+            </a>
+          ) : null}
+        </div>
+      ) : null}
       {showLongText ? <p className="long-text">{translation.longText}</p> : null}
 
       <section className="gallery" aria-label="Galeria">

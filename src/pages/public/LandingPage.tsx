@@ -1,6 +1,7 @@
 import { ArrowRight, ExternalLink, Globe2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/States';
@@ -105,7 +106,9 @@ export function LandingPage() {
           <div className="language-grid">
             {languages.map((language) => (
               <Card key={language.id} className="language-card">
-                <img className="flag" src={publicPath(flagPath(language.code, true))} alt={language.nativeName} />
+                <Link className="flag-link" to={`/guia/${language.code}`} onClick={() => persistLanguage(language.code)} aria-label={`Abrir guia en ${language.nativeName}`}>
+                  <img className="flag" src={publicPath(flagPath(language.code, true))} alt={language.nativeName} />
+                </Link>
                 <p>{language.code === 'es' ? language.cardText.replace('espanol', 'español') : language.cardText}</p>
                 <ButtonLink to={`/guia/${language.code}`} variant="primary" onClick={() => persistLanguage(language.code)}>
                   {language.cardButton} <ArrowRight size={16} />
