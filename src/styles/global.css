@@ -62,7 +62,7 @@ button, input { font: inherit; }
   min-height: 68svh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 22px clamp(20px, 6vw, 76px) 40px;
   color: var(--color-primary);
   background:
@@ -111,6 +111,9 @@ button, input { font: inherit; }
 
 .hero-nav .brand-logo { width: clamp(72px, 9vw, 118px); }
 .hero-nav .landing-language-switcher { margin-left: auto; }
+.landing-language-menu-button {
+  display: none;
+}
 .landing-language-switcher {
   display: flex;
   flex-wrap: wrap;
@@ -127,6 +130,7 @@ button, input { font: inherit; }
   border: 2px solid transparent;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
   cursor: pointer;
 }
 .landing-language-switcher button.active,
@@ -136,6 +140,8 @@ button, input { font: inherit; }
 .landing-language-switcher img {
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 .hero-content { width: 100%; }
@@ -145,7 +151,7 @@ button, input { font: inherit; }
   align-items: center;
   gap: clamp(24px, 6vw, 76px);
   max-width: 1120px;
-  margin: auto auto 0;
+  margin: clamp(26px, 5vw, 54px) auto 0;
 }
 .hero-mark {
   width: min(36vw, 390px);
@@ -156,18 +162,20 @@ button, input { font: inherit; }
 .brand-kicker, .tag { color: var(--color-stone); font-weight: 800; text-transform: uppercase; letter-spacing: 0; }
 .hero-wordmark-title {
   display: grid;
-  gap: 4px;
-  margin: 10px 0 18px;
+  gap: 6px;
+  width: min(100%, 620px);
+  margin: 0 0 18px;
   color: var(--color-primary);
   font-size: clamp(4rem, 12vw, 8.8rem);
-  line-height: 0.82;
-  letter-spacing: 0;
-  font-weight: 800;
+  line-height: 0.84;
+}
+.hero-wordmark-title span:first-child {
+  font-weight: 500;
+  letter-spacing: 0.31em;
 }
 .hero-wordmark-title span:last-child {
-  font-size: clamp(2rem, 5.4vw, 4.1rem);
-  font-weight: 600;
-  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.065em;
 }
 .hero-slogan {
   display: flex;
@@ -280,6 +288,7 @@ p { line-height: 1.65; }
   background: rgba(255, 255, 255, 0.78);
   color: inherit;
   text-decoration: none;
+  overflow: hidden;
 }
 .language-selector a.active {
   border-color: var(--color-accent);
@@ -288,6 +297,8 @@ p { line-height: 1.65; }
 .language-selector img {
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 .guide-header .language-selector {
@@ -322,6 +333,22 @@ p { line-height: 1.65; }
   border-radius: 8px;
 }
 .guide-header h1, .guide-header .text-link { color: var(--color-white); }
+.guide-wordmark {
+  display: grid;
+  width: min(100%, 330px);
+  margin: 12px 0 18px;
+  color: var(--color-white);
+  font-size: clamp(2.2rem, 7vw, 4rem);
+  line-height: 0.86;
+}
+.guide-wordmark span:first-child {
+  font-weight: 500;
+  letter-spacing: 0.31em;
+}
+.guide-wordmark span:last-child {
+  font-weight: 800;
+  letter-spacing: 0.065em;
+}
 .guide-cover {
   width: 100%;
   aspect-ratio: 21 / 8;
@@ -341,9 +368,25 @@ p { line-height: 1.65; }
   padding: 0 14px;
 }
 .search-box input { border: 0; outline: 0; width: 100%; }
-.pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.pill-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+.pill-row .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 
 .element-card { padding: 0; overflow: hidden; }
+.element-card-media {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
 .element-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--color-primary); }
 .media-placeholder {
   width: 100%;
@@ -355,6 +398,13 @@ p { line-height: 1.65; }
   font-weight: 800;
 }
 .element-card div { padding: 18px; }
+.element-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.element-card h2 a:hover {
+  color: var(--color-accent);
+}
 .element-card p {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -516,6 +566,26 @@ p { line-height: 1.65; }
   padding: 28px;
   border-radius: 8px;
   background: var(--color-white);
+}
+.login-brand {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.login-brand img {
+  width: 128px;
+  margin-bottom: 6px;
+}
+.login-brand strong {
+  color: var(--color-primary);
+  font-size: 1.32rem;
+  font-weight: 800;
+}
+.login-brand span {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  font-weight: 800;
 }
 .hint { color: var(--color-muted); font-size: 0.92rem; }
 .form-field { display: grid; gap: 8px; }
@@ -924,14 +994,40 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
 
 @media (max-width: 760px) {
   .hero {
-    min-height: 88svh;
-    padding-bottom: 42px;
+    min-height: auto;
+    padding-top: 18px;
+    padding-bottom: 30px;
   }
-  .hero-nav { align-items: flex-start; }
+  .hero-nav { align-items: flex-start; position: relative; min-height: 40px; }
   .hero-nav .brand-logo { width: 78px; }
+  .landing-language-menu-button {
+    width: 42px;
+    height: 42px;
+    display: inline-grid;
+    place-items: center;
+    margin-left: auto;
+    border: 1px solid var(--color-line);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--color-primary);
+    cursor: pointer;
+  }
   .landing-language-switcher {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    z-index: 3;
+    display: none;
     flex-wrap: nowrap;
     gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--shadow-soft);
+  }
+  .landing-language-switcher.open {
+    display: flex;
   }
   .landing-language-switcher button {
     width: 40px;
@@ -940,15 +1036,20 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .hero-brand-lockup {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 8px;
+    margin-top: 10px;
     text-align: center;
   }
   .hero-mark {
-    width: min(58vw, 250px);
+    width: min(54vw, 220px);
     min-width: 0;
     justify-self: center;
   }
   .hero-wordmark { margin: 0 auto; }
+  .hero-wordmark-title {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
   .hero-slogan {
     justify-content: center;
     margin-inline: auto;

@@ -36,14 +36,17 @@ export function AdminLogin() {
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <img src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
-        <h1>Administracion</h1>
+        <div className="login-brand">
+          <img src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
+          <strong>VIVE UTRERA</strong>
+          <span>ADMINISTRACIÓN</span>
+        </div>
         {!isSupabaseConfigured ? (
-          <p className="hint">Modo maqueta: se acepta cualquier correo y contrasena hasta configurar Supabase.</p>
+          <p className="hint">Modo maqueta: se acepta cualquier correo y contraseña hasta configurar Supabase.</p>
         ) : null}
         {error ? <ErrorState message={error} /> : null}
         <FormField label="Correo" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-        <FormField label="Contrasena" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <FormField label="Contraseña" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Entrando' : 'Entrar'}</Button>
       </form>
     </main>

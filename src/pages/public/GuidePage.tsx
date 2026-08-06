@@ -1,4 +1,4 @@
-import { MapPin, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
@@ -84,6 +84,10 @@ export function GuidePage() {
       <header className="guide-header">
         <Link to="/preview" className="text-link">Vive Utrera</Link>
         <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
+        <p className="guide-wordmark" aria-label="Vive Utrera">
+          <span>VIVE</span>
+          <span>UTRERA</span>
+        </p>
         {content.cityImageObjectKey ? <img className="guide-cover" src={mediaUrl(content.cityImageObjectKey)} alt="" loading="eager" /> : null}
         <h1>{content.cityTitle}</h1>
         <p>{content.cityText}</p>
@@ -101,7 +105,6 @@ export function GuidePage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t(language, 'search')} />
         </label>
         <div className="pill-row">
-          <Button type="button" variant={typeId === 'all' ? 'primary' : 'secondary'} onClick={() => setTypeId('all')}>{t(language, 'all')}</Button>
           {types.map((type) => (
             <Button key={type.id} type="button" variant={typeId === type.id ? 'primary' : 'secondary'} onClick={() => setTypeId(type.id)}>
               {type.name[language]}
@@ -117,16 +120,14 @@ export function GuidePage() {
           {filtered.map((element) => {
             const translation = element.translations[contentLanguage];
             const cover = element.images.find((image) => image.isCover) ?? element.images[0];
-            const type = types.find((item) => item.id === element.typeId);
             return (
               <Card key={element.id} className="element-card">
-                {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
+                <Link to={`/guia/${language}/elemento/${element.slug}`} className="element-card-media" aria-label={translation.name}>
+                  {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
+                </Link>
                 <div>
-                  <span className="tag">{type?.name[contentLanguage]}</span>
-                  <h2>{translation.name}</h2>
+                  <h2><Link to={`/guia/${language}/elemento/${element.slug}`}>{translation.name}</Link></h2>
                   <p>{translation.shortText}</p>
-                  <Link to={`/guia/${language}/elemento/${element.slug}`} className="text-link">Ver detalle</Link>
-                  {element.mapsUrl ? <MapPin size={18} aria-label={t(language, 'location')} /> : null}
                 </div>
               </Card>
             );

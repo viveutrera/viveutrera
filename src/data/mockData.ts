@@ -1,7 +1,7 @@
 import type { Collaborator, ElementType, GuideElement, Language, LanguageCode, SiteContent } from '../domain/types';
 
 export const languages: Language[] = [
-  { id: 'lang-es', code: 'es', locale: 'es-ES', name: 'Espanol', nativeName: 'Espanol', flagCode: 'ES', isActive: true, isDefault: true, sortOrder: 1, cardText: 'Comienza tu visita en espanol.', cardButton: 'Ver guia' },
+  { id: 'lang-es', code: 'es', locale: 'es-ES', name: 'Español', nativeName: 'Español', flagCode: 'ES', isActive: true, isDefault: true, sortOrder: 1, cardText: 'Comienza tu visita en español.', cardButton: 'Ver guia' },
   { id: 'lang-en', code: 'en', locale: 'en-GB', name: 'English', nativeName: 'English', flagCode: 'GB', isActive: true, isDefault: false, fallbackLanguageId: 'lang-es', sortOrder: 2, cardText: 'Discover Utrera in English.', cardButton: 'View guide' },
   { id: 'lang-fr', code: 'fr', locale: 'fr-FR', name: 'Frances', nativeName: 'Francais', flagCode: 'FR', isActive: true, isDefault: false, fallbackLanguageId: 'lang-es', sortOrder: 3, cardText: 'Decouvrez Utrera en francais.', cardButton: 'Voir le guide' },
   { id: 'lang-de', code: 'de', locale: 'de-DE', name: 'Aleman', nativeName: 'Deutsch', flagCode: 'DE', isActive: true, isDefault: false, fallbackLanguageId: 'lang-es', sortOrder: 4, cardText: 'Entdecken Sie Utrera auf Deutsch.', cardButton: 'Guide ansehen' }
