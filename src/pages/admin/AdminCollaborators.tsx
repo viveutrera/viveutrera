@@ -271,21 +271,24 @@ export function AdminCollaborators() {
   );
 }
 
-export function CollaboratorFields({ form, languages, mediaAssets, onChange, onTranslationChange }: {
+export function CollaboratorFields({ form, languages, mediaAssets, onChange, onTranslationChange, showMediaField = true }: {
   form: CollaboratorForm;
   languages: LanguageRow[];
   mediaAssets: MediaAssetRow[];
   onChange: (next: CollaboratorForm) => void;
   onTranslationChange: (languageId: string, field: keyof Omit<TranslationForm, 'language_id'>, value: string) => void;
+  showMediaField?: boolean;
 }) {
   return (
     <>
       <div className="admin-form">
         <FormField label="Nombre interno" value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} required />
-        <SelectField label="Logo / imagen" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
-          <option value="">Sin logo</option>
-          {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-        </SelectField>
+        {showMediaField ? (
+          <SelectField label="Logo / imagen" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
+            <option value="">Sin logo</option>
+            {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+          </SelectField>
+        ) : null}
         <FormField label="URL" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} />
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => onChange({ ...form, is_active: event.target.checked })} /> Activo</label>

@@ -187,6 +187,7 @@ export function AdminElementEdit() {
   const [imageUploadFile, setImageUploadFile] = useState<File>();
   const [imageFileInputKey, setImageFileInputKey] = useState(0);
   const [isImageModalOpen, setImageModalOpen] = useState(false);
+  const [imageModalMode, setImageModalMode] = useState<'upload' | 'edit'>('upload');
   const [editingImageId, setEditingImageId] = useState<string>();
   const [imageUploadPreview, setImageUploadPreview] = useState<{
     url?: string;
@@ -328,8 +329,13 @@ export function AdminElementEdit() {
         result: 'success',
         status: editingImageId ? 'Imagen actualizada correctamente.' : 'Imagen subida y asociada correctamente.'
       }));
-      resetImageForm(true);
       await load();
+      if (editingImageId) {
+        setSuccess('Imagen actualizada correctamente.');
+        closeImageModal();
+      } else {
+        resetImageForm(true);
+      }
     } catch (caught) {
       setImageUploadPreview((current) => ({
         ...current,
@@ -459,6 +465,7 @@ export function AdminElementEdit() {
 
   function openNewImageModal() {
     resetImageForm(false);
+    setImageModalMode('upload');
     setImageModalOpen(true);
   }
 
@@ -476,6 +483,7 @@ export function AdminElementEdit() {
     });
     setImageUploadFile(undefined);
     setImageUploadPreview({});
+    setImageModalMode('edit');
     setImageModalOpen(true);
   }
 
@@ -693,7 +701,7 @@ export function AdminElementEdit() {
         images={images}
         isSubmitting={isSubmitting}
         isOpen={isImageModalOpen}
-        isEditing={Boolean(editingImageId)}
+        mode={imageModalMode}
         onChange={setImageForm}
         onUploadFileChange={selectImageUploadFile}
         onOpenNew={openNewImageModal}
@@ -748,7 +756,7 @@ function ElementImagesSection({
   images,
   isSubmitting,
   isOpen,
-  isEditing,
+  mode,
   onChange,
   onUploadFileChange,
   onOpenNew,
@@ -776,7 +784,7 @@ function ElementImagesSection({
   images: ElementImageRow[];
   isSubmitting: boolean;
   isOpen: boolean;
-  isEditing: boolean;
+  mode: 'upload' | 'edit';
   onChange: (next: typeof emptyImage) => void;
   onUploadFileChange: (file?: File) => void;
   onOpenNew: () => void;
@@ -785,6 +793,7 @@ function ElementImagesSection({
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  const isEditing = mode === 'edit';
   return (
     <Card>
       <div className="admin-title-row">

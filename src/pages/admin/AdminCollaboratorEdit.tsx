@@ -7,7 +7,8 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
-import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
+import { mediaUrl } from '../../lib/media';
+import { canUseUploadApi, deleteMediaFiles, uploadMediaFile } from '../../lib/uploadApi';
 import { validateOptionalUrl, validateRequired } from '../../lib/validation';
 import {
   CollaboratorFields,
@@ -101,6 +102,38 @@ export function AdminCollaboratorEdit() {
     }
   }
 
+  async function deleteCurrentLogo() {
+    if (!form?.media_asset_id || !id) return;
+    const asset = mediaAssets.find((item) => item.id === form.media_asset_id);
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
+    try {
+      const nextForm = { ...form, media_asset_id: '' };
+      await adminRepository.saveCollaborator({ id, ...nextForm, name: nextForm.name.trim(), url: nextForm.url.trim(), media_asset_id: null });
+      setForm(nextForm);
+      if (asset?.id && canUseUploadApi()) {
+        const usage = await adminRepository.getMediaAssetUsage(asset.id);
+        const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+        if (totalUsage === 0) {
+          const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+          await deleteMediaFiles(objectKeys);
+          await adminRepository.deleteMediaAsset(asset.id);
+          setMediaAssets((current) => current.filter((item) => item.id !== asset.id));
+          setSuccess('Imagen del colaborador eliminada de R2 y Supabase.');
+        } else {
+          setSuccess('Imagen quitada del colaborador. El archivo sigue en uso en otro contenido.');
+        }
+      } else {
+        setSuccess('Imagen quitada del colaborador.');
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo quitar la imagen del colaborador.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function selectLogoFile(file?: File) {
     if (logoUploadPreview.url) URL.revokeObjectURL(logoUploadPreview.url);
     setLogoFile(file);
@@ -176,7 +209,9 @@ export function AdminCollaboratorEdit() {
         width: prepared.thumbnailWidth,
         height: prepared.thumbnailHeight
       });
-      setForm({ ...form, media_asset_id: saved.id });
+      const nextForm = { ...form, media_asset_id: saved.id };
+      await adminRepository.saveCollaborator({ id, ...nextForm, name: nextForm.name.trim(), url: nextForm.url.trim(), media_asset_id: saved.id });
+      setForm(nextForm);
       setMediaAssets((current) => [...current, {
         id: saved.id,
         object_key: mainResult.asset.object_key,
@@ -186,7 +221,7 @@ export function AdminCollaboratorEdit() {
       }]);
       setLogoFile(undefined);
       setLogoFileInputKey((current) => current + 1);
-      setLogoUploadPreview({ progress: 100, result: 'success', status: 'Logo subido y seleccionado correctamente.' });
+      setLogoUploadPreview({ progress: 100, result: 'success', status: 'Logo subido y guardado correctamente.' });
     } catch (caught) {
       setLogoUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo subir el logo.' });
     } finally {
@@ -215,6 +250,7 @@ export function AdminCollaboratorEdit() {
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura las variables remotas para editar colaboradores reales." />;
   if (isLoading) return <LoadingState />;
   if (!form || !items.some((item) => item.id === id)) return <EmptyState title="Colaborador no encontrado" message="Vuelve al listado y selecciona otro colaborador." />;
+  const currentLogo = mediaAssets.find((asset) => asset.id === form.media_asset_id);
 
   return (
     <section className="admin-section">
@@ -226,9 +262,25 @@ export function AdminCollaboratorEdit() {
       {success ? <div className="state state-success" role="status">{success}</div> : null}
       <Card>
         <form className="stack-form" onSubmit={submit}>
-          <CollaboratorFields form={form} languages={languages} mediaAssets={mediaAssets} onChange={setForm} onTranslationChange={updateTranslation} />
+          <CollaboratorFields form={form} languages={languages} mediaAssets={mediaAssets} onChange={setForm} onTranslationChange={updateTranslation} showMediaField={false} />
+          <div className="current-media-panel">
+            <h2>Imagen del colaborador</h2>
+            {currentLogo ? (
+              <div className="current-media-card">
+                <img src={mediaUrl(currentLogo.object_key)} alt="" loading="lazy" />
+                <div>
+                  <strong>{currentLogo.original_name || currentLogo.object_key}</strong>
+                  <p>{currentLogo.object_key}</p>
+                  <Button type="button" variant="danger" onClick={deleteCurrentLogo} disabled={isSubmitting}>Borrar imagen</Button>
+                </div>
+              </div>
+            ) : (
+              <p className="hint">El colaborador no tiene imagen asociada.</p>
+            )}
+          </div>
           <div className="button-row">
-            <Button type="button" variant="secondary" onClick={() => setLogoModalOpen(true)}>Subir/cambiar imagen</Button>
+            <Button type="button" variant="secondary" onClick={() => setLogoModalOpen(true)} disabled={Boolean(form.media_asset_id) || isSubmitting}>Subir imagen</Button>
+            {form.media_asset_id ? <p className="hint">Borra primero la imagen actual para habilitar la subida de una nueva.</p> : null}
           </div>
           <div className="button-row">
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</Button>
@@ -252,7 +304,7 @@ export function AdminCollaboratorEdit() {
           ) : null}
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={closeLogoModal} disabled={isSubmitting}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir y seleccionar'}</Button>
+            <Button type="submit" disabled={isSubmitting || !canUseUploadApi() || Boolean(form.media_asset_id)}>{isSubmitting ? 'Subiendo...' : 'Subir y seleccionar'}</Button>
           </div>
         </form>
       </Modal>
