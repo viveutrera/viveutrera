@@ -1,4 +1,4 @@
-import { ExternalLink, Image, Link as LinkIcon, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
+import { ExternalLink, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { publicPath } from '../lib/routing';
@@ -11,7 +11,6 @@ const links = [
   { to: '/admin/tipos', label: 'Tipos', icon: Landmark },
   { to: '/admin/elementos', label: 'Elementos', icon: Landmark },
   { to: '/admin/multimedia', label: 'Multimedia', icon: Image },
-  { to: '/admin/enlaces', label: 'Enlaces', icon: LinkIcon },
   { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users }
 ];
 

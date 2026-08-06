@@ -10,8 +10,6 @@ import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
 import { AdminElementTypes } from './pages/admin/AdminElementTypes';
 import { AdminLanguageEdit } from './pages/admin/AdminLanguageEdit';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
-import { AdminLinkEdit } from './pages/admin/AdminLinkEdit';
-import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminMedia } from './pages/admin/AdminMedia';
 import { AdminSettings } from './pages/admin/AdminSettings';
@@ -49,8 +47,6 @@ export function App() {
         <Route path="elementos" element={<AdminElements />} />
         <Route path="elementos/:id" element={<AdminElementEdit />} />
         <Route path="multimedia" element={<AdminMedia />} />
-        <Route path="enlaces" element={<AdminLinks />} />
-        <Route path="enlaces/:id" element={<AdminLinkEdit />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
         <Route path="colaboradores/:id" element={<AdminCollaboratorEdit />} />
       </Route>

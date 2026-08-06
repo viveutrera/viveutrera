@@ -105,6 +105,7 @@ interface ElementAudioRow {
   language_id: string;
   media_asset_id: string;
   title: string;
+  transcript?: string | null;
   sort_order: number;
   is_published: boolean;
   languages?: { code: string } | { code: string }[] | null;
@@ -200,6 +201,17 @@ export function AdminElementEdit() {
     result?: 'success' | 'error';
   }>({});
   const [audioUploadFile, setAudioUploadFile] = useState<File>();
+  const [audioFileInputKey, setAudioFileInputKey] = useState(0);
+  const [isAudioModalOpen, setAudioModalOpen] = useState(false);
+  const [editingAudioId, setEditingAudioId] = useState<string>();
+  const [audioUploadPreview, setAudioUploadPreview] = useState<{
+    originalSize?: number;
+    progress?: number;
+    status?: string;
+    result?: 'success' | 'error';
+  }>({});
+  const [isLinkModalOpen, setLinkModalOpen] = useState(false);
+  const [editingLinkId, setEditingLinkId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -329,30 +341,30 @@ export function AdminElementEdit() {
     }
   }
 
-  async function addAudio(event: FormEvent) {
+  async function saveAudio(event: FormEvent) {
     event.preventDefault();
     if (!id) return;
     const requiredError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.media_asset_id, 'Audio') || validateRequired(audioForm.title, 'Titulo');
     const requiredUploadError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.title, 'Titulo');
-    if (!audioForm.media_asset_id && !audioUploadFile) {
-      setError('Selecciona un audio subido o un fichero nuevo.');
+    if (!editingAudioId && !audioForm.media_asset_id && !audioUploadFile) {
+      setAudioUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona un audio subido o un fichero nuevo.' }));
       return;
     }
     if (audioForm.media_asset_id ? requiredError : requiredUploadError) {
-      setError(audioForm.media_asset_id ? requiredError : requiredUploadError);
+      setAudioUploadPreview((current) => ({ ...current, result: 'error', status: audioForm.media_asset_id ? requiredError : requiredUploadError }));
       return;
     }
     setSubmitting(true);
     setError('');
+    setSuccess('');
     try {
-      const mediaAssetId = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio') : audioForm.media_asset_id;
-      await adminRepository.saveElementAudio({ id: undefined, element_id: id, ...audioForm, media_asset_id: mediaAssetId, title: audioForm.title.trim() });
-      setAudioForm({ ...emptyAudio, language_id: languages[0]?.id ?? '' });
-      setAudioUploadFile(undefined);
-      setSuccess('Audio asociado.');
+      const mediaAssetId = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio', setAudioUploadPreview) : audioForm.media_asset_id;
+      await adminRepository.saveElementAudio({ id: editingAudioId, element_id: id, ...audioForm, media_asset_id: mediaAssetId, title: audioForm.title.trim() });
+      setAudioUploadPreview({ progress: 100, result: 'success', status: editingAudioId ? 'Audio actualizado correctamente.' : 'Audio subido y asociado correctamente.' });
+      resetAudioForm(true);
       await load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No se pudo asociar el audio.');
+      setAudioUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo guardar el audio.' });
     } finally {
       setSubmitting(false);
     }
@@ -406,7 +418,11 @@ export function AdminElementEdit() {
       return saved.id;
     }
 
-    const result = await uploadMediaFile(file, target);
+    onStatus?.((current) => ({ ...current, status: 'Subiendo fichero a R2...' }));
+    const result = await uploadMediaFile(file, target, (progress) => {
+      onStatus?.((current) => ({ ...current, progress, status: `Subiendo fichero: ${progress}%` }));
+    });
+    onStatus?.((current) => ({ ...current, progress: 92, status: 'Guardando metadatos en Supabase...' }));
     const saved = await adminRepository.saveMediaAsset({
       ...result.asset,
       width: null,
@@ -477,7 +493,45 @@ export function AdminElementEdit() {
     setImageUploadPreview({});
   }
 
-  async function addLink(event: FormEvent) {
+  function selectAudioUploadFile(file?: File) {
+    setAudioUploadFile(file);
+    setAudioUploadPreview(file ? { originalSize: file.size, status: 'Fichero preparado para subir.' } : {});
+  }
+
+  function openNewAudioModal() {
+    resetAudioForm(false);
+    setAudioModalOpen(true);
+  }
+
+  function editAudio(audio: ElementAudioRow) {
+    setEditingAudioId(audio.id);
+    setAudioForm({
+      language_id: audio.language_id,
+      media_asset_id: audio.media_asset_id,
+      title: audio.title,
+      transcript: audio.transcript ?? '',
+      sort_order: audio.sort_order,
+      is_published: audio.is_published
+    });
+    setAudioUploadFile(undefined);
+    setAudioUploadPreview({});
+    setAudioModalOpen(true);
+  }
+
+  function resetAudioForm(clearFileInput: boolean) {
+    setAudioForm({ ...emptyAudio, language_id: languages[0]?.id ?? '' });
+    setAudioUploadFile(undefined);
+    setEditingAudioId(undefined);
+    if (clearFileInput) setAudioFileInputKey((current) => current + 1);
+  }
+
+  function closeAudioModal() {
+    setAudioModalOpen(false);
+    resetAudioForm(true);
+    setAudioUploadPreview({});
+  }
+
+  async function saveLink(event: FormEvent) {
     event.preventDefault();
     if (!id) return;
     const requiredError = validateRequired(linkForm.language_id, 'Idioma') || validateRequired(linkForm.title, 'Titulo') || validateRequired(linkForm.url, 'URL') || validateOptionalUrl(linkForm.url, 'La URL');
@@ -488,15 +542,40 @@ export function AdminElementEdit() {
     setSubmitting(true);
     setError('');
     try {
-      await adminRepository.saveLink({ id: undefined, element_id: id, ...linkForm, title: linkForm.title.trim(), url: linkForm.url.trim(), link_type: linkForm.link_type.trim() });
-      setLinkForm({ ...emptyLink, language_id: languages[0]?.id ?? '' });
-      setSuccess('Enlace guardado.');
+      await adminRepository.saveLink({ id: editingLinkId, element_id: id, ...linkForm, title: linkForm.title.trim(), url: linkForm.url.trim(), link_type: linkForm.link_type.trim() });
+      closeLinkModal();
+      setSuccess(editingLinkId ? 'Enlace actualizado.' : 'Enlace guardado.');
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo guardar el enlace.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function openNewLinkModal() {
+    setEditingLinkId(undefined);
+    setLinkForm({ ...emptyLink, language_id: languages[0]?.id ?? '' });
+    setLinkModalOpen(true);
+  }
+
+  function editLink(link: ElementLinkRow) {
+    setEditingLinkId(link.id);
+    setLinkForm({
+      language_id: link.language_id,
+      title: link.title,
+      url: link.url,
+      link_type: link.link_type ?? '',
+      sort_order: link.sort_order,
+      is_published: link.is_published
+    });
+    setLinkModalOpen(true);
+  }
+
+  function closeLinkModal() {
+    setLinkModalOpen(false);
+    setEditingLinkId(undefined);
+    setLinkForm({ ...emptyLink, language_id: languages[0]?.id ?? '' });
   }
 
   async function deleteAssociation(kind: 'image' | 'audio' | 'link', associationId?: string) {
@@ -627,22 +706,34 @@ export function AdminElementEdit() {
         assets={audioAssets}
         form={audioForm}
         uploadFile={audioUploadFile}
+        uploadPreview={audioUploadPreview}
+        fileInputKey={audioFileInputKey}
         audios={audios}
         languages={languages}
         isSubmitting={isSubmitting}
+        isOpen={isAudioModalOpen}
+        isEditing={Boolean(editingAudioId)}
         onChange={setAudioForm}
-        onUploadFileChange={setAudioUploadFile}
+        onUploadFileChange={selectAudioUploadFile}
+        onOpenNew={openNewAudioModal}
+        onEdit={editAudio}
+        onClose={closeAudioModal}
         onDelete={(associationId) => deleteAssociation('audio', associationId)}
-        onSubmit={addAudio}
+        onSubmit={saveAudio}
       />
       <ElementLinksSection
         form={linkForm}
         links={links}
         languages={languages}
         isSubmitting={isSubmitting}
+        isOpen={isLinkModalOpen}
+        isEditing={Boolean(editingLinkId)}
         onChange={setLinkForm}
+        onOpenNew={openNewLinkModal}
+        onEdit={editLink}
+        onClose={closeLinkModal}
         onDelete={(associationId) => deleteAssociation('link', associationId)}
-        onSubmit={addLink}
+        onSubmit={saveLink}
       />
     </section>
   );
@@ -771,90 +862,190 @@ function ElementImagesSection({
   );
 }
 
-function ElementAudiosSection({ assets, form, uploadFile, audios, languages, isSubmitting, onChange, onUploadFileChange, onDelete, onSubmit }: {
+function ElementAudiosSection({
+  assets,
+  form,
+  uploadFile,
+  uploadPreview,
+  fileInputKey,
+  audios,
+  languages,
+  isSubmitting,
+  isOpen,
+  isEditing,
+  onChange,
+  onUploadFileChange,
+  onOpenNew,
+  onEdit,
+  onClose,
+  onDelete,
+  onSubmit
+}: {
   assets: MediaAssetRow[];
   form: typeof emptyAudio;
   uploadFile?: File;
+  uploadPreview: {
+    originalSize?: number;
+    progress?: number;
+    status?: string;
+    result?: 'success' | 'error';
+  };
+  fileInputKey: number;
   audios: ElementAudioRow[];
   languages: LanguageRow[];
   isSubmitting: boolean;
+  isOpen: boolean;
+  isEditing: boolean;
   onChange: (next: typeof emptyAudio) => void;
   onUploadFileChange: (file?: File) => void;
+  onOpenNew: () => void;
+  onEdit: (audio: ElementAudioRow) => void;
+  onClose: () => void;
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
   return (
     <Card>
-      <h2>Audios</h2>
-      <form className="admin-form" onSubmit={onSubmit}>
-        <label className="form-field">
-          <span>Subir nuevo audio</span>
-          <input type="file" accept="audio/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} />
-          {uploadFile ? <small>{uploadFile.name}</small> : null}
-        </label>
-        <SelectField label="Idioma" value={form.language_id} onChange={(event) => onChange({ ...form, language_id: event.target.value })} required>
-          <option value="">Selecciona idioma</option>
-          {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
-        </SelectField>
-        <SelectField label="Audio ya subido" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
-          <option value="">Selecciona audio subido</option>
-          {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-        </SelectField>
-        <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required />
-        <FormField label="Transcripcion" value={form.transcript} onChange={(event) => onChange({ ...form, transcript: event.target.value })} />
-        <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
-        <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} /> Publicado</label>
-        <div className="button-row"><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Subir/asociar audio'}</Button></div>
-      </form>
-      <div className="association-list">
+      <div className="admin-title-row">
+        <h2>Audios</h2>
+        <Button type="button" onClick={onOpenNew}>Subir nuevo audio</Button>
+      </div>
+      <div className="admin-data-table admin-data-table-element-audios" role="table" aria-label="Audios del elemento">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Titulo</span>
+          <span role="columnheader">Idioma</span>
+          <span role="columnheader">Archivo</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader">Acciones</span>
+        </div>
         {audios.map((audio) => {
           const asset = mediaAsset(audio.media_assets);
           return (
-            <div className="association-row" key={audio.id}>
-              <span>{audio.title} - {getCode(audio.languages)} - {asset?.original_name ?? audio.media_asset_id}</span>
-              <button className="icon-button icon-button-danger" type="button" aria-label="Borrar audio" onClick={() => onDelete(audio.id)}><Trash2 size={18} /></button>
+            <div className="admin-data-row" role="row" key={audio.id}>
+              <span role="cell"><strong>{audio.title}</strong></span>
+              <span role="cell">{getCode(audio.languages)}</span>
+              <span role="cell">{asset?.original_name ?? audio.media_asset_id}<small>{asset?.object_key}</small></span>
+              <span role="cell">{audio.sort_order}</span>
+              <span role="cell">{audio.is_published ? 'Publicado' : 'Oculto'}</span>
+              <span role="cell" className="row-actions">
+                <button className="icon-button" type="button" aria-label="Editar audio" onClick={() => onEdit(audio)}><Pencil size={18} /></button>
+                <button className="icon-button icon-button-danger" type="button" aria-label="Borrar audio" onClick={() => onDelete(audio.id)}><Trash2 size={18} /></button>
+              </span>
             </div>
           );
         })}
       </div>
+      <Modal isOpen={isOpen} title={isEditing ? 'Editar audio del elemento' : 'Subir audio al elemento'} onClose={onClose}>
+        <form className="modal-form stack-form" onSubmit={onSubmit}>
+          {!isEditing ? (
+            <label className="form-field">
+              <span>Subir nuevo audio</span>
+              <input key={fileInputKey} type="file" accept="audio/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} disabled={isSubmitting || !canUseUploadApi()} />
+              {uploadFile ? <small>{uploadFile.name}</small> : null}
+            </label>
+          ) : null}
+          <div className="admin-form">
+            <SelectField label="Idioma" value={form.language_id} onChange={(event) => onChange({ ...form, language_id: event.target.value })} required disabled={isSubmitting}>
+              <option value="">Selecciona idioma</option>
+              {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
+            </SelectField>
+            <SelectField label={isEditing ? 'Audio asociado' : 'O selecciona audio ya subido'} value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} disabled={isSubmitting}>
+              <option value="">Selecciona audio subido</option>
+              {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+            </SelectField>
+            <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required disabled={isSubmitting} />
+            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} disabled={isSubmitting} />
+            <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} disabled={isSubmitting} /> Publicado</label>
+          </div>
+          <TextAreaField label="Transcripcion" value={form.transcript} onChange={(event) => onChange({ ...form, transcript: event.target.value })} disabled={isSubmitting} />
+          {uploadFile || uploadPreview.status ? (
+            <div className={`upload-preview-panel ${uploadPreview.result ? `upload-preview-${uploadPreview.result}` : ''}`}>
+              <div className="media-admin-icon">Audio</div>
+              <div>
+                {uploadFile ? <strong>{uploadFile.name}</strong> : null}
+                {uploadPreview.originalSize ? <p>Original: {formatBytes(uploadPreview.originalSize)}</p> : null}
+                {uploadPreview.progress !== undefined ? <progress value={uploadPreview.progress} max="100" aria-label="Progreso de subida" /> : null}
+                {uploadPreview.status ? <p>{uploadPreview.status}</p> : null}
+              </div>
+            </div>
+          ) : null}
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting || (!isEditing && !canUseUploadApi() && !form.media_asset_id)}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar audio'}</Button>
+          </div>
+        </form>
+      </Modal>
     </Card>
   );
 }
 
-function ElementLinksSection({ form, links, languages, isSubmitting, onChange, onDelete, onSubmit }: {
+function ElementLinksSection({ form, links, languages, isSubmitting, isOpen, isEditing, onChange, onOpenNew, onEdit, onClose, onDelete, onSubmit }: {
   form: typeof emptyLink;
   links: ElementLinkRow[];
   languages: LanguageRow[];
   isSubmitting: boolean;
+  isOpen: boolean;
+  isEditing: boolean;
   onChange: (next: typeof emptyLink) => void;
+  onOpenNew: () => void;
+  onEdit: (link: ElementLinkRow) => void;
+  onClose: () => void;
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
   return (
     <Card>
-      <h2>Enlaces</h2>
-      <form className="admin-form" onSubmit={onSubmit}>
-        <SelectField label="Idioma" value={form.language_id} onChange={(event) => onChange({ ...form, language_id: event.target.value })} required>
-          <option value="">Selecciona idioma</option>
-          {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
-        </SelectField>
-        <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required />
-        <FormField label="URL" type="url" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} required />
-        <SelectField label="Tipo" value={form.link_type} onChange={(event) => onChange({ ...form, link_type: event.target.value })}>
-          {linkTypeOptions.map((option) => <option key={option.value || 'general'} value={option.value}>{option.label}</option>)}
-        </SelectField>
-        <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
-        <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} /> Publicado</label>
-        <div className="button-row"><Button type="submit" disabled={isSubmitting}>Guardar enlace</Button></div>
-      </form>
-      <div className="association-list">
+      <div className="admin-title-row">
+        <h2>Enlaces</h2>
+        <Button type="button" onClick={onOpenNew}>Nuevo enlace</Button>
+      </div>
+      <div className="admin-data-table admin-data-table-element-links" role="table" aria-label="Enlaces del elemento">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Titulo</span>
+          <span role="columnheader">Idioma</span>
+          <span role="columnheader">Tipo</span>
+          <span role="columnheader">URL</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader">Acciones</span>
+        </div>
         {links.map((link) => (
-          <div className="association-row" key={link.id}>
-            <span>{link.title} - {getCode(link.languages)} - {link.url}</span>
-            <button className="icon-button icon-button-danger" type="button" aria-label="Borrar enlace" onClick={() => onDelete(link.id)}><Trash2 size={18} /></button>
+          <div className="admin-data-row" role="row" key={link.id}>
+            <span role="cell"><strong>{link.title}</strong></span>
+            <span role="cell">{getCode(link.languages)}</span>
+            <span role="cell">{link.link_type || 'General'}</span>
+            <span role="cell">{link.url}</span>
+            <span role="cell">{link.sort_order}</span>
+            <span role="cell">{link.is_published ? 'Publicado' : 'Oculto'}</span>
+            <span role="cell" className="row-actions">
+              <button className="icon-button" type="button" aria-label="Editar enlace" onClick={() => onEdit(link)}><Pencil size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label="Borrar enlace" onClick={() => onDelete(link.id)}><Trash2 size={18} /></button>
+            </span>
           </div>
         ))}
       </div>
+      <Modal isOpen={isOpen} title={isEditing ? 'Editar enlace' : 'Nuevo enlace'} onClose={onClose}>
+        <form className="modal-form stack-form" onSubmit={onSubmit}>
+          <div className="admin-form">
+            <SelectField label="Idioma" value={form.language_id} onChange={(event) => onChange({ ...form, language_id: event.target.value })} required disabled={isSubmitting}>
+              <option value="">Selecciona idioma</option>
+              {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
+            </SelectField>
+            <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required disabled={isSubmitting} />
+            <FormField label="URL" type="url" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} required disabled={isSubmitting} />
+            <SelectField label="Tipo" value={form.link_type} onChange={(event) => onChange({ ...form, link_type: event.target.value })} disabled={isSubmitting}>
+              {linkTypeOptions.map((option) => <option key={option.value || 'general'} value={option.value}>{option.label}</option>)}
+            </SelectField>
+            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} disabled={isSubmitting} />
+            <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} disabled={isSubmitting} /> Publicado</label>
+          </div>
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Guardar enlace'}</Button>
+          </div>
+        </form>
+      </Modal>
     </Card>
   );
 }
