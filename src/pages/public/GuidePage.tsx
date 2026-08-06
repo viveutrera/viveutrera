@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -85,61 +86,64 @@ export function GuidePage() {
   if (!content) return <LoadingState />;
 
   return (
-    <main className="guide-page">
-      <div className="guide-language-bar">
-        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
-      </div>
-      <header className="guide-header">
-        <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
-          <span>VIVE</span>
-          <span>UTRERA</span>
-        </Link>
-        {content.cityImageObjectKey ? <img className="guide-cover" src={mediaUrl(content.cityImageObjectKey)} alt="" loading="eager" /> : null}
-        <h1>{content.cityTitle}</h1>
-        <p>{content.cityText}</p>
-      </header>
-      {contentLanguage !== language ? (
-        <div className="notice" role="status">
-          No hay elementos publicados en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
+    <>
+      <main className="guide-page">
+        <div className="guide-language-bar">
+          <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
         </div>
-      ) : null}
+        <header className="guide-header">
+          <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
+            <span>VIVE</span>
+            <span>UTRERA</span>
+          </Link>
+          {content.cityImageObjectKey ? <img className="guide-cover" src={mediaUrl(content.cityImageObjectKey)} alt="" loading="eager" /> : null}
+          <h1>{content.cityTitle}</h1>
+          <p>{content.cityText}</p>
+        </header>
+        {contentLanguage !== language ? (
+          <div className="notice" role="status">
+            No hay elementos publicados en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
+          </div>
+        ) : null}
 
-      <section className="guide-tools" aria-label="Filtros">
-        <label className="search-box">
-          <Search size={18} />
-          <span className="sr-only">{t(language, 'search')}</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t(language, 'search')} />
-        </label>
-        <div className="pill-row">
-          {types.map((type) => (
-            <Button key={type.id} type="button" variant={typeId === type.id ? 'primary' : 'secondary'} onClick={() => setTypeId(type.id)}>
-              {type.name[language]}
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      {filtered.length === 0 ? (
-        <EmptyState title={t(language, 'noResults')} message="Prueba con otra busqueda o elimina filtros." />
-      ) : (
-        <section className="element-grid">
-          {filtered.map((element) => {
-            const translation = element.translations[contentLanguage];
-            const cover = element.images.find((image) => image.isCover) ?? element.images[0];
-            return (
-              <Card key={element.id} className="element-card">
-                <Link to={`/guia/${language}/elemento/${element.slug}`} className="element-card-media" aria-label={translation.name}>
-                  {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
-                </Link>
-                <div>
-                  <h2><Link to={`/guia/${language}/elemento/${element.slug}`}>{translation.name}</Link></h2>
-                  <p>{translation.shortText}</p>
-                </div>
-              </Card>
-            );
-          })}
+        <section className="guide-tools" aria-label="Filtros">
+          <label className="search-box">
+            <Search size={18} />
+            <span className="sr-only">{t(language, 'search')}</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t(language, 'search')} />
+          </label>
+          <div className="pill-row">
+            {types.map((type) => (
+              <Button key={type.id} type="button" variant={typeId === type.id ? 'primary' : 'secondary'} onClick={() => setTypeId(type.id)}>
+                {type.name[language]}
+              </Button>
+            ))}
+          </div>
         </section>
-      )}
-    </main>
+
+        {filtered.length === 0 ? (
+          <EmptyState title={t(language, 'noResults')} message="Prueba con otra busqueda o elimina filtros." />
+        ) : (
+          <section className="element-grid">
+            {filtered.map((element) => {
+              const translation = element.translations[contentLanguage];
+              const cover = element.images.find((image) => image.isCover) ?? element.images[0];
+              return (
+                <Card key={element.id} className="element-card">
+                  <Link to={`/guia/${language}/elemento/${element.slug}`} className="element-card-media" aria-label={translation.name}>
+                    {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
+                  </Link>
+                  <div>
+                    <h2><Link to={`/guia/${language}/elemento/${element.slug}`}>{translation.name}</Link></h2>
+                    <p>{translation.shortText}</p>
+                  </div>
+                </Card>
+              );
+            })}
+          </section>
+        )}
+      </main>
+      <PublicFooter />
+    </>
   );
 }

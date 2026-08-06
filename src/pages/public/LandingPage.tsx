@@ -1,7 +1,8 @@
-import { ArrowRight, ExternalLink, Globe2 } from 'lucide-react';
+import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PublicFooter } from '../../components/PublicFooter';
 import { ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/States';
@@ -118,6 +119,32 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="section feature-section" aria-label="Funciones principales">
+          <div className="feature-strip">
+            <article>
+              <span className="feature-icon"><Headphones size={34} /></span>
+              <div>
+                <h2>AUDIOGUÍAS</h2>
+                <p>Recorridos con relatos sonoros para escuchar a tu ritmo.</p>
+              </div>
+            </article>
+            <article>
+              <span className="feature-icon"><Landmark size={34} /></span>
+              <div>
+                <h2>HISTORIA</h2>
+                <p>Un viaje riguroso por los siglos de huella cultural.</p>
+              </div>
+            </article>
+            <article>
+              <span className="feature-icon"><CalendarDays size={34} /></span>
+              <div>
+                <h2>FIESTAS Y TRADICIONES</h2>
+                <p>Mantente al día con nuestras tradiciones más arraigadas.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section className="section section-stone">
           <div className="section-heading">
             <h2>Colaboradores</h2>
@@ -134,6 +161,7 @@ export function LandingPage() {
           </div>
         </section>
       </main>
+      <PublicFooter />
     </>
   );
 }
