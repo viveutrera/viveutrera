@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
@@ -213,6 +214,9 @@ export function AdminElementEdit() {
   }>({});
   const [isLinkModalOpen, setLinkModalOpen] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string>();
+  const [isMainEditing, setMainEditing] = useState(false);
+  const [successModal, setSuccessModal] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'image' | 'audio'; id?: string; label: string }>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -287,6 +291,7 @@ export function AdminElementEdit() {
     setSubmitting(true);
     try {
       await adminRepository.saveElement({ id, ...form, slug: form.slug.trim(), maps_url: form.maps_url.trim() });
+      setMainEditing(false);
       setSuccess('Elemento guardado.');
       await load();
     } catch (caught) {
@@ -333,8 +338,8 @@ export function AdminElementEdit() {
         setSuccess('Imagen actualizada correctamente.');
         closeImageModal();
       } else {
-        setSuccess(uploaded?.summary ?? 'Imagen subida y asociada correctamente.');
         closeImageModal();
+        setSuccessModal(uploaded?.summary ?? 'Imagen subida y asociada correctamente.');
       }
     } catch (caught) {
       setImageUploadPreview((current) => ({
@@ -373,8 +378,8 @@ export function AdminElementEdit() {
         setSuccess('Audio actualizado correctamente.');
         closeAudioModal();
       } else {
-        setSuccess(uploaded?.summary ?? 'Audio subido y asociado correctamente.');
         closeAudioModal();
+        setSuccessModal(uploaded?.summary ?? 'Audio subido y asociado correctamente.');
       }
     } catch (caught) {
       setAudioUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo guardar el audio.' });
@@ -618,6 +623,12 @@ export function AdminElementEdit() {
     }
   }
 
+  async function confirmDeleteAssociation() {
+    if (!pendingDelete) return;
+    await deleteAssociation(pendingDelete.kind, pendingDelete.id);
+    setPendingDelete(undefined);
+  }
+
   async function deleteImageAssociation(associationId: string) {
     const association = images.find((item) => item.id === associationId);
     const asset = mediaAsset(association?.media_assets);
@@ -667,21 +678,21 @@ export function AdminElementEdit() {
       <Card>
         <form className="stack-form" onSubmit={submit}>
           <div className="admin-form">
-            <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required />
-            <SelectField label="Tipo" value={form.element_type_id} onChange={(event) => setForm({ ...form, element_type_id: event.target.value })} required>
+            <FormField label="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} required readOnly={!isMainEditing} />
+            <SelectField label="Tipo" value={form.element_type_id} onChange={(event) => setForm({ ...form, element_type_id: event.target.value })} required disabled={!isMainEditing}>
               <option value="">Selecciona un tipo</option>
               {types.map((type) => (
                 <option key={type.id} value={type.id}>{typeName(type)}</option>
               ))}
             </SelectField>
-            <SelectField label="Estado" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as 'draft' | 'published' })}>
+            <SelectField label="Estado" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as 'draft' | 'published' })} disabled={!isMainEditing}>
               <option value="draft">Borrador</option>
               <option value="published">Publicado</option>
             </SelectField>
-            <FormField label="URL mapa" value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} />
-            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
-            <label className="check-field"><input type="checkbox" checked={form.is_featured} onChange={(event) => setForm({ ...form, is_featured: event.target.checked })} /> Destacado</label>
-            <label className="check-field"><input type="checkbox" checked={form.show_long_text_default} onChange={(event) => setForm({ ...form, show_long_text_default: event.target.checked })} /> Texto largo desplegado por defecto</label>
+            <FormField label="URL mapa" value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} readOnly={!isMainEditing} />
+            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} readOnly={!isMainEditing} />
+            <label className="check-field"><input type="checkbox" checked={form.is_featured} onChange={(event) => setForm({ ...form, is_featured: event.target.checked })} disabled={!isMainEditing} /> Destacado</label>
+            <label className="check-field"><input type="checkbox" checked={form.show_long_text_default} onChange={(event) => setForm({ ...form, show_long_text_default: event.target.checked })} disabled={!isMainEditing} /> Texto largo desplegado por defecto</label>
           </div>
           <div className="translation-grid">
             {languages.map((language) => {
@@ -689,18 +700,22 @@ export function AdminElementEdit() {
               return (
                 <fieldset className="translation-panel" key={language.id}>
                   <legend>{language.native_name}</legend>
-                  <FormField label="Nombre" value={translation.name} onChange={(event) => updateTranslation(language.id, 'name', event.target.value)} required={language.code === 'es'} />
-                  <TextAreaField label="Texto corto" value={translation.short_text} onChange={(event) => updateTranslation(language.id, 'short_text', event.target.value)} required={language.code === 'es'} />
-                  <TextAreaField label="Texto largo" value={translation.long_text} onChange={(event) => updateTranslation(language.id, 'long_text', event.target.value)} />
-                  <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => updateTranslation(language.id, 'seo_title', event.target.value)} />
-                  <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => updateTranslation(language.id, 'seo_description', event.target.value)} />
-                  <label className="check-field"><input type="checkbox" checked={translation.is_published} onChange={(event) => updateTranslation(language.id, 'is_published', event.target.checked)} /> Publicada</label>
+                  <FormField label="Nombre" value={translation.name} onChange={(event) => updateTranslation(language.id, 'name', event.target.value)} required={language.code === 'es'} readOnly={!isMainEditing} />
+                  <TextAreaField label="Texto corto" value={translation.short_text} onChange={(event) => updateTranslation(language.id, 'short_text', event.target.value)} required={language.code === 'es'} readOnly={!isMainEditing} />
+                  <TextAreaField label="Texto largo" value={translation.long_text} onChange={(event) => updateTranslation(language.id, 'long_text', event.target.value)} readOnly={!isMainEditing} />
+                  <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => updateTranslation(language.id, 'seo_title', event.target.value)} readOnly={!isMainEditing} />
+                  <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => updateTranslation(language.id, 'seo_description', event.target.value)} readOnly={!isMainEditing} />
+                  <label className="check-field"><input type="checkbox" checked={translation.is_published} onChange={(event) => updateTranslation(language.id, 'is_published', event.target.checked)} disabled={!isMainEditing} /> Publicada</label>
                 </fieldset>
               );
             })}
           </div>
           <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</Button>
+            {!isMainEditing ? (
+              <Button type="button" onClick={() => setMainEditing(true)} disabled={isSubmitting}>Editar</Button>
+            ) : (
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</Button>
+            )}
           </div>
         </form>
       </Card>
@@ -718,7 +733,7 @@ export function AdminElementEdit() {
         onOpenNew={openNewImageModal}
         onEdit={editImage}
         onClose={closeImageModal}
-        onDelete={(associationId) => deleteAssociation('image', associationId)}
+        onDelete={(associationId) => setPendingDelete({ kind: 'image', id: associationId, label: 'imagen' })}
         onSubmit={saveImage}
       />
       <ElementAudiosSection
@@ -736,7 +751,7 @@ export function AdminElementEdit() {
         onOpenNew={openNewAudioModal}
         onEdit={editAudio}
         onClose={closeAudioModal}
-        onDelete={(associationId) => deleteAssociation('audio', associationId)}
+        onDelete={(associationId) => setPendingDelete({ kind: 'audio', id: associationId, label: 'audio' })}
         onSubmit={saveAudio}
       />
       <ElementLinksSection
@@ -753,6 +768,20 @@ export function AdminElementEdit() {
         onDelete={(associationId) => deleteAssociation('link', associationId)}
         onSubmit={saveLink}
       />
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title={`Borrar ${pendingDelete?.label ?? 'archivo'}`}
+        message={`Se borrara este ${pendingDelete?.label ?? 'archivo'} del elemento y, si el archivo no se usa en otro sitio, tambien se eliminara de R2.`}
+        confirmLabel="Borrar"
+        onCancel={() => setPendingDelete(undefined)}
+        onConfirm={confirmDeleteAssociation}
+      />
+      <Modal title="Subida completada" isOpen={Boolean(successModal)} onClose={() => setSuccessModal('')}>
+        <p>{successModal}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
+        </div>
+      </Modal>
     </section>
   );
 }

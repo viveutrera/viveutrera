@@ -918,6 +918,14 @@ p { line-height: 1.65; }
 .admin-data-row:first-child {
   border-top: 0;
 }
+.admin-data-row-clickable {
+  cursor: pointer;
+}
+.admin-data-row-clickable:hover,
+.admin-data-row-clickable:focus-visible {
+  background: rgba(216, 199, 166, 0.16);
+  outline: none;
+}
 .admin-data-head {
   background: #f1ebe0;
   color: var(--color-primary);

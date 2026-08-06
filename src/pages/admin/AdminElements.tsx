@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -7,6 +7,7 @@ import { FormField, SelectField, TextAreaField } from '../../components/ui/FormF
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { canUseUploadApi, deleteMediaFiles } from '../../lib/uploadApi';
 import { matchesSearch, slugify, validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
@@ -43,6 +44,29 @@ interface ElementRow {
   show_long_text_default?: boolean;
   sort_order: number;
   element_translations?: ElementTranslationRow[];
+}
+
+interface MediaAssetRow {
+  id: string;
+  object_key: string;
+  media_variants?: Array<{ object_key: string }> | null;
+}
+
+interface ElementImageRow {
+  id?: string;
+  element_id: string;
+  media_assets?: MediaAssetRow | MediaAssetRow[] | null;
+}
+
+interface ElementAudioRow {
+  id?: string;
+  element_id: string;
+  media_assets?: MediaAssetRow | MediaAssetRow[] | null;
+}
+
+interface ElementLinkRow {
+  id?: string;
+  element_id: string;
 }
 
 interface TranslationForm {
@@ -178,7 +202,7 @@ export function AdminElements() {
     setError('');
     setSuccess('');
     try {
-      await adminRepository.deleteElement(deleteId);
+      await deleteElementWithAssociations(deleteId);
       setDeleteId(undefined);
       setSuccess('Elemento borrado.');
       await load();
@@ -187,6 +211,42 @@ export function AdminElements() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function deleteElementWithAssociations(elementId: string) {
+    const [imageRows, audioRows, linkRows] = await Promise.all([
+      adminRepository.listElementImages(),
+      adminRepository.listElementAudios(),
+      adminRepository.listLinks()
+    ]);
+    const elementImages = (imageRows as unknown as ElementImageRow[]).filter((item) => item.element_id === elementId);
+    const elementAudios = (audioRows as unknown as ElementAudioRow[]).filter((item) => item.element_id === elementId);
+    const elementLinks = (linkRows as unknown as ElementLinkRow[]).filter((item) => item.element_id === elementId);
+
+    for (const link of elementLinks) {
+      if (link.id) await adminRepository.deleteLink(link.id);
+    }
+    for (const image of elementImages) {
+      const asset = mediaAsset(image.media_assets);
+      if (image.id) await adminRepository.deleteElementImage(image.id);
+      if (asset?.id) await deleteUnusedMediaAsset(asset);
+    }
+    for (const audio of elementAudios) {
+      const asset = mediaAsset(audio.media_assets);
+      if (audio.id) await adminRepository.deleteElementAudio(audio.id);
+      if (asset?.id) await deleteUnusedMediaAsset(asset);
+    }
+    await adminRepository.deleteElement(elementId);
+  }
+
+  async function deleteUnusedMediaAsset(asset: MediaAssetRow) {
+    if (!asset.id || !canUseUploadApi()) return;
+    const usage = await adminRepository.getMediaAssetUsage(asset.id);
+    const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+    if (totalUsage > 0) return;
+    const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+    await deleteMediaFiles(objectKeys);
+    await adminRepository.deleteMediaAsset(asset.id);
   }
 
   const filteredItems = items.filter((item) => {
@@ -240,15 +300,29 @@ export function AdminElements() {
           <span role="columnheader" aria-label="Acciones" />
         </div>
         {filteredItems.map((item) => (
-          <div className="admin-data-row" role="row" key={item.id}>
+          <div
+            className="admin-data-row admin-data-row-clickable"
+            role="row"
+            tabIndex={0}
+            key={item.id}
+            onClick={() => navigate(`/admin/elementos/${item.id}`)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                navigate(`/admin/elementos/${item.id}`);
+              }
+            }}
+          >
             <span role="cell"><strong>{elementName(item)}</strong><small>{item.is_featured ? 'Destacado' : 'Normal'}</small></span>
             <span role="cell">{item.slug}</span>
             <span role="cell">{typeName(types.find((type) => type.id === item.element_type_id))}</span>
             <span role="cell">{item.status === 'published' ? 'Publicado' : 'Borrador'}</span>
             <span role="cell">{item.sort_order}</span>
             <span className="row-actions" role="cell">
-              <button className="icon-button" type="button" aria-label={`Editar ${item.slug}`} onClick={() => navigate(`/admin/elementos/${item.id}`)}><Pencil size={18} /></button>
-              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.slug}`} onClick={() => setDeleteId(item.id)}><Trash2 size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.slug}`} onClick={(event) => {
+                event.stopPropagation();
+                setDeleteId(item.id);
+              }}><Trash2 size={18} /></button>
             </span>
           </div>
         ))}
@@ -325,6 +399,10 @@ function getCode(relation: { code: string } | { code: string }[] | null | undefi
 
 function typeName(type?: TypeRow) {
   return type?.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? type?.slug ?? 'Sin tipo';
+}
+
+function mediaAsset(relation: MediaAssetRow | MediaAssetRow[] | null | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation;
 }
 
 function elementName(element: ElementRow) {

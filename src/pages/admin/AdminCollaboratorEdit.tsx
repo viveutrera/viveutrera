@@ -44,6 +44,7 @@ export function AdminCollaboratorEdit() {
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [successModal, setSuccessModal] = useState('');
 
   useEffect(() => {
     if (!canUseSupabase()) {
@@ -222,11 +223,8 @@ export function AdminCollaboratorEdit() {
       setLogoFile(undefined);
       setLogoFileInputKey((current) => current + 1);
       setLogoUploadPreview({ progress: 100, result: 'success', status: 'Logo subido y guardado correctamente.' });
-      setSuccess(`Imagen subida correctamente: ${prepared.mainFile.name}. Original: ${formatBytes(logoFile.size)}. Optimizada: ${formatBytes(prepared.mainFile.size)}. Miniatura: ${formatBytes(prepared.thumbnailFile.size)}.`);
-      window.setTimeout(() => {
-        setLogoModalOpen(false);
-        setLogoUploadPreview({});
-      }, 900);
+      closeLogoModal();
+      setSuccessModal(`Imagen subida correctamente: ${prepared.mainFile.name}. Original: ${formatBytes(logoFile.size)}. Optimizada: ${formatBytes(prepared.mainFile.size)}. Miniatura: ${formatBytes(prepared.thumbnailFile.size)}.`);
     } catch (caught) {
       setLogoUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo subir el logo.' });
     } finally {
@@ -312,6 +310,12 @@ export function AdminCollaboratorEdit() {
             <Button type="submit" disabled={isSubmitting || !canUseUploadApi() || Boolean(form.media_asset_id)}>{isSubmitting ? 'Subiendo...' : 'Subir y seleccionar'}</Button>
           </div>
         </form>
+      </Modal>
+      <Modal title="Subida completada" isOpen={Boolean(successModal)} onClose={() => setSuccessModal('')}>
+        <p>{successModal}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
+        </div>
       </Modal>
     </section>
   );
