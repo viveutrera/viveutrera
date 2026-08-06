@@ -153,6 +153,18 @@ export function AdminMedia() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [uploadTarget, setUploadTarget] = useState('element-image');
   const [uploadFile, setUploadFile] = useState<File>();
+  const [uploadPreview, setUploadPreview] = useState<{
+    url?: string;
+    originalSize?: number;
+    optimizedSize?: number;
+    thumbnailSize?: number;
+    width?: number;
+    height?: number;
+    durationSeconds?: number;
+    progress?: number;
+    warnings?: string[];
+    status?: string;
+  }>({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -233,11 +245,24 @@ export function AdminMedia() {
     setSubmitting(true);
     try {
       if (uploadFile.type.startsWith('image/')) {
+        setUploadPreview((current) => ({ ...current, status: 'Optimizando imagen en el navegador...' }));
         const prepared = await prepareImageUpload(uploadFile);
-        const [mainResult, thumbnailResult] = await Promise.all([
-          uploadMediaFile(prepared.mainFile, uploadTarget),
-          uploadMediaFile(prepared.thumbnailFile, uploadTarget)
-        ]);
+        setUploadPreview((current) => ({
+          ...current,
+          optimizedSize: prepared.mainFile.size,
+          thumbnailSize: prepared.thumbnailFile.size,
+          width: prepared.width,
+          height: prepared.height,
+          warnings: prepared.warnings,
+          status: 'Subiendo imagen principal y miniatura a R2...'
+        }));
+        const mainResult = await uploadMediaFile(prepared.mainFile, uploadTarget, (progress) => {
+          setUploadPreview((current) => ({ ...current, progress: Math.round(progress * 0.7), status: `Subiendo imagen principal: ${progress}%` }));
+        });
+        const thumbnailResult = await uploadMediaFile(prepared.thumbnailFile, uploadTarget, (progress) => {
+          setUploadPreview((current) => ({ ...current, progress: 70 + Math.round(progress * 0.2), status: `Subiendo miniatura: ${progress}%` }));
+        });
+        setUploadPreview((current) => ({ ...current, status: 'Guardando metadatos en Supabase...' }));
         const saved = await adminRepository.saveMediaAsset({
           ...mainResult.asset,
           mime_type: prepared.mainFile.type,
@@ -257,7 +282,10 @@ export function AdminMedia() {
         });
         setSuccess(`Imagen optimizada: ${Math.round(prepared.mainFile.size / 1024)} KB y miniatura: ${Math.round(prepared.thumbnailFile.size / 1024)} KB.`);
       } else {
-        const result = await uploadMediaFile(uploadFile, uploadTarget);
+        setUploadPreview((current) => ({ ...current, status: 'Subiendo fichero a R2...' }));
+        const result = await uploadMediaFile(uploadFile, uploadTarget, (progress) => {
+          setUploadPreview((current) => ({ ...current, progress, status: `Subiendo fichero: ${progress}%` }));
+        });
         await adminRepository.saveMediaAsset({
           ...result.asset,
           width: null,
@@ -267,11 +295,47 @@ export function AdminMedia() {
         setSuccess(`Fichero subido y registrado: ${result.asset.object_key}`);
       }
       setUploadFile(undefined);
+      setUploadPreview({});
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el fichero.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function selectUploadFile(file?: File) {
+    if (uploadPreview.url) URL.revokeObjectURL(uploadPreview.url);
+    setUploadFile(file);
+    if (!file) {
+      setUploadPreview({});
+      return;
+    }
+
+    const nextPreview = {
+      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      originalSize: file.size,
+      status: 'Fichero preparado para subir.'
+    };
+    setUploadPreview(nextPreview);
+
+    if (file.type.startsWith('image/')) {
+      try {
+        const bitmap = await createImageBitmap(file);
+        setUploadPreview((current) => ({ ...current, width: bitmap.width, height: bitmap.height }));
+        bitmap.close();
+      } catch {
+        setUploadPreview((current) => ({ ...current, status: 'No se pudieron leer las dimensiones de la imagen.' }));
+      }
+    }
+
+    if (file.type.startsWith('audio/')) {
+      try {
+        const durationSeconds = await readAudioDuration(file);
+        setUploadPreview((current) => ({ ...current, durationSeconds }));
+      } catch {
+        setUploadPreview((current) => ({ ...current, status: 'No se pudo leer la duracion del audio.' }));
+      }
     }
   }
 
@@ -493,13 +557,26 @@ export function AdminMedia() {
             <option value="collaborator">Logo colaborador</option>
             <option value="site">General del sitio</option>
           </SelectField>
-          <FormField label="Fichero" type="file" onChange={(event) => setUploadFile(event.target.files?.[0])} disabled={!canUseUploadApi()} />
+          <FormField label="Fichero" type="file" onChange={(event) => selectUploadFile(event.target.files?.[0])} disabled={!canUseUploadApi()} />
           <div className="button-row">
             <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir a R2'}</Button>
           </div>
           <p className="hint">Las imagenes se convierten a WebP: version principal hasta 300 KB y miniatura hasta 50 KB.</p>
           {!canUseUploadApi() ? <p className="hint">Configura VITE_UPLOAD_API_URL y despliega el Worker para activar la subida directa.</p> : null}
         </form>
+        {uploadFile ? (
+          <div className="upload-preview-panel">
+            {uploadPreview.url ? <img src={uploadPreview.url} alt="" /> : <div className="media-admin-icon">{uploadFile.type || 'archivo'}</div>}
+            <div>
+              <strong>{uploadFile.name}</strong>
+              <p>Original: {formatBytes(uploadPreview.originalSize ?? uploadFile.size)}{uploadPreview.width && uploadPreview.height ? ` - ${uploadPreview.width} x ${uploadPreview.height}px` : ''}{uploadPreview.durationSeconds ? ` - ${formatDuration(uploadPreview.durationSeconds)}` : ''}</p>
+              {uploadPreview.optimizedSize ? <p>Optimizada: {formatBytes(uploadPreview.optimizedSize)} - miniatura: {formatBytes(uploadPreview.thumbnailSize ?? 0)}</p> : null}
+              {uploadPreview.warnings?.map((warning) => <p key={warning} className="warning-text">{warning}</p>)}
+              {uploadPreview.progress !== undefined ? <progress value={uploadPreview.progress} max="100" aria-label="Progreso de subida" /> : null}
+              {uploadPreview.status ? <p>{uploadPreview.status}</p> : null}
+            </div>
+          </div>
+        ) : null}
       </Card>
       <Card>
         <form className="stack-form" onSubmit={saveImageAssociation}>
@@ -722,4 +799,34 @@ function relationSlug(relation: { slug: string } | { slug: string }[] | null | u
 
 function relationAsset(relation: MediaAssetRow | MediaAssetRow[] | null | undefined) {
   return Array.isArray(relation) ? relation[0] : relation;
+}
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function formatDuration(seconds: number) {
+  const total = Math.round(seconds);
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
+function readAudioDuration(file: File) {
+  return new Promise<number>((resolve, reject) => {
+    const audio = document.createElement('audio');
+    const url = URL.createObjectURL(file);
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(audio.duration);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo leer el audio.'));
+    };
+    audio.src = url;
+  });
 }

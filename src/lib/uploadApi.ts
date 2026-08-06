@@ -21,7 +21,7 @@ export function canUseUploadApi() {
   return Boolean(import.meta.env.VITE_UPLOAD_API_URL && supabase);
 }
 
-export async function uploadMediaFile(file: File, target: string): Promise<UploadResponse> {
+export async function uploadMediaFile(file: File, target: string, onProgress?: (percent: number) => void): Promise<UploadResponse> {
   if (!supabase) throw new Error('Supabase no esta configurado.');
   const uploadApiUrl = String(import.meta.env.VITE_UPLOAD_API_URL || '').replace(/\/$/, '');
   if (!uploadApiUrl) throw new Error('Falta configurar VITE_UPLOAD_API_URL.');
@@ -33,6 +33,10 @@ export async function uploadMediaFile(file: File, target: string): Promise<Uploa
   const formData = new FormData();
   formData.append('file', file);
   formData.append('target', target);
+
+  if (onProgress) {
+    return uploadWithProgress(`${uploadApiUrl}/upload`, token, formData, onProgress);
+  }
 
   const response = await fetch(`${uploadApiUrl}/upload`, {
     method: 'POST',
@@ -49,6 +53,40 @@ export async function uploadMediaFile(file: File, target: string): Promise<Uploa
 
   if (!payload || !('asset' in payload)) throw new Error('Respuesta invalida del Worker.');
   return payload;
+}
+
+function uploadWithProgress(url: string, token: string, formData: FormData, onProgress: (percent: number) => void) {
+  return new Promise<UploadResponse>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('POST', url);
+    request.setRequestHeader('Authorization', `Bearer ${token}`);
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onload = () => {
+      const payload = parseJson(request.responseText);
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(payload && 'error' in payload && payload.error ? String(payload.error) : 'No se pudo subir el fichero.'));
+        return;
+      }
+      if (!payload || !('asset' in payload)) {
+        reject(new Error('Respuesta invalida del Worker.'));
+        return;
+      }
+      onProgress(100);
+      resolve(payload as UploadResponse);
+    };
+    request.onerror = () => reject(new Error('No se pudo conectar con el Worker de subida.'));
+    request.send(formData);
+  });
+}
+
+function parseJson(value: string) {
+  try {
+    return JSON.parse(value) as { error?: string } | UploadResponse;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function deleteMediaFiles(objectKeys: string[]): Promise<DeleteResponse> {

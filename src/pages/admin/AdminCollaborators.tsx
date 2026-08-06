@@ -1,28 +1,31 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { mediaUrl } from '../../lib/media';
+import { canUseUploadApi, deleteMediaFiles } from '../../lib/uploadApi';
 import { matchesSearch, validateOptionalUrl, validateRequired } from '../../lib/validation';
 
-interface LanguageRow {
+export interface LanguageRow {
   id: string;
   code: string;
   native_name: string;
   sort_order: number;
 }
 
-interface CollaboratorTranslationRow {
+export interface CollaboratorTranslationRow {
   display_name: string;
   thank_you_text?: string | null;
   language_id?: string;
   languages?: { code: string } | { code: string }[] | null;
 }
 
-interface CollaboratorRow {
+export interface CollaboratorRow {
   id?: string;
   name: string;
   media_asset_id?: string | null;
@@ -33,20 +36,21 @@ interface CollaboratorRow {
   collaborator_translations?: CollaboratorTranslationRow[];
 }
 
-interface MediaAssetRow {
+export interface MediaAssetRow {
   id: string;
   object_key: string;
   media_type: string;
   original_name: string;
+  media_variants?: Array<{ object_key: string }> | null;
 }
 
-interface TranslationForm {
+export interface TranslationForm {
   language_id: string;
   display_name: string;
   thank_you_text: string;
 }
 
-interface CollaboratorForm {
+export interface CollaboratorForm {
   name: string;
   media_asset_id: string;
   url: string;
@@ -67,11 +71,12 @@ const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
 });
 
 export function AdminCollaborators() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<CollaboratorRow[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<CollaboratorForm>(emptyCollaborator([]));
-  const [editingId, setEditingId] = useState<string>();
+  const [isCreateOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -120,8 +125,9 @@ export function AdminCollaborators() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveCollaborator({ id: editingId, ...form, name: form.name.trim(), url: form.url.trim(), media_asset_id: form.media_asset_id || null });
+      await adminRepository.saveCollaborator({ id: undefined, ...form, name: form.name.trim(), url: form.url.trim(), media_asset_id: form.media_asset_id || null });
       resetForm();
+      setCreateOpen(false);
       setSuccess('Colaborador guardado.');
       await load();
     } catch (caught) {
@@ -131,31 +137,9 @@ export function AdminCollaborators() {
     }
   }
 
-  function edit(item: CollaboratorRow) {
-    setError('');
-    setSuccess('');
-    setEditingId(item.id);
-    setForm({
-      name: item.name,
-      media_asset_id: item.media_asset_id ?? '',
-      url: item.url ?? '',
-      sort_order: item.sort_order,
-      is_active: item.is_active,
-      is_special: item.is_special,
-      translations: languages.map((language) => {
-        const saved = item.collaborator_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
-        return {
-          language_id: language.id,
-          display_name: saved?.display_name ?? '',
-          thank_you_text: saved?.thank_you_text ?? ''
-        };
-      })
-    });
-  }
-
   function resetForm() {
-    setEditingId(undefined);
     setForm(emptyCollaborator(languages));
+    setCreateOpen(false);
     setError('');
   }
 
@@ -170,11 +154,22 @@ export function AdminCollaborators() {
 
   async function confirmDelete() {
     if (!deleteId) return;
+    const collaborator = items.find((item) => item.id === deleteId);
+    const asset = mediaAssets.find((item) => item.id === collaborator?.media_asset_id);
     setSubmitting(true);
     setError('');
     setSuccess('');
     try {
       await adminRepository.deleteCollaborator(deleteId);
+      if (asset?.id && canUseUploadApi()) {
+        const usage = await adminRepository.getMediaAssetUsage(asset.id);
+        const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+        if (totalUsage === 0) {
+          const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+          await deleteMediaFiles(objectKeys);
+          await adminRepository.deleteMediaAsset(asset.id);
+        }
+      }
       setDeleteId(undefined);
       setSuccess('Colaborador borrado.');
       await load();
@@ -205,37 +200,6 @@ export function AdminCollaborators() {
       <h1>Colaboradores</h1>
       {error ? <ErrorState message={error} /> : null}
       {success ? <div className="state state-success" role="status">{success}</div> : null}
-      <Card>
-        <form className="stack-form" onSubmit={submit}>
-          <div className="admin-form">
-            <FormField label="Nombre interno" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-            <SelectField label="Logo / imagen" value={form.media_asset_id} onChange={(event) => setForm({ ...form, media_asset_id: event.target.value })}>
-              <option value="">Sin logo</option>
-              {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-            </SelectField>
-            <FormField label="URL" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
-            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
-            <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /> Activo</label>
-            <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => setForm({ ...form, is_special: event.target.checked })} /> Especial</label>
-          </div>
-          <div className="translation-grid">
-            {languages.map((language) => {
-              const translation = form.translations.find((item) => item.language_id === language.id) ?? { language_id: language.id, display_name: '', thank_you_text: '' };
-              return (
-                <fieldset className="translation-panel" key={language.id}>
-                  <legend>{language.native_name}</legend>
-                  <FormField label="Nombre visible" value={translation.display_name} onChange={(event) => updateTranslation(language.id, 'display_name', event.target.value)} required={language.code === 'es'} />
-                  <TextAreaField label="Agradecimiento" value={translation.thank_you_text} onChange={(event) => updateTranslation(language.id, 'thank_you_text', event.target.value)} />
-                </fieldset>
-              );
-            })}
-          </div>
-          <div className="button-row">
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear colaborador'}</Button>
-            {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button> : null}
-          </div>
-        </form>
-      </Card>
       <div className="admin-tools">
         <label className="search-box">
           <span className="sr-only">Buscar colaboradores</span>
@@ -251,28 +215,50 @@ export function AdminCollaborators() {
           <option value="special">Especiales</option>
           <option value="general">Generales</option>
         </select>
+        <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear colaborador</Button>
       </div>
-      <div className="admin-table">
+      <div className="admin-data-table admin-data-table-collaborators" role="table" aria-label="Colaboradores">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader">Logo</span>
+          <span role="columnheader">URL</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader">Estado</span>
+          <span role="columnheader" aria-label="Acciones" />
+        </div>
         {filteredItems.map((item) => {
           const es = item.collaborator_translations?.find((translation) => getCode(translation.languages) === 'es');
           const media = mediaAssets.find((asset) => asset.id === item.media_asset_id);
           return (
-            <Card key={item.id}>
-              <div className="media-admin-row">
-                {media ? <img src={mediaUrl(media.object_key)} alt="" loading="lazy" /> : <div className="media-admin-icon">sin logo</div>}
-                <div>
-                  <h2>{es?.display_name ?? item.name}</h2>
-                  <p>{item.is_active ? 'Activo' : 'Inactivo'} - {item.is_special ? 'Especial' : 'General'}{media ? ` - ${media.original_name || media.object_key}` : ''}</p>
-                </div>
-              </div>
-              <div className="table-actions">
-                <Button type="button" variant="secondary" onClick={() => edit(item)}>Editar</Button>
-                <Button type="button" variant="danger" onClick={() => setDeleteId(item.id)}>Borrar</Button>
-              </div>
-            </Card>
+            <div className="admin-data-row" role="row" key={item.id}>
+              <span role="cell"><strong>{es?.display_name ?? item.name}</strong><small>{item.is_special ? 'Especial' : 'General'}</small></span>
+              <span role="cell">{media ? <img className="admin-table-thumb" src={mediaUrl(media.object_key)} alt="" loading="lazy" /> : 'Sin logo'}</span>
+              <span role="cell">{item.url || 'Sin enlace'}</span>
+              <span role="cell">{item.sort_order}</span>
+              <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
+              <span className="row-actions" role="cell">
+                <button className="icon-button" type="button" aria-label={`Editar ${item.name}`} onClick={() => navigate(`/admin/colaboradores/${item.id}`)}><Pencil size={18} /></button>
+                <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.name}`} onClick={() => setDeleteId(item.id)}><Trash2 size={18} /></button>
+              </span>
+            </div>
           );
         })}
       </div>
+      <Modal title="Crear colaborador" isOpen={isCreateOpen} onClose={resetForm}>
+        <form className="stack-form modal-form" onSubmit={submit}>
+          <CollaboratorFields
+            form={form}
+            languages={languages}
+            mediaAssets={mediaAssets}
+            onChange={setForm}
+            onTranslationChange={updateTranslation}
+          />
+          <div className="modal-actions">
+            <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+          </div>
+        </form>
+      </Modal>
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar colaborador"
@@ -282,6 +268,42 @@ export function AdminCollaborators() {
         onConfirm={confirmDelete}
       />
     </section>
+  );
+}
+
+export function CollaboratorFields({ form, languages, mediaAssets, onChange, onTranslationChange }: {
+  form: CollaboratorForm;
+  languages: LanguageRow[];
+  mediaAssets: MediaAssetRow[];
+  onChange: (next: CollaboratorForm) => void;
+  onTranslationChange: (languageId: string, field: keyof Omit<TranslationForm, 'language_id'>, value: string) => void;
+}) {
+  return (
+    <>
+      <div className="admin-form">
+        <FormField label="Nombre interno" value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} required />
+        <SelectField label="Logo / imagen" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
+          <option value="">Sin logo</option>
+          {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+        </SelectField>
+        <FormField label="URL" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} />
+        <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
+        <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => onChange({ ...form, is_active: event.target.checked })} /> Activo</label>
+        <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => onChange({ ...form, is_special: event.target.checked })} /> Especial</label>
+      </div>
+      <div className="translation-grid">
+        {languages.map((language) => {
+          const translation = form.translations.find((item) => item.language_id === language.id) ?? { language_id: language.id, display_name: '', thank_you_text: '' };
+          return (
+            <fieldset className="translation-panel" key={language.id}>
+              <legend>{language.native_name}</legend>
+              <FormField label="Nombre visible" value={translation.display_name} onChange={(event) => onTranslationChange(language.id, 'display_name', event.target.value)} required={language.code === 'es'} />
+              <TextAreaField label="Agradecimiento" value={translation.thank_you_text} onChange={(event) => onTranslationChange(language.id, 'thank_you_text', event.target.value)} />
+            </fieldset>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

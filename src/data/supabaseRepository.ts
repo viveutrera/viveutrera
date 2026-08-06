@@ -643,7 +643,7 @@ export const adminRepository = {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('element_images')
-      .select('id, element_id, media_asset_id, is_cover, sort_order, elements(slug), media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), element_image_translations(id, title, alt_text, caption, language_id, languages(code))')
+      .select('id, element_id, media_asset_id, is_cover, sort_order, elements(slug), media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(id, title, alt_text, caption, language_id, languages(code))')
       .order('sort_order');
     if (error) throw error;
     return data ?? [];

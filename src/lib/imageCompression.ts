@@ -1,6 +1,7 @@
 export interface PreparedImageUpload {
   mainFile: File;
   thumbnailFile: File;
+  warnings: string[];
   width: number;
   height: number;
   thumbnailWidth: number;
@@ -14,20 +15,26 @@ export async function prepareImageUpload(file: File): Promise<PreparedImageUploa
   const bitmap = await createImageBitmap(file);
 
   try {
+    const warnings: string[] = [];
     const main = await renderCompressed(bitmap, {
       filename: withSuffix(file.name, 'web'),
       maxBytes: mainMaxBytes,
-      maxDimension: 1800
+      maxDimension: 1800,
+      label: 'imagen principal'
     });
     const thumbnail = await renderCompressed(bitmap, {
       filename: withSuffix(file.name, 'thumb'),
       maxBytes: thumbnailMaxBytes,
-      maxDimension: 520
+      maxDimension: 520,
+      label: 'miniatura'
     });
+    if (main.warning) warnings.push(main.warning);
+    if (thumbnail.warning) warnings.push(thumbnail.warning);
 
     return {
       mainFile: main.file,
       thumbnailFile: thumbnail.file,
+      warnings,
       width: main.width,
       height: main.height,
       thumbnailWidth: thumbnail.width,
@@ -40,7 +47,7 @@ export async function prepareImageUpload(file: File): Promise<PreparedImageUploa
 
 async function renderCompressed(
   bitmap: ImageBitmap,
-  options: { filename: string; maxBytes: number; maxDimension: number }
+  options: { filename: string; maxBytes: number; maxDimension: number; label: string }
 ) {
   let maxDimension = options.maxDimension;
   let lastBlob: Blob | undefined;
@@ -85,14 +92,13 @@ async function renderCompressed(
   }
 
   if (!lastBlob) throw new Error('No se pudo comprimir la imagen.');
-  if (lastBlob.size > options.maxBytes) {
-    throw new Error(`No se pudo reducir la imagen por debajo de ${Math.round(options.maxBytes / 1024)} KB.`);
-  }
-
   return {
     file: new File([lastBlob], options.filename, { type: 'image/webp' }),
     width: lastSize.width,
-    height: lastSize.height
+    height: lastSize.height,
+    warning: lastBlob.size > options.maxBytes
+      ? `La ${options.label} queda en ${Math.round(lastBlob.size / 1024)} KB; no se pudo bajar mas sin degradar demasiado.`
+      : undefined
   };
 }
 

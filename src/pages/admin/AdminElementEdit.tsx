@@ -7,8 +7,9 @@ import { FormField, SelectField, TextAreaField } from '../../components/ui/FormF
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
+import { linkTypeOptions } from '../../lib/linkTypes';
 import { mediaUrl } from '../../lib/media';
-import { canUseUploadApi, uploadMediaFile } from '../../lib/uploadApi';
+import { canUseUploadApi, deleteMediaFiles, uploadMediaFile } from '../../lib/uploadApi';
 import { validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
 
 interface LanguageRow {
@@ -78,6 +79,7 @@ interface MediaAssetRow {
   width?: number | null;
   height?: number | null;
   duration_seconds?: number | null;
+  media_variants?: Array<{ variant: string; object_key: string }> | null;
 }
 
 interface ElementImageRow {
@@ -389,8 +391,8 @@ export function AdminElementEdit() {
     setSubmitting(true);
     setError('');
     try {
-      if (kind === 'image') await adminRepository.deleteElementImage(associationId);
-      if (kind === 'audio') await adminRepository.deleteElementAudio(associationId);
+      if (kind === 'image') await deleteImageAssociation(associationId);
+      if (kind === 'audio') await deleteAudioAssociation(associationId);
       if (kind === 'link') await adminRepository.deleteLink(associationId);
       setSuccess('Asociacion borrada.');
       await load();
@@ -399,6 +401,30 @@ export function AdminElementEdit() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function deleteImageAssociation(associationId: string) {
+    const association = images.find((item) => item.id === associationId);
+    const asset = mediaAsset(association?.media_assets);
+    await adminRepository.deleteElementImage(associationId);
+    if (asset?.id) await deleteUnusedMediaAsset(asset);
+  }
+
+  async function deleteAudioAssociation(associationId: string) {
+    const association = audios.find((item) => item.id === associationId);
+    const asset = mediaAsset(association?.media_assets);
+    await adminRepository.deleteElementAudio(associationId);
+    if (asset?.id) await deleteUnusedMediaAsset(asset);
+  }
+
+  async function deleteUnusedMediaAsset(asset: MediaAssetRow) {
+    if (!asset.id || !canUseUploadApi()) return;
+    const usage = await adminRepository.getMediaAssetUsage(asset.id);
+    const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+    if (totalUsage > 0) return;
+    const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+    await deleteMediaFiles(objectKeys);
+    await adminRepository.deleteMediaAsset(asset.id);
   }
 
   function updateTranslation(languageId: string, field: keyof Omit<TranslationForm, 'language_id'>, value: string | boolean) {
@@ -618,7 +644,9 @@ function ElementLinksSection({ form, links, languages, isSubmitting, onChange, o
         </SelectField>
         <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required />
         <FormField label="URL" type="url" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} required />
-        <FormField label="Tipo" value={form.link_type} onChange={(event) => onChange({ ...form, link_type: event.target.value })} />
+        <SelectField label="Tipo" value={form.link_type} onChange={(event) => onChange({ ...form, link_type: event.target.value })}>
+          {linkTypeOptions.map((option) => <option key={option.value || 'general'} value={option.value}>{option.label}</option>)}
+        </SelectField>
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} /> Publicado</label>
         <div className="button-row"><Button type="submit" disabled={isSubmitting}>Guardar enlace</Button></div>

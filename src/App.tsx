@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
+import { AdminCollaboratorEdit } from './pages/admin/AdminCollaboratorEdit';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
@@ -9,6 +10,7 @@ import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
 import { AdminElementTypes } from './pages/admin/AdminElementTypes';
 import { AdminLanguageEdit } from './pages/admin/AdminLanguageEdit';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
+import { AdminLinkEdit } from './pages/admin/AdminLinkEdit';
 import { AdminLinks } from './pages/admin/AdminLinks';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminMedia } from './pages/admin/AdminMedia';
@@ -48,7 +50,9 @@ export function App() {
         <Route path="elementos/:id" element={<AdminElementEdit />} />
         <Route path="multimedia" element={<AdminMedia />} />
         <Route path="enlaces" element={<AdminLinks />} />
+        <Route path="enlaces/:id" element={<AdminLinkEdit />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
+        <Route path="colaboradores/:id" element={<AdminCollaboratorEdit />} />
       </Route>
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />

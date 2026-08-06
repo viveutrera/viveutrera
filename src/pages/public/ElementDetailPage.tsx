@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ExternalLink, MapPin, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { LanguageSelector } from '../../components/LanguageSelector';
@@ -25,6 +25,10 @@ export function ElementDetailPage() {
   const [showLongText, setShowLongText] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | undefined>();
   const [activeAudioId, setActiveAudioId] = useState<string>();
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  const lightboxCloseRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const touchStartXRef = useRef<number>();
   const imageCount = element?.images.length ?? 0;
 
   const moveImage = useCallback((direction: -1 | 1) => {
@@ -89,14 +93,49 @@ export function ElementDetailPage() {
 
   useEffect(() => {
     if (selectedImageIndex === undefined) return undefined;
+    lastFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    window.setTimeout(() => lightboxCloseRef.current?.focus(), 0);
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') setSelectedImageIndex(undefined);
       if (event.key === 'ArrowLeft') moveImage(-1);
       if (event.key === 'ArrowRight') moveImage(1);
+      if (event.key === 'Tab') trapLightboxFocus(event);
     }
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      lastFocusedRef.current?.focus();
+    };
   }, [moveImage, selectedImageIndex]);
+
+  function trapLightboxFocus(event: KeyboardEvent) {
+    const focusable = lightboxRef.current?.querySelectorAll<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])');
+    if (!focusable?.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  function handleLightboxTouchStart(event: TouchEvent<HTMLDivElement>) {
+    touchStartXRef.current = event.changedTouches[0]?.clientX;
+  }
+
+  function handleLightboxTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    const start = touchStartXRef.current;
+    const end = event.changedTouches[0]?.clientX;
+    touchStartXRef.current = undefined;
+    if (start === undefined || end === undefined || imageCount < 2) return;
+    const delta = end - start;
+    if (Math.abs(delta) < 48) return;
+    moveImage(delta > 0 ? -1 : 1);
+  }
 
   if (!requestedLanguage) return <Navigate to={`/guia/${language}/elemento/${slug}`} replace />;
   if (isLoading) return <LoadingState />;
@@ -165,8 +204,8 @@ export function ElementDetailPage() {
       </section>
 
       {selectedImage ? (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes">
-          <button type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes" ref={lightboxRef} onTouchStart={handleLightboxTouchStart} onTouchEnd={handleLightboxTouchEnd}>
+          <button ref={lightboxCloseRef} type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
             <X size={22} />
           </button>
           {element.images.length > 1 ? (
