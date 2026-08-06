@@ -1,9 +1,10 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useState, type SetStateAction } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
@@ -89,6 +90,13 @@ interface ElementImageRow {
   is_cover: boolean;
   sort_order: number;
   media_assets?: MediaAssetRow | MediaAssetRow[] | null;
+  element_image_translations?: Array<{
+    title?: string | null;
+    alt_text: string;
+    caption?: string | null;
+    language_id?: string;
+    languages?: { code: string } | { code: string }[] | null;
+  }>;
 }
 
 interface ElementAudioRow {
@@ -176,6 +184,21 @@ export function AdminElementEdit() {
   const [audioForm, setAudioForm] = useState({ ...emptyAudio });
   const [linkForm, setLinkForm] = useState({ ...emptyLink });
   const [imageUploadFile, setImageUploadFile] = useState<File>();
+  const [imageFileInputKey, setImageFileInputKey] = useState(0);
+  const [isImageModalOpen, setImageModalOpen] = useState(false);
+  const [editingImageId, setEditingImageId] = useState<string>();
+  const [imageUploadPreview, setImageUploadPreview] = useState<{
+    url?: string;
+    originalSize?: number;
+    optimizedSize?: number;
+    thumbnailSize?: number;
+    width?: number;
+    height?: number;
+    progress?: number;
+    warnings?: string[];
+    status?: string;
+    result?: 'success' | 'error';
+  }>({});
   const [audioUploadFile, setAudioUploadFile] = useState<File>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -262,18 +285,20 @@ export function AdminElementEdit() {
     }
   }
 
-  async function addImage(event: FormEvent) {
+  async function saveImage(event: FormEvent) {
     event.preventDefault();
     if (!id) return;
-    if (!imageForm.media_asset_id && !imageUploadFile) {
-      setError('Selecciona una imagen subida o un fichero nuevo.');
+    if (!editingImageId && !imageForm.media_asset_id && !imageUploadFile) {
+      setImageUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona una imagen subida o un fichero nuevo.' }));
       return;
     }
     setSubmitting(true);
     setError('');
+    setSuccess('');
     try {
-      const mediaAssetId = imageUploadFile ? await uploadAsset(imageUploadFile, 'element-image') : imageForm.media_asset_id;
+      const mediaAssetId = imageUploadFile ? await uploadAsset(imageUploadFile, 'element-image', setImageUploadPreview) : imageForm.media_asset_id;
       await adminRepository.saveElementImage({
+        id: editingImageId,
         element_id: id,
         media_asset_id: mediaAssetId,
         is_cover: imageForm.is_cover,
@@ -285,12 +310,20 @@ export function AdminElementEdit() {
           caption: imageForm.caption
         }))
       });
-      setImageForm({ ...emptyImage });
-      setImageUploadFile(undefined);
-      setSuccess('Imagen asociada.');
+      setImageUploadPreview((current) => ({
+        ...current,
+        progress: 100,
+        result: 'success',
+        status: editingImageId ? 'Imagen actualizada correctamente.' : 'Imagen subida y asociada correctamente.'
+      }));
+      resetImageForm(true);
       await load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No se pudo asociar la imagen.');
+      setImageUploadPreview((current) => ({
+        ...current,
+        result: 'error',
+        status: caught instanceof Error ? caught.message : 'No se pudo guardar la imagen.'
+      }));
     } finally {
       setSubmitting(false);
     }
@@ -325,15 +358,34 @@ export function AdminElementEdit() {
     }
   }
 
-  async function uploadAsset(file: File, target: string) {
+  async function uploadAsset(
+    file: File,
+    target: string,
+    onStatus?: (next: SetStateAction<typeof imageUploadPreview>) => void
+  ) {
     if (!canUseUploadApi()) throw new Error('Falta configurar VITE_UPLOAD_API_URL para subir ficheros desde esta pantalla.');
 
     if (file.type.startsWith('image/')) {
+      onStatus?.((current) => ({ ...current, status: 'Optimizando imagen en el navegador...' }));
       const prepared = await prepareImageUpload(file);
+      onStatus?.((current) => ({
+        ...current,
+        optimizedSize: prepared.mainFile.size,
+        thumbnailSize: prepared.thumbnailFile.size,
+        width: prepared.width,
+        height: prepared.height,
+        warnings: prepared.warnings,
+        status: 'Subiendo imagen principal y miniatura a R2...'
+      }));
       const [mainResult, thumbnailResult] = await Promise.all([
-        uploadMediaFile(prepared.mainFile, target),
-        uploadMediaFile(prepared.thumbnailFile, target)
+        uploadMediaFile(prepared.mainFile, target, (progress) => {
+          onStatus?.((current) => ({ ...current, progress: Math.round(progress * 0.7), status: `Subiendo imagen principal: ${progress}%` }));
+        }),
+        uploadMediaFile(prepared.thumbnailFile, target, (progress) => {
+          onStatus?.((current) => ({ ...current, progress: 70 + Math.round(progress * 0.2), status: `Subiendo miniatura: ${progress}%` }));
+        })
       ]);
+      onStatus?.((current) => ({ ...current, progress: 92, status: 'Guardando metadatos en Supabase...' }));
       const saved = await adminRepository.saveMediaAsset({
         ...mainResult.asset,
         mime_type: prepared.mainFile.type,
@@ -362,6 +414,67 @@ export function AdminElementEdit() {
       duration_seconds: null
     }) as { id: string };
     return saved.id;
+  }
+
+  async function selectImageUploadFile(file?: File) {
+    if (imageUploadPreview.url) URL.revokeObjectURL(imageUploadPreview.url);
+    setImageUploadFile(file);
+    if (!file) {
+      setImageUploadPreview({});
+      return;
+    }
+
+    setImageUploadPreview({
+      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      originalSize: file.size,
+      status: 'Fichero preparado para subir.'
+    });
+
+    if (file.type.startsWith('image/')) {
+      try {
+        const bitmap = await createImageBitmap(file);
+        setImageUploadPreview((current) => ({ ...current, width: bitmap.width, height: bitmap.height }));
+        bitmap.close();
+      } catch {
+        setImageUploadPreview((current) => ({ ...current, status: 'No se pudieron leer las dimensiones de la imagen.' }));
+      }
+    }
+  }
+
+  function openNewImageModal() {
+    resetImageForm(false);
+    setImageModalOpen(true);
+  }
+
+  function editImage(image: ElementImageRow) {
+    const asset = mediaAsset(image.media_assets);
+    const spanishTranslation = image.element_image_translations?.find((translation) => getCode(translation.languages) === 'es') ?? image.element_image_translations?.[0];
+    setEditingImageId(image.id);
+    setImageForm({
+      media_asset_id: image.media_asset_id,
+      is_cover: image.is_cover,
+      sort_order: image.sort_order,
+      title: spanishTranslation?.title ?? asset?.original_name?.replace(/\.[^.]+$/, '') ?? '',
+      alt_text: spanishTranslation?.alt_text ?? '',
+      caption: spanishTranslation?.caption ?? ''
+    });
+    setImageUploadFile(undefined);
+    setImageUploadPreview({});
+    setImageModalOpen(true);
+  }
+
+  function resetImageForm(clearFileInput: boolean) {
+    setImageForm({ ...emptyImage });
+    setImageUploadFile(undefined);
+    setEditingImageId(undefined);
+    if (clearFileInput) setImageFileInputKey((current) => current + 1);
+  }
+
+  function closeImageModal() {
+    if (imageUploadPreview.url) URL.revokeObjectURL(imageUploadPreview.url);
+    setImageModalOpen(false);
+    resetImageForm(true);
+    setImageUploadPreview({});
   }
 
   async function addLink(event: FormEvent) {
@@ -496,12 +609,19 @@ export function AdminElementEdit() {
         assets={imageAssets}
         form={imageForm}
         uploadFile={imageUploadFile}
+        uploadPreview={imageUploadPreview}
+        fileInputKey={imageFileInputKey}
         images={images}
         isSubmitting={isSubmitting}
+        isOpen={isImageModalOpen}
+        isEditing={Boolean(editingImageId)}
         onChange={setImageForm}
-        onUploadFileChange={setImageUploadFile}
+        onUploadFileChange={selectImageUploadFile}
+        onOpenNew={openNewImageModal}
+        onEdit={editImage}
+        onClose={closeImageModal}
         onDelete={(associationId) => deleteAssociation('image', associationId)}
-        onSubmit={addImage}
+        onSubmit={saveImage}
       />
       <ElementAudiosSection
         assets={audioAssets}
@@ -528,49 +648,125 @@ export function AdminElementEdit() {
   );
 }
 
-function ElementImagesSection({ assets, form, uploadFile, images, isSubmitting, onChange, onUploadFileChange, onDelete, onSubmit }: {
+function ElementImagesSection({
+  assets,
+  form,
+  uploadFile,
+  uploadPreview,
+  fileInputKey,
+  images,
+  isSubmitting,
+  isOpen,
+  isEditing,
+  onChange,
+  onUploadFileChange,
+  onOpenNew,
+  onEdit,
+  onClose,
+  onDelete,
+  onSubmit
+}: {
   assets: MediaAssetRow[];
   form: typeof emptyImage;
   uploadFile?: File;
+  uploadPreview: {
+    url?: string;
+    originalSize?: number;
+    optimizedSize?: number;
+    thumbnailSize?: number;
+    width?: number;
+    height?: number;
+    progress?: number;
+    warnings?: string[];
+    status?: string;
+    result?: 'success' | 'error';
+  };
+  fileInputKey: number;
   images: ElementImageRow[];
   isSubmitting: boolean;
+  isOpen: boolean;
+  isEditing: boolean;
   onChange: (next: typeof emptyImage) => void;
   onUploadFileChange: (file?: File) => void;
+  onOpenNew: () => void;
+  onEdit: (image: ElementImageRow) => void;
+  onClose: () => void;
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
   return (
     <Card>
-      <h2>Imagenes del elemento</h2>
-      <form className="admin-form" onSubmit={onSubmit}>
-        <label className="form-field">
-          <span>Subir nueva imagen</span>
-          <input type="file" accept="image/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} />
-          {uploadFile ? <small>{uploadFile.name}</small> : null}
-        </label>
-        <SelectField label="Imagen ya subida" value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })}>
-          <option value="">Selecciona imagen subida</option>
-          {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-        </SelectField>
-        <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} />
-        <FormField label="Texto alternativo" value={form.alt_text} onChange={(event) => onChange({ ...form, alt_text: event.target.value })} />
-        <FormField label="Pie" value={form.caption} onChange={(event) => onChange({ ...form, caption: event.target.value })} />
-        <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
-        <label className="check-field"><input type="checkbox" checked={form.is_cover} onChange={(event) => onChange({ ...form, is_cover: event.target.checked })} /> Portada</label>
-        <div className="button-row"><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Subir/asociar imagen'}</Button></div>
-      </form>
-      <div className="association-list">
+      <div className="admin-title-row">
+        <h2>Imagenes del elemento</h2>
+        <Button type="button" onClick={onOpenNew}>Subir nueva imagen</Button>
+      </div>
+      <div className="admin-data-table admin-data-table-element-images" role="table" aria-label="Imagenes del elemento">
+        <div className="admin-data-row admin-data-head" role="row">
+          <span role="columnheader">Imagen</span>
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader">Tamano</span>
+          <span role="columnheader">Dimensiones</span>
+          <span role="columnheader">Orden</span>
+          <span role="columnheader">Portada</span>
+          <span role="columnheader">Acciones</span>
+        </div>
         {images.map((image) => {
           const asset = mediaAsset(image.media_assets);
           return (
-            <div className="association-row" key={image.id}>
-              {asset ? <img src={mediaUrl(asset.object_key)} alt="" loading="lazy" /> : null}
-              <span>{asset?.original_name ?? image.media_asset_id} {image.is_cover ? '(portada)' : ''}</span>
-              <button className="icon-button icon-button-danger" type="button" aria-label="Borrar imagen" onClick={() => onDelete(image.id)}><Trash2 size={18} /></button>
+            <div className="admin-data-row" role="row" key={image.id}>
+              <span role="cell">{asset ? <img className="admin-table-thumb" src={mediaUrl(asset.object_key)} alt="" loading="lazy" /> : <span className="media-admin-icon">Imagen</span>}</span>
+              <span role="cell"><strong>{asset?.original_name ?? image.media_asset_id}</strong><small>{asset?.object_key}</small></span>
+              <span role="cell">{formatBytes(asset?.file_size ?? 0)}</span>
+              <span role="cell">{asset?.width && asset.height ? `${asset.width} x ${asset.height}` : '-'}</span>
+              <span role="cell">{image.sort_order}</span>
+              <span role="cell">{image.is_cover ? 'Si' : 'No'}</span>
+              <span role="cell" className="row-actions">
+                <button className="icon-button" type="button" aria-label="Editar imagen" onClick={() => onEdit(image)}><Pencil size={18} /></button>
+                <button className="icon-button icon-button-danger" type="button" aria-label="Borrar imagen" onClick={() => onDelete(image.id)}><Trash2 size={18} /></button>
+              </span>
             </div>
           );
         })}
       </div>
+      <Modal isOpen={isOpen} title={isEditing ? 'Editar imagen del elemento' : 'Subir imagen al elemento'} onClose={onClose}>
+        <form className="modal-form stack-form" onSubmit={onSubmit}>
+          {!isEditing ? (
+            <label className="form-field">
+              <span>Subir nueva imagen</span>
+              <input key={fileInputKey} type="file" accept="image/*" onChange={(event) => onUploadFileChange(event.target.files?.[0])} disabled={isSubmitting || !canUseUploadApi()} />
+              {uploadFile ? <small>{uploadFile.name}</small> : null}
+            </label>
+          ) : null}
+          <SelectField label={isEditing ? 'Imagen asociada' : 'O selecciona imagen ya subida'} value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} disabled={isSubmitting}>
+            <option value="">Selecciona imagen subida</option>
+            {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
+          </SelectField>
+          <div className="admin-form">
+            <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} disabled={isSubmitting} />
+            <FormField label="Texto alternativo" value={form.alt_text} onChange={(event) => onChange({ ...form, alt_text: event.target.value })} disabled={isSubmitting} />
+            <FormField label="Pie" value={form.caption} onChange={(event) => onChange({ ...form, caption: event.target.value })} disabled={isSubmitting} />
+            <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} disabled={isSubmitting} />
+            <label className="check-field"><input type="checkbox" checked={form.is_cover} onChange={(event) => onChange({ ...form, is_cover: event.target.checked })} disabled={isSubmitting} /> Portada</label>
+          </div>
+          {uploadFile || uploadPreview.status ? (
+            <div className={`upload-preview-panel ${uploadPreview.result ? `upload-preview-${uploadPreview.result}` : ''}`}>
+              {uploadPreview.url ? <img src={uploadPreview.url} alt="" /> : <div className="media-admin-icon">Imagen</div>}
+              <div>
+                {uploadFile ? <strong>{uploadFile.name}</strong> : null}
+                {uploadPreview.originalSize ? <p>Original: {formatBytes(uploadPreview.originalSize)}{uploadPreview.width && uploadPreview.height ? ` - ${uploadPreview.width} x ${uploadPreview.height}px` : ''}</p> : null}
+                {uploadPreview.optimizedSize ? <p>Optimizada: {formatBytes(uploadPreview.optimizedSize)} - miniatura: {formatBytes(uploadPreview.thumbnailSize ?? 0)}</p> : null}
+                {uploadPreview.warnings?.map((warning) => <p key={warning} className="warning-text">{warning}</p>)}
+                {uploadPreview.progress !== undefined ? <progress value={uploadPreview.progress} max="100" aria-label="Progreso de subida" /> : null}
+                {uploadPreview.status ? <p>{uploadPreview.status}</p> : null}
+              </div>
+            </div>
+          ) : null}
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting || (!isEditing && !canUseUploadApi() && !form.media_asset_id)}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar imagen'}</Button>
+          </div>
+        </form>
+      </Modal>
     </Card>
   );
 }
@@ -691,4 +887,10 @@ function typeName(type?: TypeRow) {
 
 function mediaAsset(relation: MediaAssetRow | MediaAssetRow[] | null | undefined) {
   return Array.isArray(relation) ? relation[0] : relation;
+}
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }

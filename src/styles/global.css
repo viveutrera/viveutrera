@@ -865,6 +865,9 @@ p { line-height: 1.65; }
 .admin-data-table-types .admin-data-row {
   grid-template-columns: minmax(180px, 1.4fr) minmax(110px, 1fr) minmax(120px, 1fr) minmax(74px, 0.55fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr) 92px;
 }
+.admin-data-table-element-images .admin-data-row {
+  grid-template-columns: 84px minmax(190px, 1.6fr) minmax(86px, 0.7fr) minmax(110px, 0.8fr) minmax(70px, 0.55fr) minmax(74px, 0.55fr) 92px;
+}
 .admin-data-row-links,
 .admin-data-table-collaborators .admin-data-row {
   grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 1fr) minmax(100px, 0.8fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr) 92px;
@@ -1001,6 +1004,13 @@ p { line-height: 1.65; }
   height: 12px;
   margin-top: 8px;
   accent-color: var(--color-primary);
+}
+.upload-preview-success {
+  border-color: rgba(13, 43, 77, 0.35);
+}
+.upload-preview-error {
+  border-color: rgba(178, 34, 38, 0.45);
+  background: rgba(178, 34, 38, 0.08);
 }
 .warning-text {
   color: var(--color-accent) !important;
@@ -1452,6 +1462,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     background: var(--color-white);
   }
   .admin-data-table-types .admin-data-row {
+    grid-template-columns: 1fr auto;
+  }
+  .admin-data-table-element-images .admin-data-row {
     grid-template-columns: 1fr auto;
   }
   .admin-data-row span:not(.row-actions) {
