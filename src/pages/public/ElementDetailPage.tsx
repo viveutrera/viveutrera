@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
@@ -151,118 +152,121 @@ export function ElementDetailPage() {
   const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
 
   return (
-    <main className="detail-page">
-      <div className="detail-language-bar">
-        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
-      </div>
-      {contentLanguage !== language ? (
-        <div className="notice" role="status">
-          Esta ficha no esta publicada en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
+    <>
+      <main className="detail-page">
+        <div className="detail-language-bar">
+          <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
         </div>
-      ) : null}
-      <div className="detail-kicker-row">
-        <span className="tag">{type?.name[contentLanguage]}</span>
-        <Link to={`/guia/${language}`} className="text-link">{t(language, 'back')}</Link>
-      </div>
-      <h1>{translation.name}</h1>
-      <p className="lead">{translation.shortText}</p>
-      {!element.showLongTextDefault || element.mapsUrl ? (
-        <div className="detail-actions">
-          {!element.showLongTextDefault ? (
-            <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
-          ) : null}
-          {element.mapsUrl ? (
-            <a className="button button-primary" href={element.mapsUrl} target="_blank" rel="noreferrer">
-              <MapPin size={18} />
-              <span>{t(language, 'location')}</span>
-            </a>
-          ) : null}
+        {contentLanguage !== language ? (
+          <div className="notice" role="status">
+            Esta ficha no esta publicada en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.
+          </div>
+        ) : null}
+        <div className="detail-kicker-row">
+          <span className="tag">{type?.name[contentLanguage]}</span>
+          <Link to={`/guia/${language}`} className="text-link">{t(language, 'back')}</Link>
         </div>
-      ) : null}
-      {showLongText ? <p className="long-text">{translation.longText}</p> : null}
+        <h1>{translation.name}</h1>
+        <p className="lead">{translation.shortText}</p>
+        {!element.showLongTextDefault || element.mapsUrl ? (
+          <div className="detail-actions">
+            {!element.showLongTextDefault ? (
+              <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
+            ) : null}
+            {element.mapsUrl ? (
+              <a className="button button-primary" href={element.mapsUrl} target="_blank" rel="noreferrer">
+                <MapPin size={18} />
+                <span>{t(language, 'location')}</span>
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+        {showLongText ? <p className="long-text">{translation.longText}</p> : null}
 
-      <section className="gallery" aria-label="Galeria">
-        {element.images.length ? (
-          <>
-            <figure className="gallery-feature">
-              <button type="button" className="gallery-open" onClick={() => setSelectedImageIndex(0)}>
-                <img src={mediaUrl(element.images[0].mediaAsset.objectKey)} alt={element.images[0].translations[contentLanguage].altText} loading="lazy" />
+        <section className="gallery" aria-label="Galeria">
+          {element.images.length ? (
+            <>
+              <figure className="gallery-feature">
+                <button type="button" className="gallery-open" onClick={() => setSelectedImageIndex(0)}>
+                  <img src={mediaUrl(element.images[0].mediaAsset.objectKey)} alt={element.images[0].translations[contentLanguage].altText} loading="lazy" />
+                </button>
+                <figcaption>{element.images[0].translations[contentLanguage].caption ?? element.images[0].translations[contentLanguage].title}</figcaption>
+              </figure>
+              {element.images.length > 1 ? (
+                <div className="gallery-thumbs" aria-label="Miniaturas">
+                  {element.images.map((image, index) => (
+                    <button key={image.id} type="button" onClick={() => setSelectedImageIndex(index)} aria-label={`Abrir imagen ${index + 1}`}>
+                      <img src={mediaUrl(mediaObjectKey(image.mediaAsset, 'thumbnail'))} alt="" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : <div className="state">No hay imagenes publicadas para este elemento.</div>}
+        </section>
+
+        {selectedImage ? (
+          <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes" ref={lightboxRef} onTouchStart={handleLightboxTouchStart} onTouchEnd={handleLightboxTouchEnd}>
+            <button ref={lightboxCloseRef} type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
+              <X size={22} />
+            </button>
+            {element.images.length > 1 ? (
+              <button type="button" className="lightbox-previous" onClick={() => moveImage(-1)} aria-label="Imagen anterior">
+                <ChevronLeft size={28} />
               </button>
-              <figcaption>{element.images[0].translations[contentLanguage].caption ?? element.images[0].translations[contentLanguage].title}</figcaption>
+            ) : null}
+            <figure>
+              <img src={mediaUrl(selectedImage.mediaAsset.objectKey)} alt={selectedImage.translations[contentLanguage].altText} />
+              <figcaption>{selectedImage.translations[contentLanguage].caption ?? selectedImage.translations[contentLanguage].title}</figcaption>
             </figure>
             {element.images.length > 1 ? (
-              <div className="gallery-thumbs" aria-label="Miniaturas">
-                {element.images.map((image, index) => (
-                  <button key={image.id} type="button" onClick={() => setSelectedImageIndex(index)} aria-label={`Abrir imagen ${index + 1}`}>
-                    <img src={mediaUrl(mediaObjectKey(image.mediaAsset, 'thumbnail'))} alt="" loading="lazy" />
-                  </button>
-                ))}
-              </div>
+              <button type="button" className="lightbox-next" onClick={() => moveImage(1)} aria-label="Imagen siguiente">
+                <ChevronRight size={28} />
+              </button>
             ) : null}
-          </>
-        ) : <div className="state">No hay imagenes publicadas para este elemento.</div>}
-      </section>
-
-      {selectedImage ? (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes" ref={lightboxRef} onTouchStart={handleLightboxTouchStart} onTouchEnd={handleLightboxTouchEnd}>
-          <button ref={lightboxCloseRef} type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
-            <X size={22} />
-          </button>
-          {element.images.length > 1 ? (
-            <button type="button" className="lightbox-previous" onClick={() => moveImage(-1)} aria-label="Imagen anterior">
-              <ChevronLeft size={28} />
-            </button>
-          ) : null}
-          <figure>
-            <img src={mediaUrl(selectedImage.mediaAsset.objectKey)} alt={selectedImage.translations[contentLanguage].altText} />
-            <figcaption>{selectedImage.translations[contentLanguage].caption ?? selectedImage.translations[contentLanguage].title}</figcaption>
-          </figure>
-          {element.images.length > 1 ? (
-            <button type="button" className="lightbox-next" onClick={() => moveImage(1)} aria-label="Imagen siguiente">
-              <ChevronRight size={28} />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <section className="media-list">
-        <h2>{t(language, 'audios')}</h2>
-        {audios.length ? audios.map((audio) => (
-          <AudioPlayer
-            key={audio.id}
-            id={audio.id}
-            title={audio.title}
-            src={mediaUrl(audio.mediaAsset.objectKey)}
-            durationSeconds={audio.durationSeconds}
-            activeAudioId={activeAudioId}
-            onActivate={setActiveAudioId}
-          />
-        )) : <div className="state">No hay audios publicados para este idioma.</div>}
-      </section>
-
-      <section className="media-list">
-        <h2>{t(language, 'links')}</h2>
-        {links.length ? links.map((link) => (
-          <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="text-link">
-            {link.title} <ExternalLink size={14} />
-          </a>
-        )) : <div className="state">No hay enlaces complementarios publicados para este idioma.</div>}
-      </section>
-
-      <nav className="detail-pagination" aria-label="Elementos">
-        {previous ? (
-          <Link to={`/guia/${language}/elemento/${previous.slug}`} className="button button-secondary">
-            <ChevronLeft size={18} />
-            <span>{previous.translations[contentLanguage].name}</span>
-          </Link>
-        ) : <span />}
-        {next ? (
-          <Link to={`/guia/${language}/elemento/${next.slug}`} className="button button-secondary">
-            <span>{next.translations[contentLanguage].name}</span>
-            <ChevronRight size={18} />
-          </Link>
+          </div>
         ) : null}
-      </nav>
-    </main>
+
+        <section className="media-list">
+          <h2>{t(language, 'audios')}</h2>
+          {audios.length ? audios.map((audio) => (
+            <AudioPlayer
+              key={audio.id}
+              id={audio.id}
+              title={audio.title}
+              src={mediaUrl(audio.mediaAsset.objectKey)}
+              durationSeconds={audio.durationSeconds}
+              activeAudioId={activeAudioId}
+              onActivate={setActiveAudioId}
+            />
+          )) : <div className="state">No hay audios publicados para este idioma.</div>}
+        </section>
+
+        <section className="media-list">
+          <h2>{t(language, 'links')}</h2>
+          {links.length ? links.map((link) => (
+            <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="text-link">
+              {link.title} <ExternalLink size={14} />
+            </a>
+          )) : <div className="state">No hay enlaces complementarios publicados para este idioma.</div>}
+        </section>
+
+        <nav className="detail-pagination" aria-label="Elementos">
+          {previous ? (
+            <Link to={`/guia/${language}/elemento/${previous.slug}`} className="button button-secondary">
+              <ChevronLeft size={18} />
+              <span>{previous.translations[contentLanguage].name}</span>
+            </Link>
+          ) : <span />}
+          {next ? (
+            <Link to={`/guia/${language}/elemento/${next.slug}`} className="button button-secondary">
+              <span>{next.translations[contentLanguage].name}</span>
+              <ChevronRight size={18} />
+            </Link>
+          ) : null}
+        </nav>
+      </main>
+      <PublicFooter />
+    </>
   );
 }

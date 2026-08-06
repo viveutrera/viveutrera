@@ -268,7 +268,7 @@ button, input { font: inherit; }
 .public-footer {
   width: 100%;
   padding: 18px max(20px, calc((100vw - 1120px) / 2));
-  background: #273646;
+  background: var(--color-primary);
   color: var(--color-white);
 }
 
