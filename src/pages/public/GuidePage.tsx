@@ -22,7 +22,7 @@ export function GuidePage() {
   const [types, setTypes] = useState<ElementType[]>([]);
   const [elements, setElements] = useState<GuideElement[]>([]);
   const [query, setQuery] = useState('');
-  const [typeId, setTypeId] = useState('all');
+  const [typeId, setTypeId] = useState('');
 
   useEffect(() => {
     guideRepository.getLanguages().then((languageData) => {
@@ -46,6 +46,11 @@ export function GuidePage() {
 
         setContent(siteData);
         setTypes(typeData);
+        setTypeId((currentTypeId) => (
+          currentTypeId && typeData.some((type) => type.id === currentTypeId)
+            ? currentTypeId
+            : typeData[0]?.id ?? ''
+        ));
         setElements(visibleElements);
         setContentLanguage(visibleLanguage);
         setSeo({
@@ -69,7 +74,7 @@ export function GuidePage() {
     const normalized = query.trim().toLocaleLowerCase();
     return elements.filter((element) => {
       const translation = element.translations[contentLanguage];
-      const typeMatch = typeId === 'all' || element.typeId === typeId;
+      const typeMatch = !typeId || element.typeId === typeId;
       const textMatch = !normalized || `${translation.name} ${translation.shortText}`.toLocaleLowerCase().includes(normalized);
       return typeMatch && textMatch;
     });
@@ -81,12 +86,14 @@ export function GuidePage() {
 
   return (
     <main className="guide-page">
+      <div className="guide-language-bar">
+        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
+      </div>
       <header className="guide-header">
         <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
           <span>VIVE</span>
           <span>UTRERA</span>
         </Link>
-        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
         {content.cityImageObjectKey ? <img className="guide-cover" src={mediaUrl(content.cityImageObjectKey)} alt="" loading="eager" /> : null}
         <h1>{content.cityTitle}</h1>
         <p>{content.cityText}</p>
