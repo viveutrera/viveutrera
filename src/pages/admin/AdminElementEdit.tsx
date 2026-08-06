@@ -42,6 +42,7 @@ interface ElementRow {
   maps_url?: string | null;
   status: 'draft' | 'published';
   is_featured: boolean;
+  show_long_text_default?: boolean;
   sort_order: number;
   element_translations?: ElementTranslationRow[];
 }
@@ -62,6 +63,7 @@ interface ElementForm {
   maps_url: string;
   status: 'draft' | 'published';
   is_featured: boolean;
+  show_long_text_default: boolean;
   sort_order: number;
   translations: TranslationForm[];
 }
@@ -117,6 +119,7 @@ const emptyElement = (languages: LanguageRow[]): ElementForm => ({
   maps_url: '',
   status: 'draft',
   is_featured: false,
+  show_long_text_default: false,
   sort_order: 0,
   translations: languages.map((language) => ({
     language_id: language.id,
@@ -209,6 +212,7 @@ export function AdminElementEdit() {
       maps_url: element.maps_url ?? '',
       status: element.status,
       is_featured: element.is_featured,
+      show_long_text_default: element.show_long_text_default ?? false,
       sort_order: element.sort_order,
       translations: nextLanguages.map((language) => {
         const saved = element.element_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
@@ -439,6 +443,7 @@ export function AdminElementEdit() {
             <FormField label="URL mapa" value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} />
             <label className="check-field"><input type="checkbox" checked={form.is_featured} onChange={(event) => setForm({ ...form, is_featured: event.target.checked })} /> Destacado</label>
+            <label className="check-field"><input type="checkbox" checked={form.show_long_text_default} onChange={(event) => setForm({ ...form, show_long_text_default: event.target.checked })} /> Texto largo desplegado por defecto</label>
           </div>
           <div className="translation-grid">
             {languages.map((language) => {

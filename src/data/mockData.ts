@@ -71,6 +71,7 @@ export const elements: GuideElement[] = [
     mapsUrl: 'https://maps.google.com/?q=Parroquia+de+Santiago+Utrera',
     status: 'published',
     isFeatured: true,
+    showLongTextDefault: false,
     sortOrder: 1,
     translations: {
       es: { name: 'Parroquia de Santiago', shortText: 'Uno de los grandes hitos patrimoniales del centro historico.', longText: 'Maqueta inicial para validar la experiencia de detalle con textos largos, galeria y audioguia.', seoTitle: 'Parroquia de Santiago en Utrera', seoDescription: 'Informacion audiovisual de la Parroquia de Santiago.', isPublished: true },
@@ -88,6 +89,7 @@ export const elements: GuideElement[] = [
     typeId: 'type-monument',
     status: 'published',
     isFeatured: false,
+    showLongTextDefault: false,
     sortOrder: 2,
     translations: {
       es: { name: 'Castillo de Utrera', shortText: 'Recinto historico vinculado a la memoria defensiva de la ciudad.', longText: 'Contenido simulado para preparar estructura editorial y multimedia.', seoTitle: 'Castillo de Utrera', seoDescription: 'Guia audiovisual del Castillo de Utrera.', isPublished: true },

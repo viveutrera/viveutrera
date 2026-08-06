@@ -12,6 +12,10 @@ import { supabase } from '../lib/supabase';
 import { languages as mockLanguages, siteContent as mockSiteContent } from './mockData';
 
 const languageCodes: LanguageCode[] = ['es', 'en', 'fr', 'de'];
+const publicElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
+const publicElementSelectLegacy = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
+const adminElementSelect = 'id, slug, element_type_id, maps_url, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
+const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 
 const placeholderAsset: MediaAsset = {
   id: 'placeholder',
@@ -33,6 +37,7 @@ interface ElementRowRaw {
   longitude: number | null;
   status: string;
   is_featured: boolean;
+  show_long_text_default?: boolean;
   sort_order: number;
   element_translations?: Array<{
     name: string;
@@ -138,6 +143,14 @@ function ensureSupabase() {
   return supabase;
 }
 
+function isMissingColumnError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: string; message?: string };
+  return candidate.code === '42703'
+    || candidate.code === 'PGRST204'
+    || Boolean(candidate.message?.includes('show_long_text_default'));
+}
+
 export const supabaseGuideRepository = {
   async getLanguages(): Promise<Language[]> {
     const client = ensureSupabase();
@@ -230,13 +243,27 @@ export const supabaseGuideRepository = {
     const languageId = await getLanguageId(language);
     if (!languageId) return [];
 
-    const { data, error } = await client
+    const response = await client
       .from('elements')
-      .select('id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)')
+      .select(publicElementSelect)
       .eq('status', 'published')
       .eq('element_translations.language_id', languageId)
       .eq('element_translations.is_published', true)
       .order('sort_order');
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('elements')
+        .select(publicElementSelectLegacy)
+        .eq('status', 'published')
+        .eq('element_translations.language_id', languageId)
+        .eq('element_translations.is_published', true)
+        .order('sort_order');
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
 
@@ -250,14 +277,29 @@ export const supabaseGuideRepository = {
     const languageId = await getLanguageId(language);
     if (!languageId) return undefined;
 
-    const { data, error } = await client
+    const response = await client
       .from('elements')
-      .select('id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)')
+      .select(publicElementSelect)
       .eq('slug', slug)
       .eq('status', 'published')
       .eq('element_translations.language_id', languageId)
       .eq('element_translations.is_published', true)
       .maybeSingle();
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('elements')
+        .select(publicElementSelectLegacy)
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .eq('element_translations.language_id', languageId)
+        .eq('element_translations.is_published', true)
+        .maybeSingle();
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
     if (!data) return undefined;
@@ -510,10 +552,20 @@ export const adminRepository = {
 
   async listElements() {
     const client = ensureSupabase();
-    const { data, error } = await client
+    const response = await client
       .from('elements')
-      .select('id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))')
+      .select(adminElementSelect)
       .order('sort_order');
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('elements')
+        .select(adminElementSelectLegacy)
+        .order('sort_order');
+      data = legacy.data;
+      error = legacy.error;
+    }
     if (error) throw error;
     return data ?? [];
   },
@@ -524,6 +576,7 @@ export const adminRepository = {
     maps_url: string;
     status: 'draft' | 'published';
     is_featured: boolean;
+    show_long_text_default?: boolean;
     sort_order: number;
     translations: Array<{
       language_id: string;
@@ -536,21 +589,35 @@ export const adminRepository = {
     }>;
   }) {
     const client = ensureSupabase();
-    const { data: element, error } = await client
+    const payload = {
+      id: input.id,
+      slug: input.slug,
+      element_type_id: input.element_type_id,
+      maps_url: input.maps_url || null,
+      status: input.status,
+      is_featured: input.is_featured,
+      show_long_text_default: input.show_long_text_default ?? false,
+      sort_order: input.sort_order,
+      published_at: input.status === 'published' ? new Date().toISOString() : null
+    };
+    let { data: element, error } = await client
       .from('elements')
-      .upsert({
-        id: input.id,
-        slug: input.slug,
-        element_type_id: input.element_type_id,
-        maps_url: input.maps_url || null,
-        status: input.status,
-        is_featured: input.is_featured,
-        sort_order: input.sort_order,
-        published_at: input.status === 'published' ? new Date().toISOString() : null
-      })
+      .upsert(payload)
       .select('id')
       .single();
+    if (error && isMissingColumnError(error)) {
+      const legacyPayload: Partial<typeof payload> = { ...payload };
+      delete legacyPayload.show_long_text_default;
+      const legacy = await client
+        .from('elements')
+        .upsert(legacyPayload)
+        .select('id')
+        .single();
+      element = legacy.data;
+      error = legacy.error;
+    }
     if (error) throw error;
+    if (!element) throw new Error('No se pudo guardar el elemento.');
 
     const { error: translationError } = await client
       .from('element_translations')
@@ -893,6 +960,7 @@ function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement
     longitude: row.longitude ?? undefined,
     status: row.status === 'published' ? 'published' : 'draft',
     isFeatured: row.is_featured,
+    showLongTextDefault: row.show_long_text_default ?? false,
     sortOrder: row.sort_order,
     translations,
     images: [],

@@ -58,6 +58,7 @@ export function ElementDetailPage() {
         }
 
         setElement(visibleElement);
+        setShowLongText(visibleElement?.showLongTextDefault ?? false);
         setSiblings(visibleSiblings);
         setTypes(typeData);
         setContentLanguage(visibleLanguage);

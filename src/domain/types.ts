@@ -84,6 +84,7 @@ export interface GuideElement {
   longitude?: number;
   status: 'draft' | 'published';
   isFeatured: boolean;
+  showLongTextDefault: boolean;
   sortOrder: number;
   translations: Record<LanguageCode, {
     name: string;
