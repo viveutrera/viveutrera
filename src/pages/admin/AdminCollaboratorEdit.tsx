@@ -222,6 +222,10 @@ export function AdminCollaboratorEdit() {
       setLogoFile(undefined);
       setLogoFileInputKey((current) => current + 1);
       setLogoUploadPreview({ progress: 100, result: 'success', status: 'Logo subido y guardado correctamente.' });
+      window.setTimeout(() => {
+        setLogoModalOpen(false);
+        setLogoUploadPreview({});
+      }, 900);
     } catch (caught) {
       setLogoUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo subir el logo.' });
     } finally {

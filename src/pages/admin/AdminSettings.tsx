@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
+import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { prepareImageUpload } from '../../lib/imageCompression';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
+import { canUseUploadApi, deleteMediaFiles, uploadMediaFile } from '../../lib/uploadApi';
 import { validateRequired } from '../../lib/validation';
 
 interface LanguageRow {
@@ -34,6 +36,12 @@ interface MediaAssetRow {
   object_key: string;
   media_type: 'image' | 'audio' | 'logo' | 'file';
   original_name: string;
+  mime_type?: string;
+  file_size?: number;
+  width?: number | null;
+  height?: number | null;
+  duration_seconds?: number | null;
+  media_variants?: Array<{ variant: string; object_key: string; file_size?: number; width?: number | null; height?: number | null }> | null;
 }
 
 interface SiteSettingRow {
@@ -61,6 +69,21 @@ export function AdminSettings() {
   const [heroLogoMediaId, setHeroLogoMediaId] = useState('');
   const [heroMediaId, setHeroMediaId] = useState('');
   const [cityMediaId, setCityMediaId] = useState('');
+  const [activeMediaSlot, setActiveMediaSlot] = useState<'hero_logo_media' | 'hero_media' | 'city_media'>();
+  const [mediaUploadFile, setMediaUploadFile] = useState<File>();
+  const [mediaFileInputKey, setMediaFileInputKey] = useState(0);
+  const [mediaUploadPreview, setMediaUploadPreview] = useState<{
+    url?: string;
+    originalSize?: number;
+    optimizedSize?: number;
+    thumbnailSize?: number;
+    width?: number;
+    height?: number;
+    progress?: number;
+    warnings?: string[];
+    status?: string;
+    result?: 'success' | 'error';
+  }>({});
   const [activeLanguageId, setActiveLanguageId] = useState('');
   const [editingLanguageId, setEditingLanguageId] = useState<string>();
   const [isLoading, setLoading] = useState(true);
@@ -113,23 +136,156 @@ export function AdminSettings() {
     }));
   }
 
-  async function saveMediaSettings(event: FormEvent) {
+  async function uploadSettingMedia(event: FormEvent) {
     event.preventDefault();
+    if (!activeMediaSlot || !mediaUploadFile) {
+      setMediaUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona una imagen para subir.' }));
+      return;
+    }
+    if (!canUseUploadApi()) {
+      setMediaUploadPreview((current) => ({ ...current, result: 'error', status: 'Falta configurar VITE_UPLOAD_API_URL.' }));
+      return;
+    }
     setError('');
-
     setSubmitting(true);
     try {
-      await Promise.all([
-        adminRepository.saveSiteSetting('hero_logo_media', settingPayload(mediaAssets.find((asset) => asset.id === heroLogoMediaId))),
-        adminRepository.saveSiteSetting('hero_media', settingPayload(mediaAssets.find((asset) => asset.id === heroMediaId))),
-        adminRepository.saveSiteSetting('city_media', settingPayload(mediaAssets.find((asset) => asset.id === cityMediaId)))
+      setMediaUploadPreview((current) => ({ ...current, status: 'Optimizando imagen en el navegador...' }));
+      const prepared = await prepareImageUpload(mediaUploadFile);
+      setMediaUploadPreview((current) => ({
+        ...current,
+        optimizedSize: prepared.mainFile.size,
+        thumbnailSize: prepared.thumbnailFile.size,
+        width: prepared.width,
+        height: prepared.height,
+        warnings: prepared.warnings,
+        status: 'Subiendo imagen y miniatura a R2...'
+      }));
+      const [mainResult, thumbnailResult] = await Promise.all([
+        uploadMediaFile(prepared.mainFile, 'site', (progress) => {
+          setMediaUploadPreview((current) => ({ ...current, progress: Math.round(progress * 0.7), status: `Subiendo imagen: ${progress}%` }));
+        }),
+        uploadMediaFile(prepared.thumbnailFile, 'site', (progress) => {
+          setMediaUploadPreview((current) => ({ ...current, progress: 70 + Math.round(progress * 0.2), status: `Subiendo miniatura: ${progress}%` }));
+        })
       ]);
-      setSuccessModal('Imagenes principales guardadas correctamente.');
+      setMediaUploadPreview((current) => ({ ...current, progress: 92, status: 'Guardando metadatos en Supabase...' }));
+      const saved = await adminRepository.saveMediaAsset({
+        ...mainResult.asset,
+        mime_type: prepared.mainFile.type,
+        original_name: prepared.mainFile.name,
+        file_size: prepared.mainFile.size,
+        width: prepared.width,
+        height: prepared.height,
+        duration_seconds: null
+      }) as { id: string };
+      await adminRepository.saveMediaVariant({
+        media_asset_id: saved.id,
+        variant: 'thumbnail',
+        object_key: thumbnailResult.asset.object_key,
+        file_size: prepared.thumbnailFile.size,
+        width: prepared.thumbnailWidth,
+        height: prepared.thumbnailHeight
+      });
+      const nextAsset: MediaAssetRow = {
+        id: saved.id,
+        object_key: mainResult.asset.object_key,
+        media_type: 'image',
+        mime_type: prepared.mainFile.type,
+        original_name: prepared.mainFile.name,
+        file_size: prepared.mainFile.size,
+        width: prepared.width,
+        height: prepared.height,
+        media_variants: [{ variant: 'thumbnail', object_key: thumbnailResult.asset.object_key, file_size: prepared.thumbnailFile.size, width: prepared.thumbnailWidth, height: prepared.thumbnailHeight }]
+      };
+      await adminRepository.saveSiteSetting(activeMediaSlot, settingPayload(nextAsset));
+      setMediaAssets((current) => [...current, nextAsset]);
+      setSlotMediaId(activeMediaSlot, saved.id);
+      setMediaUploadPreview({ progress: 100, result: 'success', status: 'Imagen subida correctamente.' });
+      setSuccessModal('Imagen subida correctamente.');
+      closeMediaUploadModal();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No se pudieron guardar las imagenes principales.');
+      setMediaUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo subir la imagen.' });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function deleteSettingMedia(slot: 'hero_logo_media' | 'hero_media' | 'city_media') {
+    const asset = mediaAssets.find((item) => item.id === slotMediaId(slot));
+    setError('');
+    setSubmitting(true);
+    try {
+      await adminRepository.saveSiteSetting(slot, {});
+      setSlotMediaId(slot, '');
+      if (asset?.id && canUseUploadApi()) {
+        const usage = await adminRepository.getMediaAssetUsage(asset.id);
+        const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+        if (totalUsage === 0) {
+          const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
+          await deleteMediaFiles(objectKeys);
+          await adminRepository.deleteMediaAsset(asset.id);
+          setMediaAssets((current) => current.filter((item) => item.id !== asset.id));
+          setSuccessModal('Imagen borrada de R2 y Supabase.');
+        } else {
+          setSuccessModal('Imagen quitada de configuracion. El archivo sigue en uso en otro contenido.');
+        }
+      } else {
+        setSuccessModal('Imagen quitada de configuracion.');
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo borrar la imagen.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function selectMediaUploadFile(file?: File) {
+    if (mediaUploadPreview.url) URL.revokeObjectURL(mediaUploadPreview.url);
+    setMediaUploadFile(file);
+    if (!file) {
+      setMediaUploadPreview({});
+      return;
+    }
+    setMediaUploadPreview({
+      url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      originalSize: file.size,
+      status: 'Fichero preparado para subir.'
+    });
+    if (file.type.startsWith('image/')) {
+      try {
+        const bitmap = await createImageBitmap(file);
+        setMediaUploadPreview((current) => ({ ...current, width: bitmap.width, height: bitmap.height }));
+        bitmap.close();
+      } catch {
+        setMediaUploadPreview((current) => ({ ...current, status: 'No se pudieron leer las dimensiones de la imagen.' }));
+      }
+    }
+  }
+
+  function openMediaUploadModal(slot: 'hero_logo_media' | 'hero_media' | 'city_media') {
+    setActiveMediaSlot(slot);
+    setMediaUploadFile(undefined);
+    setMediaUploadPreview({});
+  }
+
+  function closeMediaUploadModal() {
+    if (mediaUploadPreview.url) URL.revokeObjectURL(mediaUploadPreview.url);
+    setActiveMediaSlot(undefined);
+    setMediaUploadFile(undefined);
+    setMediaFileInputKey((current) => current + 1);
+    setMediaUploadPreview({});
+  }
+
+  function slotMediaId(slot: 'hero_logo_media' | 'hero_media' | 'city_media') {
+    if (slot === 'hero_logo_media') return heroLogoMediaId;
+    if (slot === 'hero_media') return heroMediaId;
+    return cityMediaId;
+  }
+
+  function setSlotMediaId(slot: 'hero_logo_media' | 'hero_media' | 'city_media', value: string) {
+    if (slot === 'hero_logo_media') setHeroLogoMediaId(value);
+    if (slot === 'hero_media') setHeroMediaId(value);
+    if (slot === 'city_media') setCityMediaId(value);
   }
 
   async function saveTranslation(event: FormEvent, language: LanguageRow) {
@@ -164,34 +320,30 @@ export function AdminSettings() {
       <div className="stack-form">
         <Card>
           <h2>Imagenes principales</h2>
-          <form className="stack-form" onSubmit={saveMediaSettings}>
-            <div className="site-media-settings-grid">
-              <div className="site-media-setting">
-                <SelectField label="Imagen portada hero" value={heroLogoMediaId} onChange={(event) => setHeroLogoMediaId(event.target.value)}>
-                  <option value="">Logo por defecto</option>
-                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-                </SelectField>
-                <MediaPreview title="Portada hero" asset={mediaAssets.find((asset) => asset.id === heroLogoMediaId)} fallbackObjectKey="brand/logo-vive-utrera.png" />
-              </div>
-              <div className="site-media-setting">
-                <SelectField label="Imagen fondo hero" value={heroMediaId} onChange={(event) => setHeroMediaId(event.target.value)}>
-                  <option value="">Sin imagen administrable</option>
-                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-                </SelectField>
-                <MediaPreview title="Fondo hero" asset={mediaAssets.find((asset) => asset.id === heroMediaId)} />
-              </div>
-              <div className="site-media-setting">
-                <SelectField label="Imagen ciudad / guia" value={cityMediaId} onChange={(event) => setCityMediaId(event.target.value)}>
-                  <option value="">Sin imagen administrable</option>
-                  {mediaAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-                </SelectField>
-                <MediaPreview title="Ciudad / guia" asset={mediaAssets.find((asset) => asset.id === cityMediaId)} />
-              </div>
-            </div>
-            <div className="button-row">
-              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar imagenes'}</Button>
-            </div>
-          </form>
+          <div className="site-media-settings-grid">
+            <SiteMediaCard
+              title="Imagen portada hero"
+              asset={mediaAssets.find((asset) => asset.id === heroLogoMediaId)}
+              fallbackObjectKey="brand/logo-vive-utrera.png"
+              isSubmitting={isSubmitting}
+              onUpload={() => openMediaUploadModal('hero_logo_media')}
+              onDelete={() => deleteSettingMedia('hero_logo_media')}
+            />
+            <SiteMediaCard
+              title="Imagen fondo hero"
+              asset={mediaAssets.find((asset) => asset.id === heroMediaId)}
+              isSubmitting={isSubmitting}
+              onUpload={() => openMediaUploadModal('hero_media')}
+              onDelete={() => deleteSettingMedia('hero_media')}
+            />
+            <SiteMediaCard
+              title="Imagen ciudad / guia"
+              asset={mediaAssets.find((asset) => asset.id === cityMediaId)}
+              isSubmitting={isSubmitting}
+              onUpload={() => openMediaUploadModal('city_media')}
+              onDelete={() => deleteSettingMedia('city_media')}
+            />
+          </div>
         </Card>
         <Card>
           <h2>Textos por idioma</h2>
@@ -250,7 +402,52 @@ export function AdminSettings() {
           <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
         </div>
       </Modal>
+      <Modal title={`Subir ${slotTitle(activeMediaSlot)}`} isOpen={Boolean(activeMediaSlot)} onClose={closeMediaUploadModal}>
+        <form className="modal-form stack-form" onSubmit={uploadSettingMedia}>
+          <FormField key={mediaFileInputKey} label="Imagen" type="file" accept="image/*" onChange={(event) => selectMediaUploadFile(event.target.files?.[0])} disabled={isSubmitting || !canUseUploadApi()} />
+          {mediaUploadFile || mediaUploadPreview.status ? (
+            <div className={`upload-preview-panel ${mediaUploadPreview.result ? `upload-preview-${mediaUploadPreview.result}` : ''}`}>
+              {mediaUploadPreview.url ? <img src={mediaUploadPreview.url} alt="" /> : <div className="media-admin-icon">Imagen</div>}
+              <div>
+                {mediaUploadFile ? <strong>{mediaUploadFile.name}</strong> : null}
+                {mediaUploadPreview.originalSize ? <p>Original: {formatBytes(mediaUploadPreview.originalSize)}{mediaUploadPreview.width && mediaUploadPreview.height ? ` - ${mediaUploadPreview.width} x ${mediaUploadPreview.height}px` : ''}</p> : null}
+                {mediaUploadPreview.optimizedSize ? <p>Optimizada: {formatBytes(mediaUploadPreview.optimizedSize)} - miniatura: {formatBytes(mediaUploadPreview.thumbnailSize ?? 0)}</p> : null}
+                {mediaUploadPreview.warnings?.map((warning) => <p key={warning} className="warning-text">{warning}</p>)}
+                {mediaUploadPreview.progress !== undefined ? <progress value={mediaUploadPreview.progress} max="100" aria-label="Progreso de subida" /> : null}
+                {mediaUploadPreview.status ? <p>{mediaUploadPreview.status}</p> : null}
+              </div>
+            </div>
+          ) : null}
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={closeMediaUploadModal} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting || !canUseUploadApi() || !mediaUploadFile}>{isSubmitting ? 'Subiendo...' : 'Subir imagen'}</Button>
+          </div>
+        </form>
+      </Modal>
     </section>
+  );
+}
+
+function SiteMediaCard({ title, asset, fallbackObjectKey, isSubmitting, onUpload, onDelete }: {
+  title: string;
+  asset?: MediaAssetRow;
+  fallbackObjectKey?: string;
+  isSubmitting: boolean;
+  onUpload: () => void;
+  onDelete: () => void;
+}) {
+  const hasConfiguredImage = Boolean(asset);
+  return (
+    <div className="site-media-setting">
+      <h3>{title}</h3>
+      <MediaPreview title={title} asset={asset} fallbackObjectKey={fallbackObjectKey} />
+      {asset ? <p className="hint">{asset.original_name || asset.object_key}</p> : null}
+      <div className="button-row">
+        <Button type="button" variant="secondary" onClick={onUpload} disabled={hasConfiguredImage || isSubmitting}>Subir imagen</Button>
+        {hasConfiguredImage ? <Button type="button" variant="danger" onClick={onDelete} disabled={isSubmitting}>Borrar imagen</Button> : null}
+      </div>
+      {hasConfiguredImage ? <p className="hint">Borra primero la imagen actual para habilitar la subida de una nueva.</p> : null}
+    </div>
   );
 }
 
@@ -261,6 +458,19 @@ function MediaPreview({ title, asset, fallbackObjectKey }: { title: string; asse
       {objectKey ? <img src={asset ? mediaUrl(objectKey) : publicPath(objectKey)} alt="" loading="lazy" /> : <span>Sin imagen seleccionada</span>}
     </div>
   );
+}
+
+function slotTitle(slot: 'hero_logo_media' | 'hero_media' | 'city_media' | undefined) {
+  if (slot === 'hero_logo_media') return 'imagen portada hero';
+  if (slot === 'hero_media') return 'imagen fondo hero';
+  if (slot === 'city_media') return 'imagen ciudad / guia';
+  return 'imagen';
+}
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function settingPayload(asset?: MediaAssetRow): Record<string, unknown> {

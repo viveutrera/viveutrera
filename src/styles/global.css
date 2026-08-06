@@ -798,6 +798,23 @@ p { line-height: 1.65; }
   font-weight: 800;
 }
 .admin-sidebar nav { display: grid; gap: 6px; }
+.admin-nav-group {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+.admin-nav-group > span {
+  padding: 0 12px 4px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.admin-nav-group a {
+  padding-left: 26px;
+}
 .admin-sidebar a {
   display: flex;
   align-items: center;

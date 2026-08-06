@@ -7,11 +7,14 @@ import { useAuth } from '../routes/authContext';
 const links = [
   { to: '/admin', label: 'Panel', icon: LayoutDashboard },
   { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
-  { to: '/admin/idiomas', label: 'Idiomas', icon: Languages },
   { to: '/admin/tipos', label: 'Tipos', icon: Landmark },
   { to: '/admin/elementos', label: 'Elementos', icon: Landmark },
-  { to: '/admin/multimedia', label: 'Multimedia', icon: Image },
   { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users }
+];
+
+const advancedLinks = [
+  { to: '/admin/idiomas', label: 'Idiomas', icon: Languages },
+  { to: '/admin/multimedia', label: 'Multimedia', icon: Image }
 ];
 
 export function AdminLayout() {
@@ -35,6 +38,15 @@ export function AdminLayout() {
               <span>{label}</span>
             </NavLink>
           ))}
+          <div className="admin-nav-group">
+            <span>Advanced Setup - Webmaster</span>
+            {advancedLinks.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to}>
+                <Icon size={18} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </div>
         </nav>
       </aside>
       <main className="admin-main">

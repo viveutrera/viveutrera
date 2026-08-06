@@ -177,7 +177,6 @@ export function AdminElementEdit() {
   const [types, setTypes] = useState<TypeRow[]>([]);
   const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [form, setForm] = useState<ElementForm>();
-  const [mediaAssets, setMediaAssets] = useState<MediaAssetRow[]>([]);
   const [images, setImages] = useState<ElementImageRow[]>([]);
   const [audios, setAudios] = useState<ElementAudioRow[]>([]);
   const [links, setLinks] = useState<ElementLinkRow[]>([]);
@@ -204,6 +203,7 @@ export function AdminElementEdit() {
   const [audioUploadFile, setAudioUploadFile] = useState<File>();
   const [audioFileInputKey, setAudioFileInputKey] = useState(0);
   const [isAudioModalOpen, setAudioModalOpen] = useState(false);
+  const [audioModalMode, setAudioModalMode] = useState<'upload' | 'edit'>('upload');
   const [editingAudioId, setEditingAudioId] = useState<string>();
   const [audioUploadPreview, setAudioUploadPreview] = useState<{
     originalSize?: number;
@@ -223,11 +223,10 @@ export function AdminElementEdit() {
       setLoading(false);
       return;
     }
-    const [elementRows, typeRows, languageRows, mediaRows, imageRows, audioRows, linkRows] = await Promise.all([
+    const [elementRows, typeRows, languageRows, imageRows, audioRows, linkRows] = await Promise.all([
       adminRepository.listElements(),
       adminRepository.listElementTypes(),
       adminRepository.listLanguages(),
-      adminRepository.listMediaAssets(),
       adminRepository.listElementImages(),
       adminRepository.listElementAudios(),
       adminRepository.listLinks()
@@ -238,7 +237,6 @@ export function AdminElementEdit() {
     setItems(nextElements);
     setTypes(typeRows as unknown as TypeRow[]);
     setLanguages(nextLanguages);
-    setMediaAssets(mediaRows as unknown as MediaAssetRow[]);
     setImages((imageRows as unknown as ElementImageRow[]).filter((item) => item.element_id === id));
     setAudios((audioRows as unknown as ElementAudioRow[]).filter((item) => item.element_id === id));
     setLinks((linkRows as unknown as ElementLinkRow[]).filter((item) => item.element_id === id));
@@ -301,8 +299,8 @@ export function AdminElementEdit() {
   async function saveImage(event: FormEvent) {
     event.preventDefault();
     if (!id) return;
-    if (!editingImageId && !imageForm.media_asset_id && !imageUploadFile) {
-      setImageUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona una imagen subida o un fichero nuevo.' }));
+    if (!editingImageId && !imageUploadFile) {
+      setImageUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona una imagen para subir.' }));
       return;
     }
     setSubmitting(true);
@@ -352,8 +350,8 @@ export function AdminElementEdit() {
     if (!id) return;
     const requiredError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.media_asset_id, 'Audio') || validateRequired(audioForm.title, 'Titulo');
     const requiredUploadError = validateRequired(audioForm.language_id, 'Idioma') || validateRequired(audioForm.title, 'Titulo');
-    if (!editingAudioId && !audioForm.media_asset_id && !audioUploadFile) {
-      setAudioUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona un audio subido o un fichero nuevo.' }));
+    if (!editingAudioId && !audioUploadFile) {
+      setAudioUploadPreview((current) => ({ ...current, result: 'error', status: 'Selecciona un audio para subir.' }));
       return;
     }
     if (audioForm.media_asset_id ? requiredError : requiredUploadError) {
@@ -367,8 +365,13 @@ export function AdminElementEdit() {
       const mediaAssetId = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio', setAudioUploadPreview) : audioForm.media_asset_id;
       await adminRepository.saveElementAudio({ id: editingAudioId, element_id: id, ...audioForm, media_asset_id: mediaAssetId, title: audioForm.title.trim() });
       setAudioUploadPreview({ progress: 100, result: 'success', status: editingAudioId ? 'Audio actualizado correctamente.' : 'Audio subido y asociado correctamente.' });
-      resetAudioForm(true);
       await load();
+      if (editingAudioId) {
+        setSuccess('Audio actualizado correctamente.');
+        closeAudioModal();
+      } else {
+        resetAudioForm(true);
+      }
     } catch (caught) {
       setAudioUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo guardar el audio.' });
     } finally {
@@ -508,6 +511,7 @@ export function AdminElementEdit() {
 
   function openNewAudioModal() {
     resetAudioForm(false);
+    setAudioModalMode('upload');
     setAudioModalOpen(true);
   }
 
@@ -523,6 +527,7 @@ export function AdminElementEdit() {
     });
     setAudioUploadFile(undefined);
     setAudioUploadPreview({});
+    setAudioModalMode('edit');
     setAudioModalOpen(true);
   }
 
@@ -641,9 +646,6 @@ export function AdminElementEdit() {
   if (isLoading) return <LoadingState />;
   if (!form) return <EmptyState title="Elemento no encontrado" message="Vuelve al listado y selecciona otro elemento." />;
 
-  const imageAssets = mediaAssets.filter((asset) => asset.media_type === 'image' || asset.media_type === 'logo');
-  const audioAssets = mediaAssets.filter((asset) => asset.media_type === 'audio');
-
   return (
     <section className="admin-section">
       <div className="admin-title-row">
@@ -693,7 +695,6 @@ export function AdminElementEdit() {
         </form>
       </Card>
       <ElementImagesSection
-        assets={imageAssets}
         form={imageForm}
         uploadFile={imageUploadFile}
         uploadPreview={imageUploadPreview}
@@ -711,7 +712,6 @@ export function AdminElementEdit() {
         onSubmit={saveImage}
       />
       <ElementAudiosSection
-        assets={audioAssets}
         form={audioForm}
         uploadFile={audioUploadFile}
         uploadPreview={audioUploadPreview}
@@ -720,7 +720,7 @@ export function AdminElementEdit() {
         languages={languages}
         isSubmitting={isSubmitting}
         isOpen={isAudioModalOpen}
-        isEditing={Boolean(editingAudioId)}
+        mode={audioModalMode}
         onChange={setAudioForm}
         onUploadFileChange={selectAudioUploadFile}
         onOpenNew={openNewAudioModal}
@@ -748,7 +748,6 @@ export function AdminElementEdit() {
 }
 
 function ElementImagesSection({
-  assets,
   form,
   uploadFile,
   uploadPreview,
@@ -765,7 +764,6 @@ function ElementImagesSection({
   onDelete,
   onSubmit
 }: {
-  assets: MediaAssetRow[];
   form: typeof emptyImage;
   uploadFile?: File;
   uploadPreview: {
@@ -837,10 +835,6 @@ function ElementImagesSection({
               {uploadFile ? <small>{uploadFile.name}</small> : null}
             </label>
           ) : null}
-          <SelectField label={isEditing ? 'Imagen asociada' : 'O selecciona imagen ya subida'} value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} disabled={isSubmitting}>
-            <option value="">Selecciona imagen subida</option>
-            {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-          </SelectField>
           <div className="admin-form">
             <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} disabled={isSubmitting} />
             <FormField label="Texto alternativo" value={form.alt_text} onChange={(event) => onChange({ ...form, alt_text: event.target.value })} disabled={isSubmitting} />
@@ -863,7 +857,7 @@ function ElementImagesSection({
           ) : null}
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || (!isEditing && !canUseUploadApi() && !form.media_asset_id)}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar imagen'}</Button>
+            <Button type="submit" disabled={isSubmitting || (!isEditing && (!canUseUploadApi() || !uploadFile))}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar imagen'}</Button>
           </div>
         </form>
       </Modal>
@@ -872,7 +866,6 @@ function ElementImagesSection({
 }
 
 function ElementAudiosSection({
-  assets,
   form,
   uploadFile,
   uploadPreview,
@@ -881,7 +874,7 @@ function ElementAudiosSection({
   languages,
   isSubmitting,
   isOpen,
-  isEditing,
+  mode,
   onChange,
   onUploadFileChange,
   onOpenNew,
@@ -890,7 +883,6 @@ function ElementAudiosSection({
   onDelete,
   onSubmit
 }: {
-  assets: MediaAssetRow[];
   form: typeof emptyAudio;
   uploadFile?: File;
   uploadPreview: {
@@ -904,7 +896,7 @@ function ElementAudiosSection({
   languages: LanguageRow[];
   isSubmitting: boolean;
   isOpen: boolean;
-  isEditing: boolean;
+  mode: 'upload' | 'edit';
   onChange: (next: typeof emptyAudio) => void;
   onUploadFileChange: (file?: File) => void;
   onOpenNew: () => void;
@@ -913,6 +905,7 @@ function ElementAudiosSection({
   onDelete: (id?: string) => void;
   onSubmit: (event: FormEvent) => void;
 }) {
+  const isEditing = mode === 'edit';
   return (
     <Card>
       <div className="admin-title-row">
@@ -959,10 +952,6 @@ function ElementAudiosSection({
               <option value="">Selecciona idioma</option>
               {languages.map((language) => <option key={language.id} value={language.id}>{language.native_name}</option>)}
             </SelectField>
-            <SelectField label={isEditing ? 'Audio asociado' : 'O selecciona audio ya subido'} value={form.media_asset_id} onChange={(event) => onChange({ ...form, media_asset_id: event.target.value })} disabled={isSubmitting}>
-              <option value="">Selecciona audio subido</option>
-              {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.original_name || asset.object_key}</option>)}
-            </SelectField>
             <FormField label="Titulo" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required disabled={isSubmitting} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} disabled={isSubmitting} />
             <label className="check-field"><input type="checkbox" checked={form.is_published} onChange={(event) => onChange({ ...form, is_published: event.target.checked })} disabled={isSubmitting} /> Publicado</label>
@@ -981,7 +970,7 @@ function ElementAudiosSection({
           ) : null}
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || (!isEditing && !canUseUploadApi() && !form.media_asset_id)}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar audio'}</Button>
+            <Button type="submit" disabled={isSubmitting || (!isEditing && (!canUseUploadApi() || !uploadFile))}>{isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Subir/asociar audio'}</Button>
           </div>
         </form>
       </Modal>
