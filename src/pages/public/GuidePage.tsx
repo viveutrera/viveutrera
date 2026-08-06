@@ -82,12 +82,11 @@ export function GuidePage() {
   return (
     <main className="guide-page">
       <header className="guide-header">
-        <Link to="/preview" className="text-link">Vive Utrera</Link>
-        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
-        <p className="guide-wordmark" aria-label="Vive Utrera">
+        <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
           <span>VIVE</span>
           <span>UTRERA</span>
-        </p>
+        </Link>
+        <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
         {content.cityImageObjectKey ? <img className="guide-cover" src={mediaUrl(content.cityImageObjectKey)} alt="" loading="eager" /> : null}
         <h1>{content.cityTitle}</h1>
         <p>{content.cityText}</p>

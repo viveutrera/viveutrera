@@ -198,11 +198,12 @@ export function AdminElementTypes() {
         </select>
         <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear tipo</Button>
       </div>
-      <div className="admin-data-table" role="table" aria-label="Tipos de elementos">
+      <div className="admin-data-table admin-data-table-types" role="table" aria-label="Tipos de elementos">
         <div className="admin-data-row admin-data-head" role="row">
           <span role="columnheader">Nombre</span>
           <span role="columnheader">Slug</span>
           <span role="columnheader">Icono</span>
+          <span role="columnheader">Orden</span>
           <span role="columnheader">Elementos</span>
           <span role="columnheader">Estado</span>
           <span role="columnheader" aria-label="Acciones" />
@@ -212,6 +213,7 @@ export function AdminElementTypes() {
             <span role="cell"><strong>{item.element_type_translations?.find((translation) => getCode(translation.languages) === 'es')?.name ?? item.slug}</strong></span>
             <span role="cell">{item.slug}</span>
             <span role="cell">{elementTypeIconLabel(item.icon)}</span>
+            <span role="cell">{item.sort_order}</span>
             <span role="cell">{elements.filter((element) => element.element_type_id === item.id).length}</span>
             <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
             <span className="row-actions" role="cell">

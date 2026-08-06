@@ -101,7 +101,7 @@ export function LandingPage() {
       </header>
 
       <main>
-        <section className="section">
+        <section className="section landing-language-section">
           <div className="language-grid">
             {languages.map((language) => (
               <Card key={language.id} className="language-card">
