@@ -1,0 +1,16 @@
+{
+  "name": "Vive Utrera",
+  "short_name": "Vive Utrera",
+  "description": "Guia audiovisual de Utrera.",
+  "start_url": "/viveutrera/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0D2B4D",
+  "icons": [
+    {
+      "src": "/viveutrera/brand/app-icon-placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
