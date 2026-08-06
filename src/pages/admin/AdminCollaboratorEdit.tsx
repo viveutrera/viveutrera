@@ -222,6 +222,7 @@ export function AdminCollaboratorEdit() {
       setLogoFile(undefined);
       setLogoFileInputKey((current) => current + 1);
       setLogoUploadPreview({ progress: 100, result: 'success', status: 'Logo subido y guardado correctamente.' });
+      setSuccess(`Imagen subida correctamente: ${prepared.mainFile.name}. Original: ${formatBytes(logoFile.size)}. Optimizada: ${formatBytes(prepared.mainFile.size)}. Miniatura: ${formatBytes(prepared.thumbnailFile.size)}.`);
       window.setTimeout(() => {
         setLogoModalOpen(false);
         setLogoUploadPreview({});

@@ -805,12 +805,32 @@ p { line-height: 1.65; }
   padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
-.admin-nav-group > span {
-  padding: 0 12px 4px;
+.admin-nav-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+.admin-nav-group summary::-webkit-details-marker {
+  display: none;
+}
+.admin-nav-group summary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-white);
+}
+.admin-nav-group summary svg {
+  transition: transform 160ms ease;
+}
+.admin-nav-group[open] summary svg {
+  transform: rotate(180deg);
 }
 .admin-nav-group a {
   padding-left: 26px;

@@ -201,7 +201,7 @@ export function AdminSettings() {
       setMediaAssets((current) => [...current, nextAsset]);
       setSlotMediaId(activeMediaSlot, saved.id);
       setMediaUploadPreview({ progress: 100, result: 'success', status: 'Imagen subida correctamente.' });
-      setSuccessModal('Imagen subida correctamente.');
+      setSuccessModal(`Imagen subida correctamente: ${prepared.mainFile.name}. Original: ${formatBytes(mediaUploadFile.size)}. Optimizada: ${formatBytes(prepared.mainFile.size)}. Miniatura: ${formatBytes(prepared.thumbnailFile.size)}.`);
       closeMediaUploadModal();
     } catch (caught) {
       setMediaUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo subir la imagen.' });

@@ -1,5 +1,5 @@
-import { ExternalLink, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { ChevronDown, ExternalLink, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { publicPath } from '../lib/routing';
 import { useAuth } from '../routes/authContext';
@@ -19,6 +19,8 @@ const advancedLinks = [
 
 export function AdminLayout() {
   const { signOut, userEmail } = useAuth();
+  const location = useLocation();
+  const isAdvancedRoute = advancedLinks.some((link) => location.pathname.startsWith(link.to));
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
@@ -38,15 +40,18 @@ export function AdminLayout() {
               <span>{label}</span>
             </NavLink>
           ))}
-          <div className="admin-nav-group">
-            <span>Advanced Setup - Webmaster</span>
+          <details className="admin-nav-group" open={isAdvancedRoute}>
+            <summary>
+              <span>Advanced Setup - Webmaster</span>
+              <ChevronDown size={16} />
+            </summary>
             {advancedLinks.map(({ to, label, icon: Icon }) => (
               <NavLink key={to} to={to}>
                 <Icon size={18} />
                 <span>{label}</span>
               </NavLink>
             ))}
-          </div>
+          </details>
         </nav>
       </aside>
       <main className="admin-main">

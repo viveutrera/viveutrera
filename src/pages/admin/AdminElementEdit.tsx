@@ -307,7 +307,8 @@ export function AdminElementEdit() {
     setError('');
     setSuccess('');
     try {
-      const mediaAssetId = imageUploadFile ? await uploadAsset(imageUploadFile, 'element-image', setImageUploadPreview) : imageForm.media_asset_id;
+      const uploaded = imageUploadFile ? await uploadAsset(imageUploadFile, 'element-image', setImageUploadPreview) : undefined;
+      const mediaAssetId = uploaded?.id ?? imageForm.media_asset_id;
       await adminRepository.saveElementImage({
         id: editingImageId,
         element_id: id,
@@ -332,7 +333,8 @@ export function AdminElementEdit() {
         setSuccess('Imagen actualizada correctamente.');
         closeImageModal();
       } else {
-        resetImageForm(true);
+        setSuccess(uploaded?.summary ?? 'Imagen subida y asociada correctamente.');
+        closeImageModal();
       }
     } catch (caught) {
       setImageUploadPreview((current) => ({
@@ -362,7 +364,8 @@ export function AdminElementEdit() {
     setError('');
     setSuccess('');
     try {
-      const mediaAssetId = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio', setAudioUploadPreview) : audioForm.media_asset_id;
+      const uploaded = audioUploadFile ? await uploadAsset(audioUploadFile, 'element-audio', setAudioUploadPreview) : undefined;
+      const mediaAssetId = uploaded?.id ?? audioForm.media_asset_id;
       await adminRepository.saveElementAudio({ id: editingAudioId, element_id: id, ...audioForm, media_asset_id: mediaAssetId, title: audioForm.title.trim() });
       setAudioUploadPreview({ progress: 100, result: 'success', status: editingAudioId ? 'Audio actualizado correctamente.' : 'Audio subido y asociado correctamente.' });
       await load();
@@ -370,7 +373,8 @@ export function AdminElementEdit() {
         setSuccess('Audio actualizado correctamente.');
         closeAudioModal();
       } else {
-        resetAudioForm(true);
+        setSuccess(uploaded?.summary ?? 'Audio subido y asociado correctamente.');
+        closeAudioModal();
       }
     } catch (caught) {
       setAudioUploadPreview({ result: 'error', status: caught instanceof Error ? caught.message : 'No se pudo guardar el audio.' });
@@ -383,7 +387,7 @@ export function AdminElementEdit() {
     file: File,
     target: string,
     onStatus?: (next: SetStateAction<typeof imageUploadPreview>) => void
-  ) {
+  ): Promise<{ id: string; summary: string }> {
     if (!canUseUploadApi()) throw new Error('Falta configurar VITE_UPLOAD_API_URL para subir ficheros desde esta pantalla.');
 
     if (file.type.startsWith('image/')) {
@@ -424,7 +428,10 @@ export function AdminElementEdit() {
         width: prepared.thumbnailWidth,
         height: prepared.thumbnailHeight
       });
-      return saved.id;
+      return {
+        id: saved.id,
+        summary: `Imagen subida correctamente: ${prepared.mainFile.name}. Original: ${formatBytes(file.size)}. Optimizada: ${formatBytes(prepared.mainFile.size)}. Miniatura: ${formatBytes(prepared.thumbnailFile.size)}.`
+      };
     }
 
     onStatus?.((current) => ({ ...current, status: 'Subiendo fichero a R2...' }));
@@ -438,7 +445,10 @@ export function AdminElementEdit() {
       height: null,
       duration_seconds: null
     }) as { id: string };
-    return saved.id;
+    return {
+      id: saved.id,
+      summary: `Audio subido correctamente: ${file.name}. Tamano original: ${formatBytes(file.size)}.`
+    };
   }
 
   async function selectImageUploadFile(file?: File) {
