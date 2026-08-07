@@ -1378,7 +1378,7 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
 }
 .modal {
   width: min(780px, 100%);
-  max-height: min(88svh, 900px);
+  max-height: min(94svh, 980px);
   overflow: auto;
   padding: 20px;
   border-radius: 8px;

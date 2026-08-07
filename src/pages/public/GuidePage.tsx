@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
@@ -15,7 +15,9 @@ import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function GuidePage() {
   const { idioma = 'es' } = useParams();
+  const [searchParams] = useSearchParams();
   const requestedLanguage = isLanguageCode(idioma) ? idioma : undefined;
+  const requestedTypeId = searchParams.get('tipo') ?? '';
   const [content, setContent] = useState<SiteContent>();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [language, setLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
@@ -48,9 +50,11 @@ export function GuidePage() {
         setContent(siteData);
         setTypes(typeData);
         setTypeId((currentTypeId) => (
-          currentTypeId && typeData.some((type) => type.id === currentTypeId)
-            ? currentTypeId
-            : typeData[0]?.id ?? ''
+          requestedTypeId && typeData.some((type) => type.id === requestedTypeId)
+            ? requestedTypeId
+            : currentTypeId && typeData.some((type) => type.id === currentTypeId)
+              ? currentTypeId
+              : typeData[0]?.id ?? ''
         ));
         setElements(visibleElements);
         setContentLanguage(visibleLanguage);
@@ -69,7 +73,7 @@ export function GuidePage() {
         setAlternateLanguages((code) => `/guia/${code}`, languageData.map((item) => item.code));
       });
     });
-  }, [idioma]);
+  }, [idioma, requestedTypeId]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
@@ -128,13 +132,14 @@ export function GuidePage() {
             {filtered.map((element) => {
               const translation = element.translations[contentLanguage];
               const cover = element.images.find((image) => image.isCover) ?? element.images[0];
+              const detailPath = `/guia/${language}/elemento/${element.slug}${typeId ? `?tipo=${encodeURIComponent(typeId)}` : ''}`;
               return (
                 <Card key={element.id} className="element-card">
-                  <Link to={`/guia/${language}/elemento/${element.slug}`} className="element-card-media" aria-label={translation.name}>
+                  <Link to={detailPath} className="element-card-media" aria-label={translation.name}>
                     {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <div className="media-placeholder">Sin imagen</div>}
                   </Link>
                   <div>
-                    <h2><Link to={`/guia/${language}/elemento/${element.slug}`}>{translation.name}</Link></h2>
+                    <h2><Link to={detailPath}>{translation.name}</Link></h2>
                     <p>{translation.shortText}</p>
                   </div>
                 </Card>

@@ -259,6 +259,7 @@ export function AdminCollaborators() {
             mediaAssets={mediaAssets}
             onChange={setForm}
             onTranslationChange={updateTranslation}
+            showMediaField={false}
           />
           <div className="modal-actions">
             <Button type="button" variant="ghost" onClick={resetForm} disabled={isSubmitting}>Cancelar</Button>

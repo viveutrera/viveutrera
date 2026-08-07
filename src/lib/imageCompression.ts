@@ -10,33 +10,39 @@ export interface PreparedImageUpload {
 
 const mainMaxBytes = 300 * 1024;
 const thumbnailMaxBytes = 50 * 1024;
+type CompressionResult = { file: File; width: number; height: number; warning?: string };
 
 export async function prepareImageUpload(file: File): Promise<PreparedImageUpload> {
   const bitmap = await createImageBitmap(file);
 
   try {
     const warnings: string[] = [];
-    const main = await renderCompressed(bitmap, {
-      filename: withSuffix(file.name, 'web'),
-      maxBytes: mainMaxBytes,
-      maxDimension: 1800,
-      label: 'imagen principal'
-    });
+    const main: CompressionResult = file.size <= mainMaxBytes
+      ? { file, width: bitmap.width, height: bitmap.height }
+      : await renderCompressed(bitmap, {
+        filename: withSuffix(file.name, 'web'),
+        maxBytes: mainMaxBytes,
+        maxDimension: 1800,
+        label: 'imagen principal'
+      });
+    const selectedMain: CompressionResult = main.file.size > file.size
+      ? { file, width: bitmap.width, height: bitmap.height, warning: 'La imagen optimizada pesaba mas que la original; se ha usado el archivo original.' }
+      : main;
     const thumbnail = await renderCompressed(bitmap, {
       filename: withSuffix(file.name, 'thumb'),
       maxBytes: thumbnailMaxBytes,
       maxDimension: 520,
       label: 'miniatura'
     });
-    if (main.warning) warnings.push(main.warning);
+    if (selectedMain.warning) warnings.push(selectedMain.warning);
     if (thumbnail.warning) warnings.push(thumbnail.warning);
 
     return {
-      mainFile: main.file,
+      mainFile: selectedMain.file,
       thumbnailFile: thumbnail.file,
       warnings,
-      width: main.width,
-      height: main.height,
+      width: selectedMain.width,
+      height: selectedMain.height,
       thumbnailWidth: thumbnail.width,
       thumbnailHeight: thumbnail.height
     };

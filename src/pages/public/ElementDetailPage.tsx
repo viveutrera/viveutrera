@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, ExternalLink, MapPin, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
@@ -15,7 +15,9 @@ import { setAlternateLanguages, setSeo } from '../../lib/seo';
 
 export function ElementDetailPage() {
   const { idioma = 'es', slug = '' } = useParams();
+  const [searchParams] = useSearchParams();
   const requestedLanguage = isLanguageCode(idioma) ? idioma : undefined;
+  const selectedTypeId = searchParams.get('tipo') ?? '';
   const [languages, setLanguages] = useState<Language[]>([]);
   const [language, setLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
   const [contentLanguage, setContentLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
@@ -150,6 +152,8 @@ export function ElementDetailPage() {
   const currentIndex = siblings.findIndex((item) => item.id === element.id);
   const previous = currentIndex > 0 ? siblings[currentIndex - 1] : undefined;
   const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
+  const typeQuery = selectedTypeId ? `?tipo=${encodeURIComponent(selectedTypeId)}` : '';
+  const backPath = `/guia/${language}${typeQuery}`;
 
   return (
     <>
@@ -164,7 +168,7 @@ export function ElementDetailPage() {
         ) : null}
         <div className="detail-kicker-row">
           <span className="tag">{type?.name[contentLanguage]}</span>
-          <Link to={`/guia/${language}`} className="text-link">{t(language, 'back')}</Link>
+          <Link to={backPath} className="text-link">{t(language, 'back')}</Link>
         </div>
         <h1>{translation.name}</h1>
         <p className="lead">{translation.shortText}</p>
@@ -253,13 +257,13 @@ export function ElementDetailPage() {
 
         <nav className="detail-pagination" aria-label="Elementos">
           {previous ? (
-            <Link to={`/guia/${language}/elemento/${previous.slug}`} className="button button-secondary">
+            <Link to={`/guia/${language}/elemento/${previous.slug}${typeQuery}`} className="button button-secondary">
               <ChevronLeft size={18} />
               <span>{previous.translations[contentLanguage].name}</span>
             </Link>
           ) : <span />}
           {next ? (
-            <Link to={`/guia/${language}/elemento/${next.slug}`} className="button button-secondary">
+            <Link to={`/guia/${language}/elemento/${next.slug}${typeQuery}`} className="button button-secondary">
               <span>{next.translations[contentLanguage].name}</span>
               <ChevronRight size={18} />
             </Link>
