@@ -5,10 +5,10 @@ export function PublicFooter() {
   return (
     <footer className="public-footer" aria-label="Vive Utrera">
       <div className="public-footer-inner">
-        <div className="public-footer-brand">
+        <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
           <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
           <span>VIVE UTRERA</span>
-        </div>
+        </a>
         <div className="public-footer-social" aria-label="Redes sociales">
           <span aria-label="Facebook" role="img"><Facebook size={20} /></span>
           <span aria-label="Instagram" role="img"><Instagram size={20} /></span>
