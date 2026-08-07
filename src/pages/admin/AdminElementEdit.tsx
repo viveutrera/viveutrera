@@ -279,6 +279,7 @@ export function AdminElementEdit() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!form) return;
+    if (!isMainEditing) return;
     setError('');
     setSuccess('');
 
@@ -711,11 +712,8 @@ export function AdminElementEdit() {
             })}
           </div>
           <div className="button-row">
-            {!isMainEditing ? (
-              <Button type="button" onClick={() => setMainEditing(true)} disabled={isSubmitting}>Editar</Button>
-            ) : (
-              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</Button>
-            )}
+            <Button type="button" variant="secondary" onClick={() => setMainEditing(true)} disabled={isSubmitting || isMainEditing}>Editar</Button>
+            <Button type="submit" disabled={isSubmitting || !isMainEditing}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</Button>
           </div>
         </form>
       </Card>
