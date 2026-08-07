@@ -56,6 +56,8 @@ export function LandingPage() {
   }
 
   if (!content) return <LoadingState label="Preparando Vive Utrera" />;
+  const specialCollaborators = collaborators.filter((collaborator) => collaborator.isSpecial);
+  const generalCollaborators = collaborators.filter((collaborator) => !collaborator.isSpecial);
 
   return (
     <>
@@ -150,16 +152,27 @@ export function LandingPage() {
             <h2>Colaboradores</h2>
             <p>Logotipos y agradecimientos configurables desde administracion.</p>
           </div>
-          <div className="collaborator-carousel" aria-label="Colaboradores">
-            <div className={collaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
-              {collaborators.map((collaborator) => (
-                <CollaboratorCard key={collaborator.id} collaborator={collaborator} />
+          {specialCollaborators.length ? (
+            <div className="special-collaborators" aria-label="Colaboradores especiales">
+              {specialCollaborators.map((collaborator) => (
+                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
               ))}
-              {collaborators.length > 1 ? collaborators.map((collaborator) => (
-                <CollaboratorCard key={`${collaborator.id}-copy`} collaborator={collaborator} ariaHidden />
-              )) : null}
             </div>
-          </div>
+          ) : null}
+          {generalCollaborators.length ? (
+            <div className="collaborator-carousel" aria-label="Colaboradores">
+              <div className={generalCollaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
+                {generalCollaborators.map((collaborator) => (
+                  <CollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
+                ))}
+                {generalCollaborators.length > 1 ? generalCollaborators.map((collaborator) => (
+                  <CollaboratorCard key={`${collaborator.id}-copy`} collaborator={collaborator} language={landingLanguage} ariaHidden />
+                )) : null}
+              </div>
+            </div>
+          ) : specialCollaborators.length ? null : (
+            <p className="hint">Los colaboradores se mostraran cuando esten configurados.</p>
+          )}
         </section>
       </main>
       <PublicFooter />
@@ -167,15 +180,54 @@ export function LandingPage() {
   );
 }
 
-function CollaboratorCard({ collaborator, ariaHidden = false }: { collaborator: Collaborator; ariaHidden?: boolean }) {
-  const displayName = collaborator.translations.es.displayName;
-  return (
-    <a className="collaborator" href={collaborator.url ?? '#'} aria-label={collaborator.name} aria-hidden={ariaHidden} tabIndex={ariaHidden ? -1 : undefined}>
-      {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={displayName} loading="lazy" /> : null}
-      {collaborator.showName ? <span>{displayName}</span> : null}
-      {collaborator.url ? <ExternalLink size={14} /> : null}
-    </a>
+function SpecialCollaboratorCard({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
+  const translation = collaboratorTranslation(collaborator, language);
+  const content = (
+    <>
+      {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={translation.displayName} loading="lazy" /> : null}
+      <div>
+        <p className="special-collaborator-kicker">Agradecimiento especial</p>
+        {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
+        {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
+      </div>
+      {collaborator.url ? <ExternalLink className="special-collaborator-link-icon" size={18} aria-hidden="true" /> : null}
+    </>
   );
+
+  return collaborator.url ? (
+    <a className="special-collaborator" href={collaborator.url} target="_blank" rel="noreferrer" aria-label={translation.displayName}>
+      {content}
+    </a>
+  ) : (
+    <article className="special-collaborator">
+      {content}
+    </article>
+  );
+}
+
+function CollaboratorCard({ collaborator, language, ariaHidden = false }: { collaborator: Collaborator; language: LanguageCode; ariaHidden?: boolean }) {
+  const translation = collaboratorTranslation(collaborator, language);
+  const content = (
+    <>
+      {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={translation.displayName} loading="lazy" /> : null}
+      {collaborator.showName ? <span>{translation.displayName}</span> : null}
+      {collaborator.url ? <ExternalLink size={14} /> : null}
+    </>
+  );
+
+  return collaborator.url ? (
+    <a className="collaborator" href={collaborator.url} target="_blank" rel="noreferrer" aria-label={translation.displayName} aria-hidden={ariaHidden} tabIndex={ariaHidden ? -1 : undefined}>
+      {content}
+    </a>
+  ) : (
+    <div className="collaborator" aria-label={translation.displayName} aria-hidden={ariaHidden}>
+      {content}
+    </div>
+  );
+}
+
+function collaboratorTranslation(collaborator: Collaborator, language: LanguageCode) {
+  return collaborator.translations[language] ?? collaborator.translations.es;
 }
 
 function flagPath(language: LanguageCode, round: boolean) {
