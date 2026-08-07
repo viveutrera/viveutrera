@@ -148,7 +148,8 @@ function isMissingColumnError(error: unknown) {
   const candidate = error as { code?: string; message?: string };
   return candidate.code === '42703'
     || candidate.code === 'PGRST204'
-    || Boolean(candidate.message?.includes('show_long_text_default'));
+    || Boolean(candidate.message?.includes('show_long_text_default'))
+    || Boolean(candidate.message?.includes('show_name'));
 }
 
 export const supabaseGuideRepository = {
@@ -330,17 +331,28 @@ export const supabaseGuideRepository = {
 
   async getCollaborators(): Promise<Collaborator[]> {
     const client = ensureSupabase();
-    const { data, error } = await client
+    const response = await client
       .from('collaborators')
-      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
       .eq('is_active', true)
       .order('sort_order');
+    let data = response.data as Array<Record<string, any>> | null;
+    let error = response.error;
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('collaborators')
+        .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
+        .eq('is_active', true)
+        .order('sort_order');
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
 
     return (data ?? []).map((row) => {
       const translations = emptyTranslations<{ displayName: string; thankYouText?: string }>(() => ({ displayName: row.name }));
-      row.collaborator_translations?.forEach((translation) => {
+      row.collaborator_translations?.forEach((translation: Record<string, any>) => {
         const code = asLanguageCode(relatedLanguageCode(translation.languages));
         translations[code] = {
           displayName: translation.display_name,
@@ -356,6 +368,7 @@ export const supabaseGuideRepository = {
         sortOrder: row.sort_order,
         isActive: row.is_active,
         isSpecial: row.is_special,
+        showName: row.show_name ?? true,
         translations
       };
     });
@@ -742,10 +755,20 @@ export const adminRepository = {
 
   async listCollaborators() {
     const client = ensureSupabase();
-    const { data, error } = await client
+    const response = await client
       .from('collaborators')
-      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
       .order('sort_order');
+    let data = response.data as Array<Record<string, any>> | null;
+    let error = response.error;
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('collaborators')
+        .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+        .order('sort_order');
+      data = legacy.data;
+      error = legacy.error;
+    }
     if (error) throw error;
     return data ?? [];
   },
@@ -757,23 +780,38 @@ export const adminRepository = {
     sort_order: number;
     is_active: boolean;
     is_special: boolean;
+    show_name?: boolean;
     translations: Array<{ language_id: string; display_name: string; thank_you_text: string }>;
   }) {
     const client = ensureSupabase();
-    const { data: collaborator, error } = await client
+    const payload = {
+      id: input.id,
+      name: input.name,
+      media_asset_id: input.media_asset_id || null,
+      url: input.url || null,
+      sort_order: input.sort_order,
+      is_active: input.is_active,
+      is_special: input.is_special,
+      show_name: input.show_name ?? true
+    };
+    let { data: collaborator, error } = await client
       .from('collaborators')
-      .upsert({
-        id: input.id,
-        name: input.name,
-        media_asset_id: input.media_asset_id || null,
-        url: input.url || null,
-        sort_order: input.sort_order,
-        is_active: input.is_active,
-        is_special: input.is_special
-      })
+      .upsert(payload)
       .select('id')
       .single();
+    if (error && isMissingColumnError(error)) {
+      const legacyPayload: Partial<typeof payload> = { ...payload };
+      delete legacyPayload.show_name;
+      const legacy = await client
+        .from('collaborators')
+        .upsert(legacyPayload)
+        .select('id')
+        .single();
+      collaborator = legacy.data;
+      error = legacy.error;
+    }
     if (error) throw error;
+    if (!collaborator) throw new Error('No se pudo guardar el colaborador.');
 
     const { error: translationError } = await client
       .from('collaborator_translations')

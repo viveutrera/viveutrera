@@ -1,6 +1,8 @@
 import { ChevronDown, ExternalLink, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { publicPath } from '../lib/routing';
 import { useAuth } from '../routes/authContext';
 
@@ -20,7 +22,14 @@ const advancedLinks = [
 export function AdminLayout() {
   const { signOut, userEmail } = useAuth();
   const location = useLocation();
+  const [isSignOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const isAdvancedRoute = advancedLinks.some((link) => location.pathname.startsWith(link.to));
+
+  async function confirmSignOut() {
+    setSignOutConfirmOpen(false);
+    await signOut();
+  }
+
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
@@ -57,10 +66,18 @@ export function AdminLayout() {
       <main className="admin-main">
         <header className="admin-topbar">
           <p>{userEmail ?? 'Administrador'}</p>
-          <Button type="button" variant="ghost" icon={<LogOut size={18} />} onClick={signOut}>Salir</Button>
+          <Button type="button" variant="ghost" icon={<LogOut size={18} />} onClick={() => setSignOutConfirmOpen(true)}>Salir</Button>
         </header>
         <Outlet />
       </main>
+      <ConfirmDialog
+        isOpen={isSignOutConfirmOpen}
+        title="Cerrar sesion"
+        message="Se cerrara la sesion de administracion actual."
+        confirmLabel="Salir"
+        onCancel={() => setSignOutConfirmOpen(false)}
+        onConfirm={confirmSignOut}
+      />
     </div>
   );
 }

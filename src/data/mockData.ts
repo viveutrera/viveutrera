@@ -104,5 +104,5 @@ export const elements: GuideElement[] = [
 ];
 
 export const collaborators: Collaborator[] = [
-  { id: 'collab-city', name: 'Colaborador institucional', mediaAsset: image, sortOrder: 1, isActive: true, isSpecial: true, translations: { es: { displayName: 'Colaborador institucional', thankYouText: 'Agradecimiento especial pendiente de configurar.' }, en: { displayName: 'Institutional collaborator', thankYouText: 'Special thanks pending configuration.' }, fr: { displayName: 'Collaborateur institutionnel' }, de: { displayName: 'Institutioneller Partner' } } }
+  { id: 'collab-city', name: 'Colaborador institucional', mediaAsset: image, sortOrder: 1, isActive: true, isSpecial: true, showName: true, translations: { es: { displayName: 'Colaborador institucional', thankYouText: 'Agradecimiento especial pendiente de configurar.' }, en: { displayName: 'Institutional collaborator', thankYouText: 'Special thanks pending configuration.' }, fr: { displayName: 'Collaborateur institutionnel' }, de: { displayName: 'Institutioneller Partner' } } }
 ];

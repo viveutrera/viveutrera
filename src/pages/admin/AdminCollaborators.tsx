@@ -33,6 +33,7 @@ export interface CollaboratorRow {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
+  show_name?: boolean;
   collaborator_translations?: CollaboratorTranslationRow[];
 }
 
@@ -57,6 +58,7 @@ export interface CollaboratorForm {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
+  show_name: boolean;
   translations: TranslationForm[];
 }
 
@@ -67,6 +69,7 @@ const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
   sort_order: 0,
   is_active: true,
   is_special: false,
+  show_name: true,
   translations: languages.map((language) => ({ language_id: language.id, display_name: '', thank_you_text: '' }))
 });
 
@@ -223,6 +226,7 @@ export function AdminCollaborators() {
           <span role="columnheader">Logo</span>
           <span role="columnheader">URL</span>
           <span role="columnheader">Orden</span>
+          <span role="columnheader">Nombre visible</span>
           <span role="columnheader">Estado</span>
           <span role="columnheader" aria-label="Acciones" />
         </div>
@@ -235,6 +239,7 @@ export function AdminCollaborators() {
               <span role="cell">{media ? <img className="admin-table-thumb" src={mediaUrl(media.object_key)} alt="" loading="lazy" /> : 'Sin logo'}</span>
               <span role="cell">{item.url || 'Sin enlace'}</span>
               <span role="cell">{item.sort_order}</span>
+              <span role="cell">{item.show_name ?? true ? 'Si' : 'No'}</span>
               <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
               <span className="row-actions" role="cell">
                 <button className="icon-button" type="button" aria-label={`Editar ${item.name}`} onClick={() => navigate(`/admin/colaboradores/${item.id}`)}><Pencil size={18} /></button>
@@ -262,7 +267,7 @@ export function AdminCollaborators() {
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar colaborador"
-        message={`Se eliminara ${selectedCollaborator?.name ?? 'este colaborador'} y sus textos traducidos. No se borraran archivos multimedia.`}
+        message={`Se eliminara ${selectedCollaborator?.name ?? 'este colaborador'} y sus textos traducidos. Si su imagen no se usa en otro sitio, tambien se eliminara de R2 y Supabase.`}
         confirmLabel="Borrar"
         onCancel={() => setDeleteId(undefined)}
         onConfirm={confirmDelete}
@@ -293,6 +298,7 @@ export function CollaboratorFields({ form, languages, mediaAssets, onChange, onT
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => onChange({ ...form, is_active: event.target.checked })} /> Activo</label>
         <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => onChange({ ...form, is_special: event.target.checked })} /> Especial</label>
+        <label className="check-field"><input type="checkbox" checked={form.show_name} onChange={(event) => onChange({ ...form, show_name: event.target.checked })} /> Mostrar nombre en la web</label>
       </div>
       <div className="translation-grid">
         {languages.map((language) => {

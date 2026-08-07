@@ -69,6 +69,7 @@ export function AdminCollaboratorEdit() {
         sort_order: collaborator.sort_order,
         is_active: collaborator.is_active,
         is_special: collaborator.is_special,
+        show_name: collaborator.show_name ?? true,
         translations: nextLanguages.map((language) => {
           const saved = collaborator.collaborator_translations?.find((translation) => translation.language_id === language.id || getCode(translation.languages) === language.code);
           return {

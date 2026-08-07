@@ -150,19 +150,31 @@ export function LandingPage() {
             <h2>Colaboradores</h2>
             <p>Logotipos y agradecimientos configurables desde administracion.</p>
           </div>
-          <div className="collaborator-grid">
-            {collaborators.map((collaborator) => (
-              <a key={collaborator.id} className="collaborator" href={collaborator.url ?? '#'} aria-label={collaborator.name}>
-                {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={collaborator.translations.es.displayName} loading="lazy" /> : null}
-                <span>{collaborator.translations.es.displayName}</span>
-                {collaborator.url ? <ExternalLink size={14} /> : null}
-              </a>
-            ))}
+          <div className="collaborator-carousel" aria-label="Colaboradores">
+            <div className={collaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
+              {collaborators.map((collaborator) => (
+                <CollaboratorCard key={collaborator.id} collaborator={collaborator} />
+              ))}
+              {collaborators.length > 1 ? collaborators.map((collaborator) => (
+                <CollaboratorCard key={`${collaborator.id}-copy`} collaborator={collaborator} ariaHidden />
+              )) : null}
+            </div>
           </div>
         </section>
       </main>
       <PublicFooter />
     </>
+  );
+}
+
+function CollaboratorCard({ collaborator, ariaHidden = false }: { collaborator: Collaborator; ariaHidden?: boolean }) {
+  const displayName = collaborator.translations.es.displayName;
+  return (
+    <a className="collaborator" href={collaborator.url ?? '#'} aria-label={collaborator.name} aria-hidden={ariaHidden} tabIndex={ariaHidden ? -1 : undefined}>
+      {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={displayName} loading="lazy" /> : null}
+      {collaborator.showName ? <span>{displayName}</span> : null}
+      {collaborator.url ? <ExternalLink size={14} /> : null}
+    </a>
   );
 }
 

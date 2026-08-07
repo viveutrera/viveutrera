@@ -107,6 +107,7 @@ export interface Collaborator {
   sortOrder: number;
   isActive: boolean;
   isSpecial: boolean;
+  showName: boolean;
   translations: Record<LanguageCode, { displayName: string; thankYouText?: string }>;
 }
 
