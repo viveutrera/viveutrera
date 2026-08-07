@@ -1008,7 +1008,7 @@ p { line-height: 1.65; }
 }
 .admin-data-row-links,
 .admin-data-table-collaborators .admin-data-row {
-  grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(100px, 0.75fr) minmax(70px, 0.5fr) minmax(100px, 0.75fr) minmax(90px, 0.65fr) 92px;
+  grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(100px, 0.75fr) minmax(70px, 0.5fr) minmax(74px, 0.55fr) minmax(100px, 0.75fr) minmax(90px, 0.65fr) 92px;
 }
 .admin-data-row:first-child {
   border-top: 0;

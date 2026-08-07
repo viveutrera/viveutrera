@@ -226,6 +226,7 @@ export function AdminCollaborators() {
           <span role="columnheader">Logo</span>
           <span role="columnheader">URL</span>
           <span role="columnheader">Orden</span>
+          <span role="columnheader">Especial</span>
           <span role="columnheader">Nombre visible</span>
           <span role="columnheader">Estado</span>
           <span role="columnheader" aria-label="Acciones" />
@@ -235,10 +236,11 @@ export function AdminCollaborators() {
           const media = mediaAssets.find((asset) => asset.id === item.media_asset_id);
           return (
             <div className="admin-data-row" role="row" key={item.id}>
-              <span role="cell"><strong>{es?.display_name ?? item.name}</strong><small>{item.is_special ? 'Especial' : 'General'}</small></span>
+              <span role="cell"><strong>{es?.display_name ?? item.name}</strong><small>{item.name}</small></span>
               <span role="cell">{media ? <img className="admin-table-thumb" src={mediaUrl(media.object_key)} alt="" loading="lazy" /> : 'Sin logo'}</span>
               <span role="cell">{item.url || 'Sin enlace'}</span>
               <span role="cell">{item.sort_order}</span>
+              <span role="cell">{item.is_special ? 'Si' : 'No'}</span>
               <span role="cell">{item.show_name ?? true ? 'Si' : 'No'}</span>
               <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
               <span className="row-actions" role="cell">
