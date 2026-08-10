@@ -42,7 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isMounted) setLoading(false);
     }
 
-    void loadSession();
+    async function initializeAuth() {
+      await processPasswordRecoveryUrl();
+      await loadSession();
+    }
+
+    void initializeAuth();
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       void loadSession();
@@ -116,9 +121,41 @@ function isPasswordRecoveryUrl() {
   if (typeof window === 'undefined') return false;
   const params = new URLSearchParams(window.location.search);
   if (params.get('type') === 'recovery') return true;
+  if (isHostLoginPath() && params.has('code')) return true;
   const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
   const hashParams = new URLSearchParams(hash);
   return hashParams.get('type') === 'recovery';
+}
+
+async function processPasswordRecoveryUrl() {
+  if (!supabase || typeof window === 'undefined' || !isPasswordRecoveryUrl()) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) console.warn('No se pudo intercambiar el codigo de recuperacion.', error);
+    cleanRecoveryUrl();
+    return;
+  }
+
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+  const hashParams = new URLSearchParams(hash);
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (error) console.warn('No se pudo activar la sesion de recuperacion.', error);
+    cleanRecoveryUrl();
+  }
+}
+
+function cleanRecoveryUrl() {
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
+function isHostLoginPath() {
+  return window.location.pathname.endsWith('/host/login');
 }
 
 async function loadAuthorizedProfile(userId: string, fallbackEmail: string): Promise<ProfileAuth | undefined> {
