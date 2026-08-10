@@ -42,7 +42,10 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourJoined: 'Te has unido al tour. Puedes seguir usando la guia normalmente.',
     tourActive: 'Tour activo',
     joiningTour: 'Uniendo...',
-    loggingIn: 'Entrando...'
+    loggingIn: 'Entrando...',
+    resetPassword: 'Restablecer contrasena',
+    passwordResetSent: 'Si el correo pertenece a un anfitrion, recibira un enlace para restablecer la contrasena.',
+    passwordResetError: 'No se pudo enviar el correo para restablecer la contrasena.'
   },
   en: {
     guide: 'View guide',
@@ -85,7 +88,10 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourJoined: 'You have joined the tour. You can keep using the guide normally.',
     tourActive: 'Active tour',
     joiningTour: 'Joining...',
-    loggingIn: 'Signing in...'
+    loggingIn: 'Signing in...',
+    resetPassword: 'Reset password',
+    passwordResetSent: 'If the email belongs to a host, they will receive a password reset link.',
+    passwordResetError: 'Could not send the password reset email.'
   },
   fr: {
     guide: 'Voir le guide',
@@ -128,7 +134,10 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourJoined: 'Vous avez rejoint le tour. Vous pouvez continuer a utiliser le guide.',
     tourActive: 'Tour actif',
     joiningTour: 'Connexion...',
-    loggingIn: 'Connexion...'
+    loggingIn: 'Connexion...',
+    resetPassword: 'Reinitialiser le mot de passe',
+    passwordResetSent: 'Si l email appartient a un hote, il recevra un lien pour reinitialiser son mot de passe.',
+    passwordResetError: 'Impossible d envoyer l email de reinitialisation.'
   },
   de: {
     guide: 'Guide ansehen',
@@ -171,7 +180,10 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourJoined: 'Du bist der Tour beigetreten. Du kannst den Guide weiter nutzen.',
     tourActive: 'Aktive Tour',
     joiningTour: 'Beitreten...',
-    loggingIn: 'Anmelden...'
+    loggingIn: 'Anmelden...',
+    resetPassword: 'Passwort zurucksetzen',
+    passwordResetSent: 'Wenn die E-Mail zu einem Gastgeber gehort, erhalt er einen Link zum Zurucksetzen des Passworts.',
+    passwordResetError: 'Die E-Mail zum Zurucksetzen des Passworts konnte nicht gesendet werden.'
   }
 };
 

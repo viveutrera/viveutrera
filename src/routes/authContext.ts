@@ -6,12 +6,14 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isHost: boolean;
+  isPasswordRecovery: boolean;
   isLoading: boolean;
   userEmail?: string;
   userRole?: UserRole;
   signIn: (email: string, password: string, allowedRoles?: UserRole[]) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

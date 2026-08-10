@@ -21,7 +21,7 @@ import { useAuth } from '../../routes/authContext';
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { resetPassword, signIn } = useAuth();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<SiteContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -81,6 +81,20 @@ export function LandingPage() {
       navigate('/host');
     } catch (caught) {
       setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'tourHostLoginError'));
+    } finally {
+      setTourSubmitting(false);
+    }
+  }
+
+  async function requestHostPasswordReset() {
+    setTourError('');
+    setTourSubmitting(true);
+    try {
+      await resetPassword(hostEmail);
+      setTourMessage(t(landingLanguage, 'passwordResetSent'));
+      setHostLoginOpen(false);
+    } catch (caught) {
+      setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'passwordResetError'));
     } finally {
       setTourSubmitting(false);
     }
@@ -259,6 +273,9 @@ export function LandingPage() {
           {tourError ? <div className="state state-error">{tourError}</div> : null}
           <FormField label={t(landingLanguage, 'email')} type="email" value={hostEmail} onChange={(event) => setHostEmail(event.target.value)} required />
           <FormField label={t(landingLanguage, 'password')} type="password" value={hostPassword} onChange={(event) => setHostPassword(event.target.value)} required />
+          <button className="text-button" type="button" onClick={requestHostPasswordReset} disabled={isTourSubmitting}>
+            {t(landingLanguage, 'resetPassword')}
+          </button>
           <div className="modal-actions">
             <Button type="button" variant="secondary" onClick={() => setHostLoginOpen(false)} disabled={isTourSubmitting}>{t(landingLanguage, 'close')}</Button>
             <Button type="submit" disabled={isTourSubmitting}>{isTourSubmitting ? t(landingLanguage, 'loggingIn') : t(landingLanguage, 'login')}</Button>

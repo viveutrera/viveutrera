@@ -10,6 +10,7 @@ interface ProfileAuth {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [mockEmail, setMockEmail] = useState(() => supabase ? undefined : sessionStorage.getItem('mock-admin-email') ?? undefined);
   const [userRole, setUserRole] = useState<UserRole | undefined>(() => supabase ? undefined : 'admin');
+  const [isPasswordRecovery, setPasswordRecovery] = useState(false);
   const [isLoading, setLoading] = useState(Boolean(supabase));
 
   useEffect(() => {
@@ -41,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void loadSession();
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       void loadSession();
     });
 
@@ -56,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: Boolean(mockEmail),
     isAdmin: userRole === 'admin',
     isHost: userRole === 'host' || userRole === 'admin',
+    isPasswordRecovery,
     userEmail: mockEmail,
     userRole,
     async signIn(email, password, allowedRoles = ['admin']) {
@@ -81,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('mock-admin-email');
       setMockEmail(undefined);
       setUserRole(undefined);
+      setPasswordRecovery(false);
     },
     async resetPassword(email) {
       if (!email.trim()) throw new Error('Indica el correo para restaurar la contrasena.');
@@ -90,8 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw new Error('No se pudo enviar el correo de restauracion.');
       }
+    },
+    async updatePassword(password) {
+      if (password.trim().length < 8) throw new Error('La nueva contrasena debe tener al menos 8 caracteres.');
+      if (supabase) {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw new Error('No se pudo actualizar la contrasena.');
+      }
+      setPasswordRecovery(false);
     }
-  }), [isLoading, mockEmail, userRole]);
+  }), [isLoading, isPasswordRecovery, mockEmail, userRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
