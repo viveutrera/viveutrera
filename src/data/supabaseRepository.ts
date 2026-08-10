@@ -8,6 +8,8 @@ import type {
   MediaVariant,
   SiteContent,
   Tour,
+  TourEvent,
+  TourEventType,
   TourStatus
 } from '../domain/types';
 import { supabase } from '../lib/supabase';
@@ -1041,6 +1043,21 @@ export const tourRepository = {
     if (error) throw error;
     const rows = (data ?? []) as Array<Parameters<typeof mapTourRow>[0]>;
     return rows[0] ? mapTourRow(rows[0]) : undefined;
+  },
+  async sendElementToTour(tourId: string, elementId: string): Promise<TourEvent> {
+    const client = ensureSupabase();
+    const { data, error } = await client.rpc('send_tour_element', { input_tour_id: tourId, input_element_id: elementId });
+    if (error) throw error;
+    const rows = (data ?? []) as Array<Parameters<typeof mapTourEventRow>[0]>;
+    if (!rows[0]) throw new Error('No se pudo registrar la indicacion del tour.');
+    return mapTourEventRow(rows[0]);
+  },
+  async getLatestTourEvent(tourId: string): Promise<TourEvent | undefined> {
+    const client = ensureSupabase();
+    const { data, error } = await client.rpc('get_latest_tour_event', { input_tour_id: tourId });
+    if (error) throw error;
+    const rows = (data ?? []) as Array<Parameters<typeof mapTourEventRow>[0]>;
+    return rows[0] ? mapTourEventRow(rows[0]) : undefined;
   }
 };
 
@@ -1068,6 +1085,31 @@ function mapTourRow(row: {
 
 function asTourStatus(status: string): TourStatus {
   return status === 'active' || status === 'finished' || status === 'cancelled' ? status : 'draft';
+}
+
+function mapTourEventRow(row: {
+  id: string;
+  tour_id: string;
+  event_type: string;
+  element_id?: string | null;
+  message?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}): TourEvent {
+  return {
+    id: row.id,
+    tourId: row.tour_id,
+    eventType: asTourEventType(row.event_type),
+    elementId: row.element_id ?? undefined,
+    message: row.message ?? undefined,
+    createdBy: row.created_by ?? undefined,
+    createdAt: row.created_at
+  };
+}
+
+function asTourEventType(value: string): TourEventType {
+  if (value === 'message' || value === 'notice' || value === 'meeting_point') return value;
+  return 'element';
 }
 
 async function getLanguageId(language: LanguageCode): Promise<string | undefined> {

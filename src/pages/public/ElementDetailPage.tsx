@@ -1,19 +1,24 @@
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Radio, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { ElementType, GuideElement, Language, LanguageCode } from '../../domain/types';
+import { tourRepository } from '../../data/supabaseRepository';
+import type { ElementType, GuideElement, Language, LanguageCode, Tour } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
+import { broadcastTourElement } from '../../lib/realtimeTourService';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
+import { useAuth } from '../../routes/authContext';
 
 export function ElementDetailPage() {
+  const { isHost } = useAuth();
   const { idioma = 'es', slug = '' } = useParams();
   const [searchParams] = useSearchParams();
   const requestedLanguage = isLanguageCode(idioma) ? idioma : undefined;
@@ -28,6 +33,10 @@ export function ElementDetailPage() {
   const [showLongText, setShowLongText] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | undefined>();
   const [activeAudioId, setActiveAudioId] = useState<string>();
+  const [activeTours, setActiveTours] = useState<Tour[]>([]);
+  const [sendTourId, setSendTourId] = useState<string>();
+  const [tourMessage, setTourMessage] = useState('');
+  const [isSendingTour, setSendingTour] = useState(false);
   const lightboxRef = useRef<HTMLDivElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
@@ -95,6 +104,14 @@ export function ElementDetailPage() {
   }, [idioma, slug]);
 
   useEffect(() => {
+    if (!isHost) return undefined;
+    tourRepository.listMyTours()
+      .then((rows) => setActiveTours(rows.filter((tour) => tour.status === 'active')))
+      .catch(() => setActiveTours([]));
+    return undefined;
+  }, [isHost]);
+
+  useEffect(() => {
     if (selectedImageIndex === undefined) return undefined;
     lastFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     window.setTimeout(() => lightboxCloseRef.current?.focus(), 0);
@@ -154,6 +171,22 @@ export function ElementDetailPage() {
   const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
   const typeQuery = selectedTypeId ? `?tipo=${encodeURIComponent(selectedTypeId)}` : '';
   const backPath = `/guia/${language}${typeQuery}`;
+  const selectedTour = activeTours.find((tour) => tour.id === sendTourId);
+
+  async function sendElementToTour() {
+    if (!selectedTour || !element) return;
+    setSendingTour(true);
+    try {
+      const event = await tourRepository.sendElementToTour(selectedTour.id, element.id);
+      await broadcastTourElement(selectedTour.id, event);
+      setSendTourId(undefined);
+      setTourMessage('Elemento enviado al tour.');
+    } catch (caught) {
+      setTourMessage(caught instanceof Error ? caught.message : 'No se pudo enviar el elemento al tour.');
+    } finally {
+      setSendingTour(false);
+    }
+  }
 
   return (
     <>
@@ -172,7 +205,7 @@ export function ElementDetailPage() {
         </div>
         <h1>{translation.name}</h1>
         <p className="lead">{translation.shortText}</p>
-        {!element.showLongTextDefault || element.mapsUrl ? (
+        {!element.showLongTextDefault || element.mapsUrl || activeTours.length ? (
           <div className="detail-actions">
             {!element.showLongTextDefault ? (
               <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
@@ -182,6 +215,9 @@ export function ElementDetailPage() {
                 <MapPin size={18} />
                 <span>{t(language, 'location')}</span>
               </a>
+            ) : null}
+            {activeTours.length ? (
+              <Button type="button" icon={<Radio size={18} />} onClick={() => setSendTourId(activeTours[0].id)}>{t(language, 'sendToTour')}</Button>
             ) : null}
           </div>
         ) : null}
@@ -270,6 +306,29 @@ export function ElementDetailPage() {
           ) : null}
         </nav>
       </main>
+      <Modal title={t(language, 'sendToTour')} isOpen={Boolean(sendTourId)} onClose={() => setSendTourId(undefined)}>
+        <div className="stack-form">
+          <p>Enviar <strong>{translation.name}</strong> al tour <strong>{selectedTour?.code}</strong>.</p>
+          {activeTours.length > 1 ? (
+            <label className="form-field">
+              <span>Tour activo</span>
+              <select value={sendTourId} onChange={(event) => setSendTourId(event.target.value)}>
+                {activeTours.map((tour) => <option key={tour.id} value={tour.id}>{tour.code}</option>)}
+              </select>
+            </label>
+          ) : null}
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={() => setSendTourId(undefined)} disabled={isSendingTour}>{t(language, 'close')}</Button>
+            <Button type="button" onClick={sendElementToTour} disabled={isSendingTour}>{isSendingTour ? 'Enviando...' : t(language, 'sendToTour')}</Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal title="Tour" isOpen={Boolean(tourMessage)} onClose={() => setTourMessage('')}>
+        <p>{tourMessage}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setTourMessage('')}>{t(language, 'close')}</Button>
+        </div>
+      </Modal>
       <PublicFooter />
     </>
   );

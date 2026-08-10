@@ -9,6 +9,7 @@ import { LoadingState } from '../../components/ui/States';
 import { tourRepository } from '../../data/supabaseRepository';
 import type { Tour } from '../../domain/types';
 import { publicPath } from '../../lib/routing';
+import { subscribeToTourPresence } from '../../lib/realtimeTourService';
 import { useAuth } from '../../routes/authContext';
 
 export function HostDashboard() {
@@ -122,6 +123,7 @@ export function HostDashboard() {
               <p className={`tour-status tour-status-${tour.status}`}>{statusLabel(tour.status)}</p>
               <strong className="tour-code">{tour.code}</strong>
               <small>Caduca: {formatDate(tour.expiresAt)}</small>
+              {tour.status === 'active' ? <ConnectedParticipants tourId={tour.id} /> : null}
             </div>
             <div className="host-tour-actions">
               <Button type="button" variant="secondary" icon={<Clipboard size={18} />} onClick={() => copyCode(tour.code)}>Copiar</Button>
@@ -147,6 +149,14 @@ export function HostDashboard() {
       </Modal>
     </main>
   );
+}
+
+function ConnectedParticipants({ tourId }: { tourId: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => subscribeToTourPresence(tourId, `host-${tourId}`, setCount), [tourId]);
+
+  return <small className="tour-presence">Participantes conectados: {Math.max(0, count - 1)}</small>;
 }
 
 function statusLabel(status: Tour['status']) {

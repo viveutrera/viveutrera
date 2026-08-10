@@ -45,7 +45,12 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     loggingIn: 'Entrando...',
     resetPassword: 'Restablecer contrasena',
     passwordResetSent: 'Si el correo pertenece a un anfitrion, recibira un enlace para restablecer la contrasena.',
-    passwordResetError: 'No se pudo enviar el correo para restablecer la contrasena.'
+    passwordResetError: 'No se pudo enviar el correo para restablecer la contrasena.',
+    sendToTour: 'Enviar al tour',
+    tourNotificationTitle: 'Nueva indicacion del anfitrion',
+    tourNotificationText: 'El anfitrion quiere mostrarte este lugar.',
+    open: 'Abrir',
+    lastTourInstruction: 'Ultima indicacion'
   },
   en: {
     guide: 'View guide',
@@ -91,7 +96,12 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     loggingIn: 'Signing in...',
     resetPassword: 'Reset password',
     passwordResetSent: 'If the email belongs to a host, they will receive a password reset link.',
-    passwordResetError: 'Could not send the password reset email.'
+    passwordResetError: 'Could not send the password reset email.',
+    sendToTour: 'Send to tour',
+    tourNotificationTitle: 'New host instruction',
+    tourNotificationText: 'The host wants to show you this place.',
+    open: 'Open',
+    lastTourInstruction: 'Last instruction'
   },
   fr: {
     guide: 'Voir le guide',
@@ -137,7 +147,12 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     loggingIn: 'Connexion...',
     resetPassword: 'Reinitialiser le mot de passe',
     passwordResetSent: 'Si l email appartient a un hote, il recevra un lien pour reinitialiser son mot de passe.',
-    passwordResetError: 'Impossible d envoyer l email de reinitialisation.'
+    passwordResetError: 'Impossible d envoyer l email de reinitialisation.',
+    sendToTour: 'Envoyer au tour',
+    tourNotificationTitle: 'Nouvelle indication de l hote',
+    tourNotificationText: 'L hote souhaite vous montrer ce lieu.',
+    open: 'Ouvrir',
+    lastTourInstruction: 'Derniere indication'
   },
   de: {
     guide: 'Guide ansehen',
@@ -183,7 +198,12 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     loggingIn: 'Anmelden...',
     resetPassword: 'Passwort zurucksetzen',
     passwordResetSent: 'Wenn die E-Mail zu einem Gastgeber gehort, erhalt er einen Link zum Zurucksetzen des Passworts.',
-    passwordResetError: 'Die E-Mail zum Zurucksetzen des Passworts konnte nicht gesendet werden.'
+    passwordResetError: 'Die E-Mail zum Zurucksetzen des Passworts konnte nicht gesendet werden.',
+    sendToTour: 'An Tour senden',
+    tourNotificationTitle: 'Neue Anweisung des Gastgebers',
+    tourNotificationText: 'Der Gastgeber mochte dir diesen Ort zeigen.',
+    open: 'Offnen',
+    lastTourInstruction: 'Letzte Anweisung'
   }
 };
 

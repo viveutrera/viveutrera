@@ -139,6 +139,18 @@ export interface Tour {
   expiresAt: string;
 }
 
+export type TourEventType = 'element' | 'message' | 'notice' | 'meeting_point';
+
+export interface TourEvent {
+  id: string;
+  tourId: string;
+  eventType: TourEventType;
+  elementId?: string;
+  message?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
 export interface UploadRequest {
   file: File;
   target: 'site' | 'element-image' | 'element-audio' | 'collaborator';

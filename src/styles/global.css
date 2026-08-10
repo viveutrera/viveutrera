@@ -429,6 +429,14 @@ p { line-height: 1.65; }
 .tour-action-card p {
   margin: 0;
 }
+.tour-notification {
+  display: grid;
+  gap: 10px;
+}
+.tour-notification strong {
+  color: var(--color-primary);
+  font-size: 1.35rem;
+}
 .active-tour-indicator {
   position: fixed;
   top: 14px;
@@ -1596,6 +1604,12 @@ p { line-height: 1.65; }
 }
 .host-tour-card small {
   color: var(--color-muted);
+}
+.tour-presence {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-primary);
+  font-weight: 800;
 }
 .host-tour-actions {
   display: flex;
