@@ -37,6 +37,8 @@ create table public.site_translations (
   city_text text not null,
   language_card_text text not null,
   language_card_button text not null,
+  collaborator_section_text text,
+  special_collaborator_label text,
   seo_title text not null,
   seo_description text not null,
   unique(language_id)

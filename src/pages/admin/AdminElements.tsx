@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { LanguageLegend } from '../../components/admin/LanguageLegend';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { canUseUploadApi, deleteMediaFiles } from '../../lib/uploadApi';
 import { matchesSearch, slugify, validateOptionalUrl, validateRequired, validateSlug } from '../../lib/validation';
@@ -350,7 +351,7 @@ export function AdminElements() {
               const translation = form.translations.find((item) => item.language_id === language.id) ?? emptyElement([language]).translations[0];
               return (
                 <fieldset className="translation-panel" key={language.id}>
-                  <legend>{language.native_name}</legend>
+                  <legend><LanguageLegend code={language.code} name={language.native_name} /></legend>
                   <FormField label="Nombre" value={translation.name} onChange={(event) => updateTranslation(language.id, 'name', event.target.value)} required={language.code === 'es'} />
                   <TextAreaField label="Texto corto" value={translation.short_text} onChange={(event) => updateTranslation(language.id, 'short_text', event.target.value)} required={language.code === 'es'} />
                 </fieldset>

@@ -117,6 +117,8 @@ export interface SiteContent {
   heroDescription: string;
   cityTitle: string;
   cityText: string;
+  collaboratorSectionText?: string;
+  specialCollaboratorLabel?: string;
   seoTitle: string;
   seoDescription: string;
   heroLogoObjectKey?: string;

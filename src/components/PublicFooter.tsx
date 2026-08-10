@@ -7,7 +7,7 @@ export function PublicFooter() {
       <div className="public-footer-inner">
         <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
           <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
-          <span>VIVE UTRERA</span>
+          <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
         </a>
         <div className="public-footer-social" aria-label="Redes sociales">
           <span aria-label="Facebook" role="img"><Facebook size={20} /></span>

@@ -291,8 +291,8 @@ button, input { font: inherit; }
   gap: 12px;
   min-width: 0;
   color: var(--color-white);
-  font-weight: 800;
   letter-spacing: 0.04em;
+  text-decoration: none;
 }
 
 .public-footer-brand img {
@@ -301,8 +301,16 @@ button, input { font: inherit; }
   object-fit: contain;
 }
 
-.public-footer-brand span {
+.public-footer-wordmark {
+  display: inline-flex;
+  gap: 0.32em;
   white-space: nowrap;
+}
+.public-footer-wordmark span {
+  font-weight: 500;
+}
+.public-footer-wordmark strong {
+  font-weight: 800;
 }
 
 .public-footer-social {
@@ -1093,6 +1101,17 @@ p { line-height: 1.65; }
   color: var(--color-primary);
   font-weight: 800;
 }
+.language-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.language-legend img {
+  width: 24px;
+  height: 16px;
+  border: 1px solid rgba(216, 199, 166, 0.75);
+  object-fit: contain;
+}
 .table-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1495,7 +1514,8 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     justify-content: flex-end;
   }
   .detail-language-bar {
-    justify-content: flex-start;
+    justify-content: flex-end;
+    margin-top: -8px;
   }
   .detail-language-bar .language-selector {
     right: auto;

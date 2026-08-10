@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { LanguageLegend } from '../../components/admin/LanguageLegend';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { elementTypeIconOptions, isElementTypeIcon } from '../../lib/typeIcons';
 import { validateRequired, validateSlug } from '../../lib/validation';
@@ -147,7 +148,7 @@ export function AdminElementTypeEdit() {
               const translation = form.translations.find((item) => item.language_id === language.id) ?? { language_id: language.id, name: '', description: '' };
               return (
                 <fieldset className="translation-panel" key={language.id}>
-                  <legend>{language.native_name}</legend>
+                  <legend><LanguageLegend code={language.code} name={language.native_name} /></legend>
                   <FormField label="Nombre" value={translation.name} onChange={(event) => updateTranslation(language.id, 'name', event.target.value)} required={language.code === 'es'} />
                   <TextAreaField label="Descripcion" value={translation.description} onChange={(event) => updateTranslation(language.id, 'description', event.target.value)} />
                 </fieldset>

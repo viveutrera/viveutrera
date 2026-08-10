@@ -150,12 +150,12 @@ export function LandingPage() {
         <section className="section section-stone">
           <div className="section-heading">
             <h2>Colaboradores</h2>
-            <p>Logotipos y agradecimientos configurables desde administracion.</p>
+            {content.collaboratorSectionText ? <p>{content.collaboratorSectionText}</p> : null}
           </div>
           {specialCollaborators.length ? (
             <div className="special-collaborators" aria-label="Colaboradores especiales">
               {specialCollaborators.map((collaborator) => (
-                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
+                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} label={content.specialCollaboratorLabel} />
               ))}
             </div>
           ) : null}
@@ -180,13 +180,13 @@ export function LandingPage() {
   );
 }
 
-function SpecialCollaboratorCard({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
+function SpecialCollaboratorCard({ collaborator, language, label }: { collaborator: Collaborator; language: LanguageCode; label?: string }) {
   const translation = collaboratorTranslation(collaborator, language);
   const content = (
     <>
       {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={translation.displayName} loading="lazy" /> : null}
       <div>
-        <p className="special-collaborator-kicker">Agradecimiento especial</p>
+        {label ? <p className="special-collaborator-kicker">{label}</p> : null}
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
         {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
       </div>

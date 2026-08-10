@@ -27,6 +27,8 @@ interface SettingsTranslation {
   city_text: string;
   language_card_text: string;
   language_card_button: string;
+  collaborator_section_text: string;
+  special_collaborator_label: string;
   seo_title: string;
   seo_description: string;
 }
@@ -58,6 +60,8 @@ const emptyTranslation = (languageId: string): SettingsTranslation => ({
   city_text: '',
   language_card_text: '',
   language_card_button: '',
+  collaborator_section_text: '',
+  special_collaborator_label: '',
   seo_title: '',
   seo_description: ''
 });
@@ -388,6 +392,8 @@ export function AdminSettings() {
                 <TextAreaField label="Texto ciudad" value={translation.city_text} onChange={(event) => update(language.id, 'city_text', event.target.value)} required readOnly={!isEditing} />
                 <TextAreaField label="Texto tarjeta idioma" value={translation.language_card_text} onChange={(event) => update(language.id, 'language_card_text', event.target.value)} required readOnly={!isEditing} />
                 <FormField label="Boton tarjeta idioma" value={translation.language_card_button} onChange={(event) => update(language.id, 'language_card_button', event.target.value)} required readOnly={!isEditing} />
+                <TextAreaField label="Texto seccion colaboradores" value={translation.collaborator_section_text} onChange={(event) => update(language.id, 'collaborator_section_text', event.target.value)} readOnly={!isEditing} />
+                <FormField label="Etiqueta colaborador especial" value={translation.special_collaborator_label} onChange={(event) => update(language.id, 'special_collaborator_label', event.target.value)} readOnly={!isEditing} />
                 <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => update(language.id, 'seo_title', event.target.value)} required readOnly={!isEditing} />
                 <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => update(language.id, 'seo_description', event.target.value)} required readOnly={!isEditing} />
               </div>

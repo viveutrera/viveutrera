@@ -14,6 +14,8 @@ export const siteContent: Record<LanguageCode, SiteContent> = {
     heroDescription: 'Descubre monumentos, calles y lugares de interes de Utrera mediante fotografias, mapas y audioguias.',
     cityTitle: 'Una ciudad para escuchar con calma',
     cityText: 'Patrimonio, plazas, callejones y espacios culturales reunidos en una guia publica pensada para el movil.',
+    collaboratorSectionText: 'Logotipos y agradecimientos configurables desde administracion.',
+    specialCollaboratorLabel: 'Agradecimiento especial',
     seoTitle: 'Vive Utrera | Guia audiovisual de Utrera',
     seoDescription: 'Guia publica de monumentos, calles y lugares de interes de Utrera.'
   },
@@ -23,6 +25,8 @@ export const siteContent: Record<LanguageCode, SiteContent> = {
     heroDescription: 'Discover Utrera monuments, streets and places of interest through photos, maps and audio guides.',
     cityTitle: 'A city to hear slowly',
     cityText: 'Heritage, squares, streets and cultural spaces gathered in a mobile-first public guide.',
+    collaboratorSectionText: 'Logos and acknowledgements configured from administration.',
+    specialCollaboratorLabel: 'Special thanks',
     seoTitle: 'Vive Utrera | Audiovisual guide',
     seoDescription: 'Public guide to Utrera monuments, streets and places of interest.'
   },
@@ -32,6 +36,8 @@ export const siteContent: Record<LanguageCode, SiteContent> = {
     heroDescription: 'Decouvrez les monuments, rues et lieux d interet d Utrera avec photos, cartes et audioguides.',
     cityTitle: 'Une ville a ecouter doucement',
     cityText: 'Patrimoine, places, rues et espaces culturels reunis dans un guide public mobile.',
+    collaboratorSectionText: 'Logos et remerciements configures depuis l administration.',
+    specialCollaboratorLabel: 'Remerciement special',
     seoTitle: 'Vive Utrera | Guide audiovisuel',
     seoDescription: 'Guide public des monuments, rues et lieux d interet d Utrera.'
   },
@@ -41,6 +47,8 @@ export const siteContent: Record<LanguageCode, SiteContent> = {
     heroDescription: 'Entdecken Sie Utreras Denkmaler, Strassen und Orte mit Fotos, Karten und Audioguides.',
     cityTitle: 'Eine Stadt zum ruhigen Zuhoren',
     cityText: 'Kulturerbe, Platze, Strassen und Kulturorte in einem mobilen offentlichen Guide.',
+    collaboratorSectionText: 'Logos und Danksagungen aus der Verwaltung.',
+    specialCollaboratorLabel: 'Besonderer Dank',
     seoTitle: 'Vive Utrera | Audiovisueller Guide',
     seoDescription: 'Offentlicher Guide zu Denkmalern, Strassen und Orten in Utrera.'
   }

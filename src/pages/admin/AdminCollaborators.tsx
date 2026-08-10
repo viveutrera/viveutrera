@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField, SelectField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
+import { LanguageLegend } from '../../components/admin/LanguageLegend';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { mediaUrl } from '../../lib/media';
 import { canUseUploadApi, deleteMediaFiles } from '../../lib/uploadApi';
@@ -308,7 +309,7 @@ export function CollaboratorFields({ form, languages, mediaAssets, onChange, onT
           const translation = form.translations.find((item) => item.language_id === language.id) ?? { language_id: language.id, display_name: '', thank_you_text: '' };
           return (
             <fieldset className="translation-panel" key={language.id}>
-              <legend>{language.native_name}</legend>
+              <legend><LanguageLegend code={language.code} name={language.native_name} /></legend>
               <FormField label="Nombre visible" value={translation.display_name} onChange={(event) => onTranslationChange(language.id, 'display_name', event.target.value)} required={language.code === 'es'} />
               <TextAreaField label="Agradecimiento" value={translation.thank_you_text} onChange={(event) => onTranslationChange(language.id, 'thank_you_text', event.target.value)} />
             </fieldset>

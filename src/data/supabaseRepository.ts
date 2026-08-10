@@ -149,7 +149,9 @@ function isMissingColumnError(error: unknown) {
   return candidate.code === '42703'
     || candidate.code === 'PGRST204'
     || Boolean(candidate.message?.includes('show_long_text_default'))
-    || Boolean(candidate.message?.includes('show_name'));
+    || Boolean(candidate.message?.includes('show_name'))
+    || Boolean(candidate.message?.includes('collaborator_section_text'))
+    || Boolean(candidate.message?.includes('special_collaborator_label'));
 }
 
 export const supabaseGuideRepository = {
@@ -187,11 +189,22 @@ export const supabaseGuideRepository = {
     const { data: languageRow } = await client.from('languages').select('id').eq('code', language).maybeSingle();
     if (!languageRow) return mockSiteContent.es;
 
-    const { data, error } = await client
+    const response = await client
       .from('site_translations')
-      .select('hero_title, hero_slogan, hero_description, city_title, city_text, seo_title, seo_description')
+      .select('hero_title, hero_slogan, hero_description, city_title, city_text, collaborator_section_text, special_collaborator_label, seo_title, seo_description')
       .eq('language_id', languageRow.id)
       .maybeSingle();
+    let data = response.data as Record<string, any> | null;
+    let error = response.error;
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('site_translations')
+        .select('hero_title, hero_slogan, hero_description, city_title, city_text, seo_title, seo_description')
+        .eq('language_id', languageRow.id)
+        .maybeSingle();
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
     if (!data) return mockSiteContent.es;
@@ -203,6 +216,8 @@ export const supabaseGuideRepository = {
       heroDescription: data.hero_description,
       cityTitle: data.city_title,
       cityText: data.city_text,
+      collaboratorSectionText: data.collaborator_section_text ?? mockSiteContent[language].collaboratorSectionText,
+      specialCollaboratorLabel: data.special_collaborator_label ?? mockSiteContent[language].specialCollaboratorLabel,
       seoTitle: data.seo_title,
       seoDescription: data.seo_description,
       heroLogoObjectKey: mediaSettings.heroLogoObjectKey,
@@ -487,11 +502,23 @@ export const adminRepository = {
     city_text: string;
     language_card_text: string;
     language_card_button: string;
+    collaborator_section_text?: string | null;
+    special_collaborator_label?: string | null;
     seo_title: string;
     seo_description: string;
   }>) {
     const client = ensureSupabase();
-    const { error } = await client.from('site_translations').upsert(translations, { onConflict: 'language_id' });
+    let { error } = await client.from('site_translations').upsert(translations, { onConflict: 'language_id' });
+    if (error && isMissingColumnError(error)) {
+      const legacyTranslations = translations.map((translation) => {
+        const legacy: Partial<typeof translation> = { ...translation };
+        delete legacy.collaborator_section_text;
+        delete legacy.special_collaborator_label;
+        return legacy;
+      });
+      const legacy = await client.from('site_translations').upsert(legacyTranslations, { onConflict: 'language_id' });
+      error = legacy.error;
+    }
     if (error) throw error;
   },
 
