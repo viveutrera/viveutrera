@@ -13,8 +13,8 @@ import { languages as mockLanguages, siteContent as mockSiteContent } from './mo
 
 const languageCodes: LanguageCode[] = ['es', 'en', 'fr', 'de'];
 const publicElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
-const publicElementSelectLegacy = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
-const adminElementSelect = 'id, slug, element_type_id, maps_url, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
+const publicElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
+const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 
 const placeholderAsset: MediaAsset = {
@@ -33,8 +33,8 @@ interface ElementRowRaw {
   slug: string;
   element_type_id: string;
   maps_url: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   status: string;
   is_featured: boolean;
   show_long_text_default?: boolean;
@@ -117,6 +117,39 @@ interface SiteSettingRowRaw {
   value_json: unknown;
 }
 
+interface SiteTranslationRowRaw {
+  hero_title: string;
+  hero_slogan: string;
+  hero_description: string;
+  city_title: string;
+  city_text: string;
+  collaborator_section_text?: string | null;
+  special_collaborator_label?: string | null;
+  seo_title: string;
+  seo_description: string;
+}
+
+interface CollaboratorTranslationRowRaw {
+  id?: string;
+  display_name: string;
+  thank_you_text: string | null;
+  language_id?: string;
+  languages?: { code: string } | { code: string }[] | null;
+}
+
+interface CollaboratorRowRaw {
+  id: string;
+  name: string;
+  media_asset_id: string | null;
+  url: string | null;
+  sort_order: number;
+  is_active: boolean;
+  is_special: boolean;
+  show_name?: boolean | null;
+  media_assets?: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
+  collaborator_translations?: CollaboratorTranslationRowRaw[];
+}
+
 function asLanguageCode(code: string): LanguageCode {
   return languageCodes.includes(code as LanguageCode) ? code as LanguageCode : 'es';
 }
@@ -151,7 +184,9 @@ function isMissingColumnError(error: unknown) {
     || Boolean(candidate.message?.includes('show_long_text_default'))
     || Boolean(candidate.message?.includes('show_name'))
     || Boolean(candidate.message?.includes('collaborator_section_text'))
-    || Boolean(candidate.message?.includes('special_collaborator_label'));
+    || Boolean(candidate.message?.includes('special_collaborator_label'))
+    || Boolean(candidate.message?.includes('latitude'))
+    || Boolean(candidate.message?.includes('longitude'));
 }
 
 export const supabaseGuideRepository = {
@@ -194,7 +229,7 @@ export const supabaseGuideRepository = {
       .select('hero_title, hero_slogan, hero_description, city_title, city_text, collaborator_section_text, special_collaborator_label, seo_title, seo_description')
       .eq('language_id', languageRow.id)
       .maybeSingle();
-    let data = response.data as Record<string, any> | null;
+    let data = response.data as SiteTranslationRowRaw | null;
     let error = response.error;
     if (error && isMissingColumnError(error)) {
       const legacy = await client
@@ -351,7 +386,7 @@ export const supabaseGuideRepository = {
       .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
       .eq('is_active', true)
       .order('sort_order');
-    let data = response.data as Array<Record<string, any>> | null;
+    let data = response.data as CollaboratorRowRaw[] | null;
     let error = response.error;
     if (error && isMissingColumnError(error)) {
       const legacy = await client
@@ -367,7 +402,7 @@ export const supabaseGuideRepository = {
 
     return (data ?? []).map((row) => {
       const translations = emptyTranslations<{ displayName: string; thankYouText?: string }>(() => ({ displayName: row.name }));
-      row.collaborator_translations?.forEach((translation: Record<string, any>) => {
+      row.collaborator_translations?.forEach((translation) => {
         const code = asLanguageCode(relatedLanguageCode(translation.languages));
         translations[code] = {
           displayName: translation.display_name,
@@ -614,6 +649,8 @@ export const adminRepository = {
     slug: string;
     element_type_id: string;
     maps_url: string;
+    latitude?: number | null;
+    longitude?: number | null;
     status: 'draft' | 'published';
     is_featured: boolean;
     show_long_text_default?: boolean;
@@ -634,6 +671,8 @@ export const adminRepository = {
       slug: input.slug,
       element_type_id: input.element_type_id,
       maps_url: input.maps_url || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       status: input.status,
       is_featured: input.is_featured,
       show_long_text_default: input.show_long_text_default ?? false,
@@ -648,6 +687,8 @@ export const adminRepository = {
     if (error && isMissingColumnError(error)) {
       const legacyPayload: Partial<typeof payload> = { ...payload };
       delete legacyPayload.show_long_text_default;
+      delete legacyPayload.latitude;
+      delete legacyPayload.longitude;
       const legacy = await client
         .from('elements')
         .upsert(legacyPayload)
@@ -786,7 +827,7 @@ export const adminRepository = {
       .from('collaborators')
       .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
       .order('sort_order');
-    let data = response.data as Array<Record<string, any>> | null;
+    let data = response.data as CollaboratorRowRaw[] | null;
     let error = response.error;
     if (error && isMissingColumnError(error)) {
       const legacy = await client

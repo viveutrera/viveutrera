@@ -44,6 +44,8 @@ interface ElementRow {
   slug: string;
   element_type_id: string;
   maps_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   status: 'draft' | 'published';
   is_featured: boolean;
   show_long_text_default?: boolean;
@@ -65,6 +67,8 @@ interface ElementForm {
   slug: string;
   element_type_id: string;
   maps_url: string;
+  latitude: string;
+  longitude: string;
   status: 'draft' | 'published';
   is_featured: boolean;
   show_long_text_default: boolean;
@@ -130,6 +134,8 @@ const emptyElement = (languages: LanguageRow[]): ElementForm => ({
   slug: '',
   element_type_id: '',
   maps_url: '',
+  latitude: '',
+  longitude: '',
   status: 'draft',
   is_featured: false,
   show_long_text_default: false,
@@ -251,6 +257,8 @@ export function AdminElementEdit() {
       slug: element.slug,
       element_type_id: element.element_type_id,
       maps_url: element.maps_url ?? '',
+      latitude: element.latitude === null || element.latitude === undefined ? '' : String(element.latitude),
+      longitude: element.longitude === null || element.longitude === undefined ? '' : String(element.longitude),
       status: element.status,
       is_featured: element.is_featured,
       show_long_text_default: element.show_long_text_default ?? false,
@@ -292,7 +300,14 @@ export function AdminElementEdit() {
 
     setSubmitting(true);
     try {
-      await adminRepository.saveElement({ id, ...form, slug: form.slug.trim(), maps_url: form.maps_url.trim() });
+      await adminRepository.saveElement({
+        id,
+        ...form,
+        slug: form.slug.trim(),
+        maps_url: form.maps_url.trim(),
+        latitude: parseOptionalCoordinate(form.latitude),
+        longitude: parseOptionalCoordinate(form.longitude)
+      });
       setMainEditing(false);
       setSuccess('Elemento guardado.');
       await load();
@@ -692,6 +707,8 @@ export function AdminElementEdit() {
               <option value="published">Publicado</option>
             </SelectField>
             <FormField label="URL mapa" value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} readOnly={!isMainEditing} />
+            <FormField label="Latitud" type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(event) => setForm({ ...form, latitude: event.target.value })} readOnly={!isMainEditing} />
+            <FormField label="Longitud" type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(event) => setForm({ ...form, longitude: event.target.value })} readOnly={!isMainEditing} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} readOnly={!isMainEditing} />
             <label className="check-field"><input type="checkbox" checked={form.is_featured} onChange={(event) => setForm({ ...form, is_featured: event.target.checked })} disabled={!isMainEditing} /> Destacado</label>
             <label className="check-field"><input type="checkbox" checked={form.show_long_text_default} onChange={(event) => setForm({ ...form, show_long_text_default: event.target.checked })} disabled={!isMainEditing} /> Texto largo desplegado por defecto</label>
@@ -1095,6 +1112,10 @@ function validateElement(candidate: ElementForm, languages: LanguageRow[], rows:
   if (typeError) return typeError;
   const urlError = validateOptionalUrl(candidate.maps_url, 'La URL del mapa');
   if (urlError) return urlError;
+  const latitudeError = validateCoordinate(candidate.latitude, 'La latitud', -90, 90);
+  if (latitudeError) return latitudeError;
+  const longitudeError = validateCoordinate(candidate.longitude, 'La longitud', -180, 180);
+  if (longitudeError) return longitudeError;
   const spanish = languages.find((language) => language.code === 'es') ?? languages[0];
   const spanishTranslation = candidate.translations.find((translation) => translation.language_id === spanish?.id);
   const requiredError = [
@@ -1102,6 +1123,20 @@ function validateElement(candidate: ElementForm, languages: LanguageRow[], rows:
     validateRequired(spanishTranslation?.short_text, `Texto corto en ${spanish?.native_name ?? 'el idioma principal'}`)
   ].find(Boolean);
   return requiredError ?? '';
+}
+
+function parseOptionalCoordinate(value: string) {
+  const normalized = value.trim().replace(',', '.');
+  return normalized ? Number(normalized) : null;
+}
+
+function validateCoordinate(value: string, label: string, min: number, max: number) {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized) return '';
+  const numberValue = Number(normalized);
+  if (!Number.isFinite(numberValue)) return `${label} debe ser un numero.`;
+  if (numberValue < min || numberValue > max) return `${label} debe estar entre ${min} y ${max}.`;
+  return '';
 }
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {

@@ -611,6 +611,16 @@ p { line-height: 1.65; }
   background: rgba(216, 199, 166, 0.2);
 }
 .guide-tools { display: grid; gap: 16px; margin: 28px 0; }
+.nearby-tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.nearby-tool small {
+  max-width: 560px;
+  color: var(--color-muted);
+}
 .search-box {
   display: flex;
   align-items: center;
@@ -663,6 +673,73 @@ p { line-height: 1.65; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.nearby-modal {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+.nearby-intro {
+  margin: 0;
+  color: var(--color-muted);
+}
+.nearby-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  color: var(--color-primary);
+  font-weight: 800;
+}
+.nearby-results {
+  display: grid;
+  gap: 12px;
+}
+.nearby-result {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-stone);
+}
+.nearby-thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.nearby-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nearby-result-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-primary);
+}
+.nearby-result-header span {
+  flex: 0 0 auto;
+  font-weight: 900;
+}
+.nearby-result small {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-weight: 800;
+}
+.nearby-result p {
+  margin: 8px 0 12px;
 }
 
 .detail-page { max-width: 900px; }
@@ -1516,6 +1593,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .detail-language-bar {
     justify-content: flex-end;
     margin-top: -8px;
+  }
+  .nearby-result {
+    grid-template-columns: 96px minmax(0, 1fr);
   }
   .detail-language-bar .language-selector {
     right: auto;

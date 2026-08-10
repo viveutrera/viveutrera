@@ -1,7 +1,8 @@
-import { Search } from 'lucide-react';
+import { MapPin, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { NearbyPlacesModal } from '../../components/NearbyPlacesModal';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -9,6 +10,7 @@ import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
 import type { ElementType, GuideElement, Language, LanguageCode, SiteContent } from '../../domain/types';
 import { t } from '../../i18n/ui';
+import { getNearestElements, type NearbyElement } from '../../lib/geolocation';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
@@ -26,6 +28,10 @@ export function GuidePage() {
   const [elements, setElements] = useState<GuideElement[]>([]);
   const [query, setQuery] = useState('');
   const [typeId, setTypeId] = useState('');
+  const [isNearbyOpen, setNearbyOpen] = useState(false);
+  const [isLocating, setLocating] = useState(false);
+  const [nearbyResults, setNearbyResults] = useState<NearbyElement[]>([]);
+  const [nearbyError, setNearbyError] = useState('');
 
   useEffect(() => {
     guideRepository.getLanguages().then((languageData) => {
@@ -85,6 +91,35 @@ export function GuidePage() {
     });
   }, [contentLanguage, elements, query, typeId]);
 
+  function locateNearbyPlaces() {
+    setNearbyOpen(true);
+    setNearbyError('');
+    setNearbyResults([]);
+
+    if (!('geolocation' in navigator)) {
+      setNearbyError(t(language, 'nearbyUnsupported'));
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nearest = getNearestElements(elements, {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+        setNearbyResults(nearest);
+        if (nearest.length === 0) setNearbyError(t(language, 'nearbyNoCoordinates'));
+        setLocating(false);
+      },
+      (geolocationError) => {
+        setNearbyError(geolocationErrorMessage(geolocationError, language));
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
   if (!requestedLanguage) return <Navigate to={`/guia/${language}`} replace />;
 
   if (!content) return <LoadingState />;
@@ -116,6 +151,10 @@ export function GuidePage() {
             <span className="sr-only">{t(language, 'search')}</span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t(language, 'search')} />
           </label>
+          <div className="nearby-tool">
+            <Button type="button" variant="secondary" onClick={locateNearbyPlaces} icon={<MapPin size={18} />}>{t(language, 'whatIsNearby')}</Button>
+            <small>{t(language, 'nearbyPrivacy')}</small>
+          </div>
           <div className="pill-row">
             {types.map((type) => (
               <Button key={type.id} type="button" variant={typeId === type.id ? 'primary' : 'secondary'} onClick={() => setTypeId(type.id)}>
@@ -148,7 +187,26 @@ export function GuidePage() {
           </section>
         )}
       </main>
+      <NearbyPlacesModal
+        isOpen={isNearbyOpen}
+        language={language}
+        contentLanguage={contentLanguage}
+        results={nearbyResults}
+        types={types}
+        isLocating={isLocating}
+        error={nearbyError}
+        selectedTypeId={typeId}
+        onRelocate={locateNearbyPlaces}
+        onClose={() => setNearbyOpen(false)}
+      />
       <PublicFooter />
     </>
   );
+}
+
+function geolocationErrorMessage(error: GeolocationPositionError, language: LanguageCode) {
+  if (error.code === error.PERMISSION_DENIED) return t(language, 'nearbyPermissionDenied');
+  if (error.code === error.POSITION_UNAVAILABLE) return t(language, 'nearbyUnavailable');
+  if (error.code === error.TIMEOUT) return t(language, 'nearbyTimeout');
+  return t(language, 'nearbyUnavailable');
 }

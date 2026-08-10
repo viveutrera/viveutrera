@@ -14,7 +14,20 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     admin: 'Administracion',
     login: 'Entrar',
     email: 'Correo',
-    password: 'Contrasena'
+    password: 'Contrasena',
+    whatIsNearby: 'Que tengo cerca?',
+    nearbyPrivacy: 'Tu ubicacion se utiliza unicamente para mostrarte los lugares cercanos. No se almacena.',
+    nearbyPlacesTitle: 'Lugares cerca de ti',
+    nearbyPlacesIntro: 'Estos son los lugares mas cercanos a tu ubicacion.',
+    nearbyNoCoordinates: 'No hay elementos con coordenadas disponibles.',
+    nearbyUnsupported: 'Tu navegador no permite usar la ubicacion.',
+    nearbyPermissionDenied: 'Permiso de ubicacion necesario para mostrar lugares cercanos.',
+    nearbyUnavailable: 'Ubicacion no disponible. Intentalo de nuevo.',
+    nearbyTimeout: 'No se pudo obtener la ubicacion a tiempo.',
+    locating: 'Localizando...',
+    locateAgain: 'Volver a localizarme',
+    openPlace: 'Abrir ficha',
+    close: 'Cerrar'
   },
   en: {
     guide: 'View guide',
@@ -29,7 +42,20 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     admin: 'Administration',
     login: 'Sign in',
     email: 'Email',
-    password: 'Password'
+    password: 'Password',
+    whatIsNearby: 'What is nearby?',
+    nearbyPrivacy: 'Your location is only used to show nearby places. It is not stored.',
+    nearbyPlacesTitle: 'Places near you',
+    nearbyPlacesIntro: 'These are the places closest to your location.',
+    nearbyNoCoordinates: 'No elements with coordinates are available.',
+    nearbyUnsupported: 'Your browser does not support location access.',
+    nearbyPermissionDenied: 'Location permission is required to show nearby places.',
+    nearbyUnavailable: 'Location unavailable. Please try again.',
+    nearbyTimeout: 'Location request timed out.',
+    locating: 'Locating...',
+    locateAgain: 'Locate me again',
+    openPlace: 'Open place',
+    close: 'Close'
   },
   fr: {
     guide: 'Voir le guide',
@@ -44,7 +70,20 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     admin: 'Administration',
     login: 'Connexion',
     email: 'E-mail',
-    password: 'Mot de passe'
+    password: 'Mot de passe',
+    whatIsNearby: 'Que vois-je autour de moi ?',
+    nearbyPrivacy: 'Votre position est uniquement utilisee pour afficher les lieux proches. Elle n est pas stockee.',
+    nearbyPlacesTitle: 'Lieux pres de vous',
+    nearbyPlacesIntro: 'Voici les lieux les plus proches de votre position.',
+    nearbyNoCoordinates: 'Aucun element avec coordonnees n est disponible.',
+    nearbyUnsupported: 'Votre navigateur ne prend pas en charge la geolocalisation.',
+    nearbyPermissionDenied: 'L autorisation de localisation est necessaire.',
+    nearbyUnavailable: 'Position indisponible. Reessayez.',
+    nearbyTimeout: 'La demande de localisation a expire.',
+    locating: 'Localisation...',
+    locateAgain: 'Me relocaliser',
+    openPlace: 'Ouvrir la fiche',
+    close: 'Fermer'
   },
   de: {
     guide: 'Guide ansehen',
@@ -59,7 +98,20 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     admin: 'Administration',
     login: 'Anmelden',
     email: 'E-Mail',
-    password: 'Passwort'
+    password: 'Passwort',
+    whatIsNearby: 'Was ist in meiner Nahe?',
+    nearbyPrivacy: 'Ihr Standort wird nur verwendet, um nahe gelegene Orte anzuzeigen. Er wird nicht gespeichert.',
+    nearbyPlacesTitle: 'Orte in deiner Nahe',
+    nearbyPlacesIntro: 'Dies sind die Orte, die deinem Standort am nachsten liegen.',
+    nearbyNoCoordinates: 'Es sind keine Elemente mit Koordinaten verfugbar.',
+    nearbyUnsupported: 'Ihr Browser unterstutzt keine Standortfreigabe.',
+    nearbyPermissionDenied: 'Standortberechtigung ist erforderlich.',
+    nearbyUnavailable: 'Standort nicht verfugbar. Bitte erneut versuchen.',
+    nearbyTimeout: 'Standortabfrage abgelaufen.',
+    locating: 'Standort wird ermittelt...',
+    locateAgain: 'Erneut lokalisieren',
+    openPlace: 'Ort offnen',
+    close: 'Schliessen'
   }
 };
 
