@@ -60,6 +60,36 @@ export function formatDistance(distanceMeters: number, language: LanguageCode) {
   return `${formatter.format(distanceMeters / 1000)} km`;
 }
 
+export function extractGoogleMapsCoordinates(value: string): Coordinates | undefined {
+  const input = value.trim();
+  if (!input) return undefined;
+
+  const candidates = [
+    /@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)(?:,|$)/,
+    /[?&](?:q|query|ll)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)(?:[,&]|$)/,
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)(?:!|$)/
+  ];
+  const decoded = safeDecodeURIComponent(input);
+
+  for (const pattern of candidates) {
+    const match = decoded.match(pattern) ?? input.match(pattern);
+    if (!match) continue;
+    const latitude = Number(match[1]);
+    const longitude = Number(match[2]);
+    if (isValidLatitude(latitude) && isValidLongitude(longitude)) return { latitude, longitude };
+  }
+
+  return undefined;
+}
+
 function toRadians(degrees: number) {
   return degrees * Math.PI / 180;
+}
+
+function safeDecodeURIComponent(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }

@@ -948,6 +948,19 @@ p { line-height: 1.65; }
   background: #f7f5f1;
 }
 .form-field small { color: var(--color-accent); }
+.form-field-with-action {
+  grid-column: 1 / -1;
+}
+.field-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.field-action-row .button {
+  min-height: 44px;
+  white-space: nowrap;
+}
 .check-field {
   min-height: 44px;
   display: flex;
@@ -1596,6 +1609,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .nearby-result {
     grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .field-action-row {
+    grid-template-columns: 1fr;
   }
   .detail-language-bar .language-selector {
     right: auto;

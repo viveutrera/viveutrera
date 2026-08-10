@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GuideElement } from '../domain/types';
-import { formatDistance, getNearestElements, haversineDistanceMeters } from './geolocation';
+import { extractGoogleMapsCoordinates, formatDistance, getNearestElements, haversineDistanceMeters } from './geolocation';
 
 const baseElement: GuideElement = {
   id: 'base',
@@ -63,5 +63,16 @@ describe('geolocation helpers', () => {
   it('formats meters and kilometers in a friendly way', () => {
     expect(formatDistance(85.4, 'es')).toBe('85 m');
     expect(formatDistance(1420, 'es')).toBe('1,4 km');
+  });
+
+  it('extracts coordinates from common Google Maps URLs', () => {
+    expect(extractGoogleMapsCoordinates('https://www.google.com/maps/place/Utrera/@37.181,-5.78,17z')).toEqual({ latitude: 37.181, longitude: -5.78 });
+    expect(extractGoogleMapsCoordinates('https://www.google.com/maps/search/?api=1&query=37.1825%2C-5.7815')).toEqual({ latitude: 37.1825, longitude: -5.7815 });
+    expect(extractGoogleMapsCoordinates('https://www.google.com/maps/place/foo/data=!3m1!4b1!4m6!3m5!1s0x0!8m2!3d37.183!4d-5.782')).toEqual({ latitude: 37.183, longitude: -5.782 });
+  });
+
+  it('ignores Google Maps URLs without usable coordinates', () => {
+    expect(extractGoogleMapsCoordinates('https://maps.google.com/?q=Parroquia+de+Santiago+Utrera')).toBeUndefined();
+    expect(extractGoogleMapsCoordinates('https://www.google.com/maps/@95,-5.78,17z')).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState, type SetStateAction } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MapPinned, Pencil, Trash2 } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States
 import { LanguageLegend } from '../../components/admin/LanguageLegend';
 import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
+import { extractGoogleMapsCoordinates } from '../../lib/geolocation';
 import { linkTypeOptions } from '../../lib/linkTypes';
 import { mediaUrl } from '../../lib/media';
 import { canUseUploadApi, deleteMediaFiles, uploadMediaFile } from '../../lib/uploadApi';
@@ -679,6 +680,23 @@ export function AdminElementEdit() {
     }) : current);
   }
 
+  function fillCoordinatesFromMapsUrl() {
+    if (!form || !isMainEditing) return;
+    setError('');
+    setSuccess('');
+    const coordinates = extractGoogleMapsCoordinates(form.maps_url);
+    if (!coordinates) {
+      setError('No se han encontrado coordenadas en la URL de Google Maps. Abre el lugar en Google Maps, copia una URL que incluya @latitud,longitud o las coordenadas del punto y vuelve a intentarlo.');
+      return;
+    }
+    setForm({
+      ...form,
+      latitude: String(coordinates.latitude),
+      longitude: String(coordinates.longitude)
+    });
+    setSuccess('Coordenadas obtenidas desde la URL del mapa. Pulsa "Guardar cambios" para conservarlas.');
+  }
+
   if (!id) return <Navigate to="/admin/elementos" replace />;
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura las variables remotas para editar elementos reales." />;
   if (isLoading) return <LoadingState />;
@@ -706,7 +724,15 @@ export function AdminElementEdit() {
               <option value="draft">Borrador</option>
               <option value="published">Publicado</option>
             </SelectField>
-            <FormField label="URL mapa" value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} readOnly={!isMainEditing} />
+            <div className="form-field form-field-with-action">
+              <span>URL mapa</span>
+              <div className="field-action-row">
+                <input value={form.maps_url} onChange={(event) => setForm({ ...form, maps_url: event.target.value })} readOnly={!isMainEditing} />
+                <Button type="button" variant="secondary" icon={<MapPinned size={18} />} onClick={fillCoordinatesFromMapsUrl} disabled={!isMainEditing || !form.maps_url.trim()}>
+                  Coordenadas
+                </Button>
+              </div>
+            </div>
             <FormField label="Latitud" type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(event) => setForm({ ...form, latitude: event.target.value })} readOnly={!isMainEditing} />
             <FormField label="Longitud" type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(event) => setForm({ ...form, longitude: event.target.value })} readOnly={!isMainEditing} />
             <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: Number(event.target.value) })} readOnly={!isMainEditing} />
