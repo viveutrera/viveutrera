@@ -957,6 +957,16 @@ p { line-height: 1.65; }
   padding: 24px;
   background: linear-gradient(135deg, var(--color-primary), #174166);
 }
+.auth-feedback-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f7f5f1;
+}
+.auth-feedback-page .state {
+  width: min(520px, 100%);
+}
 .login-card {
   width: min(430px, 100%);
   display: grid;
