@@ -16,6 +16,7 @@ export function subscribeToTourElementEvents(tourId: string, onEvent: (event: To
   const channel = client
     .channel(tourChannelName(tourId), {
       config: {
+        private: true,
         broadcast: { self: false },
         presence: { key: crypto.randomUUID() }
       }
@@ -36,7 +37,10 @@ export async function broadcastTourElement(tourId: string, event: TourEvent) {
   const client = supabase;
   await new Promise<void>((resolve, reject) => {
     const channel = client.channel(tourChannelName(tourId), {
-      config: { broadcast: { self: false } }
+      config: {
+        private: true,
+        broadcast: { self: false }
+      }
     });
     const timeout = window.setTimeout(() => {
       void client.removeChannel(channel);
@@ -64,7 +68,10 @@ export function subscribeToTourPresence(tourId: string, key: string, onCount: (c
   const client = supabase;
   const channel: RealtimeChannel = client
     .channel(tourChannelName(tourId), {
-      config: { presence: { key } }
+      config: {
+        private: true,
+        presence: { key }
+      }
     })
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState() ?? {};
