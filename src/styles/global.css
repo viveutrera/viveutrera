@@ -1662,12 +1662,15 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 1000;
   display: grid;
   place-items: center;
   padding: 20px;
   background: rgba(13, 43, 77, 0.5);
 }
 .modal {
+  position: relative;
+  z-index: 1001;
   width: min(780px, 100%);
   max-height: min(94svh, 980px);
   overflow: auto;
