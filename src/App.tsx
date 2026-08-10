@@ -10,9 +10,12 @@ import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
 import { AdminElementTypes } from './pages/admin/AdminElementTypes';
 import { AdminLanguageEdit } from './pages/admin/AdminLanguageEdit';
 import { AdminLanguages } from './pages/admin/AdminLanguages';
+import { AdminHosts } from './pages/admin/AdminHosts';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminMedia } from './pages/admin/AdminMedia';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { HostDashboard } from './pages/host/HostDashboard';
+import { HostLogin } from './pages/host/HostLogin';
 import { ComingSoonPage } from './pages/public/ComingSoonPage';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
@@ -33,7 +36,7 @@ export function App() {
       <Route
         path="/admin"
         element={
-          <RequireAuth>
+          <RequireAuth roles={['admin']} loginPath="/admin/login">
             <AdminLayout />
           </RequireAuth>
         }
@@ -49,7 +52,17 @@ export function App() {
         <Route path="multimedia" element={<AdminMedia />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
         <Route path="colaboradores/:id" element={<AdminCollaboratorEdit />} />
+        <Route path="anfitriones" element={<AdminHosts />} />
       </Route>
+      <Route path="/host/login" element={<HostLogin />} />
+      <Route
+        path="/host"
+        element={
+          <RequireAuth roles={['host', 'admin']} loginPath="/host/login">
+            <HostDashboard />
+          </RequireAuth>
+        }
+      />
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>

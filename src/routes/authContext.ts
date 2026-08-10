@@ -1,10 +1,15 @@
 import { createContext, useContext } from 'react';
 
+export type UserRole = 'admin' | 'host';
+
 export interface AuthContextValue {
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isHost: boolean;
   isLoading: boolean;
   userEmail?: string;
-  signIn: (email: string, password: string) => Promise<void>;
+  userRole?: UserRole;
+  signIn: (email: string, password: string, allowedRoles?: UserRole[]) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

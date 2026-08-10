@@ -225,6 +225,7 @@ export function AdminElementEdit() {
   const [isMainEditing, setMainEditing] = useState(false);
   const [successModal, setSuccessModal] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ kind: 'image' | 'audio'; id?: string; label: string }>();
+  const [coordinateModal, setCoordinateModal] = useState<{ title: string; message: string }>();
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -686,7 +687,10 @@ export function AdminElementEdit() {
     setSuccess('');
     const coordinates = extractGoogleMapsCoordinates(form.maps_url);
     if (!coordinates) {
-      setError('No se han encontrado coordenadas en la URL de Google Maps. Abre el lugar en Google Maps, copia una URL que incluya @latitud,longitud o las coordenadas del punto y vuelve a intentarlo.');
+      setCoordinateModal({
+        title: 'Coordenadas no encontradas',
+        message: 'No se han encontrado coordenadas en la URL de Google Maps. Abre el lugar en Google Maps, copia una URL que incluya @latitud,longitud o las coordenadas del punto y vuelve a intentarlo.'
+      });
       return;
     }
     setForm({
@@ -694,7 +698,10 @@ export function AdminElementEdit() {
       latitude: String(coordinates.latitude),
       longitude: String(coordinates.longitude)
     });
-    setSuccess('Coordenadas obtenidas desde la URL del mapa. Pulsa "Guardar cambios" para conservarlas.');
+    setCoordinateModal({
+      title: 'Coordenadas obtenidas',
+      message: 'Coordenadas obtenidas desde la URL del mapa. Pulsa "Guardar cambios" para conservarlas.'
+    });
   }
 
   if (!id) return <Navigate to="/admin/elementos" replace />;
@@ -822,6 +829,12 @@ export function AdminElementEdit() {
         <p>{successModal}</p>
         <div className="modal-actions">
           <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
+        </div>
+      </Modal>
+      <Modal title={coordinateModal?.title ?? ''} isOpen={Boolean(coordinateModal)} onClose={() => setCoordinateModal(undefined)}>
+        <p>{coordinateModal?.message}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setCoordinateModal(undefined)}>Aceptar</Button>
         </div>
       </Modal>
     </section>

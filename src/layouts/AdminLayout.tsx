@@ -10,7 +10,8 @@ const links = [
   { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
   { to: '/admin/tipos', label: 'Tipos', icon: Landmark },
   { to: '/admin/elementos', label: 'Elementos', icon: Landmark },
-  { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users }
+  { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users },
+  { to: '/admin/anfitriones', label: 'Anfitriones', icon: Users }
 ];
 
 const advancedLinks = [

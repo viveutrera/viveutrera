@@ -897,6 +897,45 @@ export const adminRepository = {
     if (error) throw error;
   },
 
+  async listHostProfiles() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('profiles')
+      .select('user_id, email, display_name, role, active, created_at, updated_at')
+      .eq('role', 'host')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+  async createHostProfile(input: { email: string; displayName: string; active: boolean }) {
+    const client = ensureSupabase();
+    const { data, error } = await client.functions.invoke('admin-hosts', {
+      body: {
+        action: 'create',
+        email: input.email,
+        displayName: input.displayName,
+        active: input.active
+      }
+    });
+    if (error) throw new Error(error.message || 'No se pudo crear el anfitrion.');
+    const response = data as { error?: string } | null;
+    if (response?.error) throw new Error(response.error);
+    return data;
+  },
+  async updateHostProfile(input: { user_id: string; display_name: string; active: boolean }) {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('profiles')
+      .update({
+        display_name: input.display_name,
+        active: input.active,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', input.user_id)
+      .eq('role', 'host');
+    if (error) throw error;
+  },
+
   async listLinks() {
     const client = ensureSupabase();
     const { data, error } = await client
