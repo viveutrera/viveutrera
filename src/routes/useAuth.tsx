@@ -10,13 +10,14 @@ interface ProfileAuth {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [mockEmail, setMockEmail] = useState(() => supabase ? undefined : sessionStorage.getItem('mock-admin-email') ?? undefined);
   const [userRole, setUserRole] = useState<UserRole | undefined>(() => supabase ? undefined : 'admin');
-  const [isPasswordRecovery, setPasswordRecovery] = useState(false);
+  const [isPasswordRecovery, setPasswordRecovery] = useState(() => isPasswordRecoveryUrl());
   const [isLoading, setLoading] = useState(Boolean(supabase));
 
   useEffect(() => {
     if (!supabase) return;
 
     let isMounted = true;
+    if (isPasswordRecoveryUrl()) setPasswordRecovery(true);
 
     async function loadSession() {
       const { data } = await supabase!.auth.getSession();
@@ -100,12 +101,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabase) {
         const { error } = await supabase.auth.updateUser({ password });
         if (error) throw new Error('No se pudo actualizar la contrasena.');
+        await supabase.auth.signOut();
       }
+      setMockEmail(undefined);
+      setUserRole(undefined);
       setPasswordRecovery(false);
     }
   }), [isLoading, isPasswordRecovery, mockEmail, userRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function isPasswordRecoveryUrl() {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('type') === 'recovery') return true;
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+  const hashParams = new URLSearchParams(hash);
+  return hashParams.get('type') === 'recovery';
 }
 
 async function loadAuthorizedProfile(userId: string, fallbackEmail: string): Promise<ProfileAuth | undefined> {
