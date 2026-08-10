@@ -1,24 +1,40 @@
-import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, Radio, Users } from 'lucide-react';
+import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
-import { ButtonLink } from '../../components/ui/Button';
+import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { FormField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
+import { tourRepository } from '../../data/supabaseRepository';
 import type { Collaborator, Language, LanguageCode, SiteContent } from '../../domain/types';
+import { t } from '../../i18n/ui';
 import { defaultLanguageCode, getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
+import { isValidTourCode, normalizeTourCode, saveParticipantTourSession } from '../../lib/tourSession';
+import { useAuth } from '../../routes/authContext';
 
 export function LandingPage() {
+  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<SiteContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [landingLanguage, setLandingLanguage] = useState<LanguageCode>(getPersistedLanguage() ?? defaultLanguageCode);
   const [isLanguageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [isHostLoginOpen, setHostLoginOpen] = useState(false);
+  const [isJoinTourOpen, setJoinTourOpen] = useState(false);
+  const [hostEmail, setHostEmail] = useState('');
+  const [hostPassword, setHostPassword] = useState('');
+  const [tourCode, setTourCode] = useState('');
+  const [tourMessage, setTourMessage] = useState('');
+  const [tourError, setTourError] = useState('');
+  const [isTourSubmitting, setTourSubmitting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -53,6 +69,49 @@ export function LandingPage() {
     setLandingLanguage(language);
     persistLanguage(language);
     setLanguageMenuOpen(false);
+  }
+
+  async function loginHost(event: FormEvent) {
+    event.preventDefault();
+    setTourError('');
+    setTourSubmitting(true);
+    try {
+      await signIn(hostEmail, hostPassword, ['host', 'admin']);
+      setHostLoginOpen(false);
+      navigate('/host');
+    } catch (caught) {
+      setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'tourHostLoginError'));
+    } finally {
+      setTourSubmitting(false);
+    }
+  }
+
+  async function joinTour(event: FormEvent) {
+    event.preventDefault();
+    const normalized = normalizeTourCode(tourCode);
+    setTourCode(normalized);
+    setTourError('');
+    setTourMessage('');
+    if (!isValidTourCode(normalized)) {
+      setTourError(t(landingLanguage, 'tourWrongCode'));
+      return;
+    }
+    setTourSubmitting(true);
+    try {
+      const tour = await tourRepository.joinActiveTour(normalized);
+      if (!tour) {
+        setTourError(t(landingLanguage, 'tourUnavailable'));
+        return;
+      }
+      saveParticipantTourSession({ tourId: tour.id, code: tour.code, expiresAt: tour.expiresAt });
+      setJoinTourOpen(false);
+      setTourCode('');
+      setTourMessage(t(landingLanguage, 'tourJoined'));
+    } catch (caught) {
+      setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'tourUnavailable'));
+    } finally {
+      setTourSubmitting(false);
+    }
   }
 
   if (!content) return <LoadingState label="Preparando Vive Utrera" />;
@@ -121,6 +180,26 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="section tours-section" aria-label={t(landingLanguage, 'tours')}>
+          <div className="section-heading">
+            <h2>{t(landingLanguage, 'tours')}</h2>
+          </div>
+          <div className="tour-action-grid">
+            <Card className="tour-action-card">
+              <Radio size={32} />
+              <h3>{t(landingLanguage, 'createTour')}</h3>
+              <p>{t(landingLanguage, 'createTourText')}</p>
+              <Button type="button" onClick={() => setHostLoginOpen(true)}>{t(landingLanguage, 'createTour')}</Button>
+            </Card>
+            <Card className="tour-action-card">
+              <Users size={32} />
+              <h3>{t(landingLanguage, 'joinTour')}</h3>
+              <p>{t(landingLanguage, 'joinTourText')}</p>
+              <Button type="button" variant="secondary" onClick={() => setJoinTourOpen(true)}>{t(landingLanguage, 'joinTour')}</Button>
+            </Card>
+          </div>
+        </section>
+
         <section className="section feature-section" aria-label="Funciones principales">
           <div className="feature-strip">
             <article>
@@ -175,6 +254,33 @@ export function LandingPage() {
           )}
         </section>
       </main>
+      <Modal title={t(landingLanguage, 'hostLoginTitle')} isOpen={isHostLoginOpen} onClose={() => setHostLoginOpen(false)}>
+        <form className="stack-form modal-form" onSubmit={loginHost}>
+          {tourError ? <div className="state state-error">{tourError}</div> : null}
+          <FormField label={t(landingLanguage, 'email')} type="email" value={hostEmail} onChange={(event) => setHostEmail(event.target.value)} required />
+          <FormField label={t(landingLanguage, 'password')} type="password" value={hostPassword} onChange={(event) => setHostPassword(event.target.value)} required />
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={() => setHostLoginOpen(false)} disabled={isTourSubmitting}>{t(landingLanguage, 'close')}</Button>
+            <Button type="submit" disabled={isTourSubmitting}>{isTourSubmitting ? t(landingLanguage, 'loggingIn') : t(landingLanguage, 'login')}</Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal title={t(landingLanguage, 'enterTourCode')} isOpen={isJoinTourOpen} onClose={() => setJoinTourOpen(false)}>
+        <form className="stack-form modal-form" onSubmit={joinTour}>
+          {tourError ? <div className="state state-error">{tourError}</div> : null}
+          <FormField label={t(landingLanguage, 'tourCode')} value={tourCode} onChange={(event) => setTourCode(normalizeTourCode(event.target.value))} placeholder="58321F" maxLength={6} required />
+          <div className="modal-actions">
+            <Button type="button" variant="secondary" onClick={() => setJoinTourOpen(false)} disabled={isTourSubmitting}>{t(landingLanguage, 'close')}</Button>
+            <Button type="submit" disabled={isTourSubmitting}>{isTourSubmitting ? t(landingLanguage, 'joiningTour') : t(landingLanguage, 'joinTour')}</Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal title={t(landingLanguage, 'tourActive')} isOpen={Boolean(tourMessage)} onClose={() => setTourMessage('')}>
+        <p>{tourMessage}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setTourMessage('')}>{t(landingLanguage, 'close')}</Button>
+        </div>
+      </Modal>
       <PublicFooter />
     </>
   );

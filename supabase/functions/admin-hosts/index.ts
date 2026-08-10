@@ -13,6 +13,11 @@ interface CreateHostRequest {
   active?: boolean;
 }
 
+interface DeleteHostRequest {
+  action: 'delete';
+  userId: string;
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -51,7 +56,23 @@ Deno.serve(async (request) => {
 
     if (!adminProfile && !legacyAdminProfile) return json({ error: 'Solo un administrador puede gestionar anfitriones.' }, 403);
 
-    const body = await request.json() as CreateHostRequest;
+    const body = await request.json() as CreateHostRequest | DeleteHostRequest;
+    if (body.action === 'delete') {
+      if (!body.userId) return json({ error: 'Falta indicar el anfitrion.' }, 400);
+      const { data: profile, error: profileError } = await serviceClient
+        .from('profiles')
+        .select('user_id, role')
+        .eq('user_id', body.userId)
+        .eq('role', 'host')
+        .maybeSingle();
+      if (profileError) throw profileError;
+      if (!profile) return json({ error: 'Anfitrion no encontrado.' }, 404);
+
+      const { error: deleteError } = await serviceClient.auth.admin.deleteUser(body.userId);
+      if (deleteError) throw deleteError;
+      return json({ deleted: true, userId: body.userId });
+    }
+
     if (body.action !== 'create') return json({ error: 'Accion no soportada.' }, 400);
 
     const email = body.email.trim().toLowerCase();

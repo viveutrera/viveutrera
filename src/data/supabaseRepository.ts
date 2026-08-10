@@ -6,7 +6,9 @@ import type {
   LanguageCode,
   MediaAsset,
   MediaVariant,
-  SiteContent
+  SiteContent,
+  Tour,
+  TourStatus
 } from '../domain/types';
 import { supabase } from '../lib/supabase';
 import { languages as mockLanguages, siteContent as mockSiteContent } from './mockData';
@@ -935,6 +937,15 @@ export const adminRepository = {
       .eq('role', 'host');
     if (error) throw error;
   },
+  async deleteHostProfile(userId: string) {
+    const client = ensureSupabase();
+    const { data, error } = await client.functions.invoke('admin-hosts', {
+      body: { action: 'delete', userId }
+    });
+    if (error) throw new Error(error.message || 'No se pudo borrar el anfitrion.');
+    const response = data as { error?: string } | null;
+    if (response?.error) throw new Error(response.error);
+  },
 
   async listLinks() {
     const client = ensureSupabase();
@@ -978,6 +989,86 @@ export const adminRepository = {
     if (error) throw error;
   }
 };
+
+export const tourRepository = {
+  async listMyTours(): Promise<Tour[]> {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('tours')
+      .select('id, code, host_id, status, created_at, started_at, ended_at, expires_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapTourRow);
+  },
+  async createTour(): Promise<Tour> {
+    const client = ensureSupabase();
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (userError || !userData.user) throw new Error('Debes iniciar sesion como anfitrion.');
+    const { data, error } = await client
+      .from('tours')
+      .insert({ host_id: userData.user.id, status: 'draft' })
+      .select('id, code, host_id, status, created_at, started_at, ended_at, expires_at')
+      .single();
+    if (error) throw error;
+    return mapTourRow(data);
+  },
+  async startTour(id: string): Promise<void> {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('tours')
+      .update({
+        status: 'active',
+        started_at: new Date().toISOString(),
+        ended_at: null,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      })
+      .eq('id', id)
+      .in('status', ['draft', 'active']);
+    if (error) throw error;
+  },
+  async finishTour(id: string): Promise<void> {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('tours')
+      .update({ status: 'finished', ended_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'active');
+    if (error) throw error;
+  },
+  async joinActiveTour(code: string): Promise<Tour | undefined> {
+    const client = ensureSupabase();
+    const { data, error } = await client.rpc('join_tour_by_code', { input_code: code });
+    if (error) throw error;
+    const rows = (data ?? []) as Array<Parameters<typeof mapTourRow>[0]>;
+    return rows[0] ? mapTourRow(rows[0]) : undefined;
+  }
+};
+
+function mapTourRow(row: {
+  id: string;
+  code: string;
+  host_id: string;
+  status: string;
+  created_at: string;
+  started_at?: string | null;
+  ended_at?: string | null;
+  expires_at: string;
+}): Tour {
+  return {
+    id: row.id,
+    code: row.code,
+    hostId: row.host_id,
+    status: asTourStatus(row.status),
+    createdAt: row.created_at,
+    startedAt: row.started_at ?? undefined,
+    endedAt: row.ended_at ?? undefined,
+    expiresAt: row.expires_at
+  };
+}
+
+function asTourStatus(status: string): TourStatus {
+  return status === 'active' || status === 'finished' || status === 'cancelled' ? status : 'draft';
+}
 
 async function getLanguageId(language: LanguageCode): Promise<string | undefined> {
   const client = ensureSupabase();

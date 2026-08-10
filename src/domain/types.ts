@@ -126,6 +126,19 @@ export interface SiteContent {
   cityImageObjectKey?: string;
 }
 
+export type TourStatus = 'draft' | 'active' | 'finished' | 'cancelled';
+
+export interface Tour {
+  id: string;
+  code: string;
+  hostId: string;
+  status: TourStatus;
+  createdAt: string;
+  startedAt?: string;
+  endedAt?: string;
+  expiresAt: string;
+}
+
 export interface UploadRequest {
   file: File;
   target: 'site' | 'element-image' | 'element-audio' | 'collaborator';

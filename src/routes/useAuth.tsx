@@ -81,6 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('mock-admin-email');
       setMockEmail(undefined);
       setUserRole(undefined);
+    },
+    async resetPassword(email) {
+      if (!email.trim()) throw new Error('Indica el correo para restaurar la contrasena.');
+      if (supabase) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/host/login`
+        });
+        if (error) throw new Error('No se pudo enviar el correo de restauracion.');
+      }
     }
   }), [isLoading, mockEmail, userRole]);
 

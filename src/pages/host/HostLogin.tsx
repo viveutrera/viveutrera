@@ -2,18 +2,20 @@ import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
+import { Modal } from '../../components/ui/Modal';
 import { ErrorState } from '../../components/ui/States';
 import { publicPath } from '../../lib/routing';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { useAuth } from '../../routes/authContext';
 
 export function HostLogin() {
-  const { isAuthenticated, isHost, signIn } = useAuth();
+  const { isAuthenticated, isHost, signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [isSubmitting, setSubmitting] = useState(false);
 
   if (isAuthenticated && isHost) return <Navigate to="/host" replace />;
@@ -28,6 +30,19 @@ export function HostLogin() {
       navigate(from, { replace: true });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo iniciar sesion como anfitrion.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    setSubmitting(true);
+    setError('');
+    try {
+      await resetPassword(email);
+      setNotice('Si el correo pertenece a un anfitrion, recibira un enlace para restaurar la contrasena.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo solicitar la restauracion.');
     } finally {
       setSubmitting(false);
     }
@@ -48,7 +63,16 @@ export function HostLogin() {
         <FormField label="Correo" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         <FormField label="Contrasena" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Entrando...' : 'Entrar como anfitrion'}</Button>
+        <button className="text-button" type="button" onClick={handleResetPassword} disabled={isSubmitting}>
+          He olvidado mi contrasena
+        </button>
       </form>
+      <Modal title="Solicitud enviada" isOpen={Boolean(notice)} onClose={() => setNotice('')}>
+        <p>{notice}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setNotice('')}>Aceptar</Button>
+        </div>
+      </Modal>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { FormField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
@@ -22,6 +23,7 @@ export function AdminHosts() {
   const [items, setItems] = useState<HostProfileRow[]>([]);
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [editingHost, setEditingHost] = useState<HostProfileRow>();
+  const [deleteHost, setDeleteHost] = useState<HostProfileRow>();
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -96,6 +98,22 @@ export function AdminHosts() {
     }
   }
 
+  async function confirmDeleteHost() {
+    if (!deleteHost) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await adminRepository.deleteHostProfile(deleteHost.user_id);
+      setDeleteHost(undefined);
+      setSuccessModal('Anfitrion borrado correctamente.');
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudo borrar el anfitrion.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const filtered = items.filter((item) => matchesSearch([item.display_name, item.email, item.active ? 'activo' : 'inactivo'], search));
 
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura Supabase para gestionar anfitriones reales." />;
@@ -130,6 +148,7 @@ export function AdminHosts() {
             <span role="cell">{formatDate(item.updated_at)}</span>
             <span className="row-actions" role="cell">
               <button className="icon-button" type="button" aria-label={`Editar ${item.display_name}`} onClick={() => setEditingHost(item)}><Pencil size={18} /></button>
+              <button className="icon-button icon-button-danger" type="button" aria-label={`Borrar ${item.display_name}`} onClick={() => setDeleteHost(item)}><Trash2 size={18} /></button>
             </span>
           </div>
         ))}
@@ -169,6 +188,14 @@ export function AdminHosts() {
           <Button type="button" onClick={() => setSuccessModal('')}>Aceptar</Button>
         </div>
       </Modal>
+      <ConfirmDialog
+        isOpen={Boolean(deleteHost)}
+        title="Borrar anfitrion"
+        message={`Se borrara ${deleteHost?.display_name ?? 'este anfitrion'} de Authentication/Users y de profiles. Sus tours tambien quedaran eliminados por cascada.`}
+        confirmLabel="Borrar"
+        onCancel={() => setDeleteHost(undefined)}
+        onConfirm={confirmDeleteHost}
+      />
     </section>
   );
 }

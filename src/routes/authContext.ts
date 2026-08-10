@@ -11,6 +11,7 @@ export interface AuthContextValue {
   userRole?: UserRole;
   signIn: (email: string, password: string, allowedRoles?: UserRole[]) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
