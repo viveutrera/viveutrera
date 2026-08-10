@@ -32,6 +32,41 @@ export function subscribeToTourElementEvents(tourId: string, onEvent: (event: To
   };
 }
 
+export function subscribeToTourParticipant(
+  tourId: string,
+  key: string,
+  onEvent: (event: TourEvent) => void,
+  onCount: (count: number) => void
+) {
+  if (!supabase) return () => undefined;
+  const client = supabase;
+  const channel: RealtimeChannel = client
+    .channel(tourChannelName(tourId), {
+      config: {
+        private: true,
+        broadcast: { self: false },
+        presence: { key }
+      }
+    })
+    .on('broadcast', { event: 'element' }, ({ payload }) => {
+      const next = (payload as TourElementPayload).event;
+      if (next?.eventType === 'element') onEvent(next);
+    })
+    .on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState() ?? {};
+      onCount(Object.keys(state).length);
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ online_at: new Date().toISOString() });
+      }
+    });
+
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
+
 export async function broadcastTourElement(tourId: string, event: TourEvent) {
   if (!supabase) return;
   const client = supabase;

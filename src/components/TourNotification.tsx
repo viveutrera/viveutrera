@@ -8,7 +8,7 @@ import type { GuideElement, LanguageCode, TourEvent } from '../domain/types';
 import { t } from '../i18n/ui';
 import { defaultLanguageCode, getPersistedLanguage } from '../lib/language';
 import { getParticipantTourSession, subscribeTourSessionChange, type ParticipantTourSession } from '../lib/tourSession';
-import { subscribeToTourElementEvents, subscribeToTourPresence } from '../lib/realtimeTourService';
+import { subscribeToTourParticipant } from '../lib/realtimeTourService';
 
 export function TourNotification() {
   const navigate = useNavigate();
@@ -47,11 +47,9 @@ export function TourNotification() {
       if (latest) handleEvent(latest);
     }).catch(() => undefined);
 
-    const unsubscribeEvents = subscribeToTourElementEvents(current.tourId, handleEvent);
-    const unsubscribePresence = subscribeToTourPresence(current.tourId, current.participantToken, () => undefined);
+    const unsubscribe = subscribeToTourParticipant(current.tourId, current.participantToken, handleEvent, () => undefined);
     return () => {
-      unsubscribeEvents();
-      unsubscribePresence();
+      unsubscribe();
     };
   }, [loadElement, session?.tourId]);
 
