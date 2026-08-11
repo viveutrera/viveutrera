@@ -1613,34 +1613,42 @@ p { line-height: 1.65; }
 }
 .host-tour-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 14px;
   max-width: 1180px;
 }
-.host-tour-table {
-  overflow-x: auto;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: var(--color-white);
-  box-shadow: var(--shadow-soft);
-}
-.host-tour-row {
-  min-width: 1040px;
+.host-tour-card {
   display: grid;
-  grid-template-columns: 130px minmax(160px, 1.1fr) minmax(160px, 1fr) 110px 150px 150px minmax(300px, 1.5fr);
+  gap: 16px;
+}
+.host-tour-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
-  align-items: center;
-  padding: 14px 16px;
-  border-top: 1px solid var(--color-line);
 }
-.host-tour-row:first-child {
-  border-top: 0;
+.host-tour-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
-.host-tour-head {
-  background: rgba(216, 199, 166, 0.24);
-  color: var(--color-primary);
-  font-size: 0.82rem;
+.host-tour-card-body div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(216, 199, 166, 0.18);
+}
+.host-tour-card-body span {
+  color: var(--color-muted);
+  font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+.host-tour-card-body strong {
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
 }
 .tour-status {
   display: inline-flex;
@@ -1663,8 +1671,10 @@ p { line-height: 1.65; }
 .tour-code {
   display: block;
   color: var(--color-primary);
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-size: clamp(2rem, 12vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-align: right;
 }
 .tour-presence {
   display: block;
@@ -1674,8 +1684,11 @@ p { line-height: 1.65; }
 .host-tour-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: stretch;
   gap: 8px;
+}
+.host-tour-actions .button {
+  flex: 1 1 130px;
 }
 .text-button {
   border: 0;

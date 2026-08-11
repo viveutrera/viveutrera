@@ -139,35 +139,38 @@ export function HostDashboard() {
       {error ? <div className="state state-error">{error}</div> : null}
       <section className="host-tour-list" aria-label="Tours del anfitrion">
         {tours.length === 0 ? <Card><p>No tienes tours creados todavia.</p></Card> : null}
-        {tours.length ? (
-          <div className="host-tour-table" role="table" aria-label="Tours">
-            <div className="host-tour-row host-tour-head" role="row">
-              <span role="columnheader">Codigo</span>
-              <span role="columnheader">Nombre</span>
-              <span role="columnheader">Creado por</span>
-              <span role="columnheader">Estado</span>
-              <span role="columnheader">Caduca</span>
-              <span role="columnheader">Participantes</span>
-              <span role="columnheader">Acciones</span>
+        {tours.map((tour) => (
+          <Card className="host-tour-card" key={tour.id}>
+            <div className="host-tour-card-top">
+              <span className={`tour-status tour-status-${tour.status}`}>{statusLabel(tour.status)}</span>
+              <strong className="tour-code">{tour.code}</strong>
             </div>
-            {tours.map((tour) => (
-              <div className="host-tour-row" role="row" key={tour.id}>
-                <strong className="tour-code" role="cell">{tour.code}</strong>
-                <span role="cell">{tour.name ?? 'Sin nombre'}</span>
-                <span role="cell">{tour.hostName ?? tour.hostEmail ?? 'Anfitrion'}</span>
-                <span role="cell"><span className={`tour-status tour-status-${tour.status}`}>{statusLabel(tour.status)}</span></span>
-                <span role="cell">{formatDate(tour.expiresAt)}</span>
-                <span role="cell">{tour.status === 'active' ? <ConnectedParticipants tourId={tour.id} /> : <small>No activo</small>}</span>
-                <span className="host-tour-actions" role="cell">
-                  <Button type="button" variant="secondary" icon={<Clipboard size={18} />} onClick={() => copyCode(tour.code)}>Copiar</Button>
-                  {tour.status === 'draft' ? <Button type="button" icon={<Play size={18} />} onClick={() => startTour(tour.id)} disabled={isSubmitting}>Iniciar</Button> : null}
-                  {tour.status === 'active' ? <Button type="button" variant="danger" icon={<Square size={18} />} onClick={() => setFinishTourId(tour.id)} disabled={isSubmitting}>Finalizar</Button> : null}
-                  <Button type="button" variant="danger" icon={<Trash2 size={18} />} onClick={() => setDeleteTourId(tour.id)} disabled={isSubmitting}>Borrar</Button>
-                </span>
+            <div className="host-tour-card-body">
+              <div>
+                <span>Nombre</span>
+                <strong>{tour.name ?? 'Sin nombre'}</strong>
               </div>
-            ))}
-          </div>
-        ) : null}
+              <div>
+                <span>Creado por</span>
+                <strong>{tour.hostName ?? tour.hostEmail ?? 'Anfitrion'}</strong>
+              </div>
+              <div>
+                <span>Caduca</span>
+                <strong>{formatDate(tour.expiresAt)}</strong>
+              </div>
+              <div>
+                <span>Participantes</span>
+                {tour.status === 'active' ? <ConnectedParticipants tourId={tour.id} /> : <strong>No activo</strong>}
+              </div>
+            </div>
+            <div className="host-tour-actions">
+              <Button type="button" variant="secondary" icon={<Clipboard size={18} />} onClick={() => copyCode(tour.code)}>Copiar</Button>
+              {tour.status === 'draft' ? <Button type="button" icon={<Play size={18} />} onClick={() => startTour(tour.id)} disabled={isSubmitting}>Iniciar</Button> : null}
+              {tour.status === 'active' ? <Button type="button" variant="danger" icon={<Square size={18} />} onClick={() => setFinishTourId(tour.id)} disabled={isSubmitting}>Finalizar</Button> : null}
+              <Button type="button" variant="danger" icon={<Trash2 size={18} />} onClick={() => setDeleteTourId(tour.id)} disabled={isSubmitting}>Borrar</Button>
+            </div>
+          </Card>
+        ))}
       </section>
       <Modal title="Crear tour" isOpen={isCreateOpen} onClose={() => setCreateOpen(false)}>
         <form className="stack-form modal-form" onSubmit={createTour}>
