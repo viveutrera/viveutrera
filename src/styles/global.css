@@ -845,31 +845,55 @@ p { line-height: 1.65; }
 .lightbox {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 1200;
   display: grid;
-  grid-template-columns: 56px 1fr 56px;
-  align-items: center;
-  gap: 12px;
-  padding: 26px;
-  background: rgba(13, 43, 77, 0.92);
+  grid-template-columns: minmax(44px, 7vw) minmax(0, 1fr) minmax(44px, 7vw);
+  grid-template-rows: 1fr;
+  align-items: stretch;
+  gap: 10px;
+  width: 100vw;
+  height: 100dvh;
+  padding: clamp(14px, 2.5vw, 28px);
+  background: rgba(5, 18, 34, 0.94);
   color: var(--color-white);
 }
 .lightbox figure {
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   margin: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  gap: 12px;
 }
 .lightbox img {
-  width: 100%;
-  max-height: 82svh;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 104px);
   object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.35);
 }
 .lightbox figcaption {
-  margin-top: 10px;
+  width: min(760px, 100%);
+  min-height: 34px;
+  display: grid;
+  gap: 4px;
+  margin: 0;
   text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+}
+.lightbox figcaption span,
+.lightbox figcaption small {
+  overflow-wrap: anywhere;
 }
 .lightbox button {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -878,10 +902,20 @@ p { line-height: 1.65; }
   color: var(--color-white);
   cursor: pointer;
 }
+.lightbox-previous,
+.lightbox-next {
+  align-self: center;
+}
+.lightbox-previous {
+  justify-self: start;
+}
+.lightbox-next {
+  justify-self: end;
+}
 .lightbox-close {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
 }
 .media-list { display: grid; gap: 12px; margin: 32px 0; }
 .audio-item { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--color-line); border-radius: 8px; }
@@ -1943,13 +1977,16 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     justify-self: center;
   }
   .lightbox {
-    grid-template-columns: 44px 1fr 44px;
-    gap: 8px;
-    padding: 18px 10px;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 6px;
+    padding: 14px 8px;
   }
   .lightbox button {
     width: 40px;
     height: 40px;
+  }
+  .lightbox img {
+    max-height: calc(100dvh - 92px);
   }
   .association-row {
     align-items: stretch;

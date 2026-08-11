@@ -1,7 +1,8 @@
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Radio, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Radio } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { AudioPlayer } from '../../components/AudioPlayer';
+import { GalleryLightbox } from '../../components/GalleryLightbox';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
@@ -37,18 +38,6 @@ export function ElementDetailPage() {
   const [sendTourId, setSendTourId] = useState<string>();
   const [tourMessage, setTourMessage] = useState('');
   const [isSendingTour, setSendingTour] = useState(false);
-  const lightboxRef = useRef<HTMLDivElement>(null);
-  const lightboxCloseRef = useRef<HTMLButtonElement>(null);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
-  const touchStartXRef = useRef<number>();
-  const imageCount = element?.images.length ?? 0;
-
-  const moveImage = useCallback((direction: -1 | 1) => {
-    setSelectedImageIndex((current) => {
-      if (current === undefined || imageCount === 0) return current;
-      return (current + direction + imageCount) % imageCount;
-    });
-  }, [imageCount]);
 
   useEffect(() => {
     setLoading(true);
@@ -111,52 +100,6 @@ export function ElementDetailPage() {
     return undefined;
   }, [isHost]);
 
-  useEffect(() => {
-    if (selectedImageIndex === undefined) return undefined;
-    lastFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    window.setTimeout(() => lightboxCloseRef.current?.focus(), 0);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setSelectedImageIndex(undefined);
-      if (event.key === 'ArrowLeft') moveImage(-1);
-      if (event.key === 'ArrowRight') moveImage(1);
-      if (event.key === 'Tab') trapLightboxFocus(event);
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      lastFocusedRef.current?.focus();
-    };
-  }, [moveImage, selectedImageIndex]);
-
-  function trapLightboxFocus(event: KeyboardEvent) {
-    const focusable = lightboxRef.current?.querySelectorAll<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])');
-    if (!focusable?.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  function handleLightboxTouchStart(event: TouchEvent<HTMLDivElement>) {
-    touchStartXRef.current = event.changedTouches[0]?.clientX;
-  }
-
-  function handleLightboxTouchEnd(event: TouchEvent<HTMLDivElement>) {
-    const start = touchStartXRef.current;
-    const end = event.changedTouches[0]?.clientX;
-    touchStartXRef.current = undefined;
-    if (start === undefined || end === undefined || imageCount < 2) return;
-    const delta = end - start;
-    if (Math.abs(delta) < 48) return;
-    moveImage(delta > 0 ? -1 : 1);
-  }
-
   if (!requestedLanguage) return <Navigate to={`/guia/${language}/elemento/${slug}`} replace />;
   if (isLoading) return <LoadingState />;
   if (!element) return <EmptyState title="Recurso no encontrado" message="El elemento no existe o no esta publicado en este idioma." />;
@@ -165,7 +108,6 @@ export function ElementDetailPage() {
   const type = types.find((item) => item.id === element.typeId);
   const audios = element.audios.filter((audio) => audio.languageCode === contentLanguage && audio.isPublished);
   const links = element.links.filter((link) => link.languageCode === contentLanguage && link.isPublished);
-  const selectedImage = selectedImageIndex === undefined ? undefined : element.images[selectedImageIndex];
   const currentIndex = siblings.findIndex((item) => item.id === element.id);
   const previous = currentIndex > 0 ? siblings[currentIndex - 1] : undefined;
   const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
@@ -245,28 +187,6 @@ export function ElementDetailPage() {
           ) : <div className="state">No hay imagenes publicadas para este elemento.</div>}
         </section>
 
-        {selectedImage ? (
-          <div className="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imagenes" ref={lightboxRef} onTouchStart={handleLightboxTouchStart} onTouchEnd={handleLightboxTouchEnd}>
-            <button ref={lightboxCloseRef} type="button" className="lightbox-close" onClick={() => setSelectedImageIndex(undefined)} aria-label="Cerrar visor">
-              <X size={22} />
-            </button>
-            {element.images.length > 1 ? (
-              <button type="button" className="lightbox-previous" onClick={() => moveImage(-1)} aria-label="Imagen anterior">
-                <ChevronLeft size={28} />
-              </button>
-            ) : null}
-            <figure>
-              <img src={mediaUrl(selectedImage.mediaAsset.objectKey)} alt={selectedImage.translations[contentLanguage].altText} />
-              <figcaption>{selectedImage.translations[contentLanguage].caption ?? selectedImage.translations[contentLanguage].title}</figcaption>
-            </figure>
-            {element.images.length > 1 ? (
-              <button type="button" className="lightbox-next" onClick={() => moveImage(1)} aria-label="Imagen siguiente">
-                <ChevronRight size={28} />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-
         <section className="media-list">
           <h2>{t(language, 'audios')}</h2>
           {audios.length ? audios.map((audio) => (
@@ -329,6 +249,15 @@ export function ElementDetailPage() {
           <Button type="button" onClick={() => setTourMessage('')}>{t(language, 'close')}</Button>
         </div>
       </Modal>
+      {selectedImageIndex !== undefined ? (
+        <GalleryLightbox
+          images={element.images}
+          language={contentLanguage}
+          selectedIndex={selectedImageIndex}
+          onChangeIndex={setSelectedImageIndex}
+          onClose={() => setSelectedImageIndex(undefined)}
+        />
+      ) : null}
       <PublicFooter />
     </>
   );
