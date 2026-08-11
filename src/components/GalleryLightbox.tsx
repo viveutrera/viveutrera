@@ -81,7 +81,7 @@ export function GalleryLightbox({ images, language, selectedIndex, onChangeIndex
 
   return createPortal(
     <div
-      className="lightbox"
+      className={imageCount > 1 ? 'lightbox' : 'lightbox lightbox-single'}
       role="dialog"
       aria-modal="true"
       aria-label="Visor de imagenes"

@@ -917,6 +917,7 @@ p { line-height: 1.65; }
   color: var(--color-white);
 }
 .lightbox figure {
+  grid-column: 2;
   height: 100%;
   min-width: 0;
   min-height: 0;
@@ -926,6 +927,14 @@ p { line-height: 1.65; }
   align-items: center;
   justify-items: center;
   gap: 12px;
+}
+.lightbox-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.lightbox-single figure {
+  grid-column: 1;
+  width: min(1120px, 100%);
+  justify-self: center;
 }
 .lightbox img {
   display: block;
@@ -2098,6 +2107,9 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     grid-template-columns: 42px minmax(0, 1fr) 42px;
     gap: 6px;
     padding: 14px 8px;
+  }
+  .lightbox-single {
+    grid-template-columns: minmax(0, 1fr);
   }
   .lightbox button {
     width: 40px;
