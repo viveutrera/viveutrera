@@ -143,7 +143,12 @@ export function HostDashboard() {
           <Card className="host-tour-card" key={tour.id}>
             <div className="host-tour-card-top">
               <span className={`tour-status tour-status-${tour.status}`}>{statusLabel(tour.status)}</span>
-              <strong className="tour-code">{tour.code}</strong>
+              <div className="host-tour-code-row">
+                <strong className="tour-code">{tour.code}</strong>
+                <button className="icon-button tour-copy-button" type="button" onClick={() => copyCode(tour.code)} aria-label={`Copiar codigo ${tour.code}`}>
+                  <Clipboard size={18} />
+                </button>
+              </div>
             </div>
             <div className="host-tour-card-body">
               <div>
@@ -164,7 +169,6 @@ export function HostDashboard() {
               </div>
             </div>
             <div className="host-tour-actions">
-              <Button type="button" variant="secondary" icon={<Clipboard size={18} />} onClick={() => copyCode(tour.code)}>Copiar</Button>
               {tour.status === 'draft' ? <Button type="button" icon={<Play size={18} />} onClick={() => startTour(tour.id)} disabled={isSubmitting}>Iniciar</Button> : null}
               {tour.status === 'active' ? <Button type="button" variant="danger" icon={<Square size={18} />} onClick={() => setFinishTourId(tour.id)} disabled={isSubmitting}>Finalizar</Button> : null}
               <Button type="button" variant="danger" icon={<Trash2 size={18} />} onClick={() => setDeleteTourId(tour.id)} disabled={isSubmitting}>Borrar</Button>

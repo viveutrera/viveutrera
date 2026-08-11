@@ -1620,12 +1620,26 @@ p { line-height: 1.65; }
 .host-tour-card {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 .host-tour-card-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: flex-start;
-  justify-content: space-between;
   gap: 12px;
+}
+.host-tour-code-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.tour-copy-button {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  border-color: rgba(13, 43, 77, 0.18);
+  background: rgba(216, 199, 166, 0.32);
 }
 .host-tour-card-body {
   display: grid;
@@ -1670,11 +1684,13 @@ p { line-height: 1.65; }
 }
 .tour-code {
   display: block;
+  min-width: 0;
   color: var(--color-primary);
-  font-size: clamp(2rem, 12vw, 3.4rem);
+  font-size: clamp(2rem, 11vw, 3.2rem);
   line-height: 1;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 .tour-presence {
   display: block;
@@ -1979,6 +1995,19 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .active-tour-indicator .button span {
     display: none;
+  }
+  .host-tour-list {
+    grid-template-columns: 1fr;
+  }
+  .host-tour-card-top {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .host-tour-code-row {
+    justify-content: space-between;
+  }
+  .tour-code {
+    text-align: left;
   }
   .host-tour-actions {
     justify-content: stretch;
