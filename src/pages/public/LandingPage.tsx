@@ -1,8 +1,9 @@
-import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, Radio, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, Users } from 'lucide-react';
 import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
+import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button, ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
@@ -17,20 +18,14 @@ import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
 import { isValidTourCode, normalizeTourCode, saveParticipantTourSession } from '../../lib/tourSession';
-import { useAuth } from '../../routes/authContext';
 
 export function LandingPage() {
-  const navigate = useNavigate();
-  const { resetPassword, signIn } = useAuth();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<SiteContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [landingLanguage, setLandingLanguage] = useState<LanguageCode>(getPersistedLanguage() ?? defaultLanguageCode);
   const [isLanguageMenuOpen, setLanguageMenuOpen] = useState(false);
-  const [isHostLoginOpen, setHostLoginOpen] = useState(false);
   const [isJoinTourOpen, setJoinTourOpen] = useState(false);
-  const [hostEmail, setHostEmail] = useState('');
-  const [hostPassword, setHostPassword] = useState('');
   const [tourCode, setTourCode] = useState('');
   const [tourMessage, setTourMessage] = useState('');
   const [tourError, setTourError] = useState('');
@@ -69,35 +64,6 @@ export function LandingPage() {
     setLandingLanguage(language);
     persistLanguage(language);
     setLanguageMenuOpen(false);
-  }
-
-  async function loginHost(event: FormEvent) {
-    event.preventDefault();
-    setTourError('');
-    setTourSubmitting(true);
-    try {
-      await signIn(hostEmail, hostPassword, ['host', 'admin']);
-      setHostLoginOpen(false);
-      navigate('/host');
-    } catch (caught) {
-      setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'tourHostLoginError'));
-    } finally {
-      setTourSubmitting(false);
-    }
-  }
-
-  async function requestHostPasswordReset() {
-    setTourError('');
-    setTourSubmitting(true);
-    try {
-      await resetPassword(hostEmail);
-      setTourMessage(t(landingLanguage, 'passwordResetSent'));
-      setHostLoginOpen(false);
-    } catch (caught) {
-      setTourError(caught instanceof Error ? caught.message : t(landingLanguage, 'passwordResetError'));
-    } finally {
-      setTourSubmitting(false);
-    }
   }
 
   async function joinTour(event: FormEvent) {
@@ -162,6 +128,7 @@ export function LandingPage() {
               </button>
             ))}
           </div>
+          <PublicUserMenu />
         </nav>
         <div className="hero-content hero-brand-lockup">
           <img className="hero-mark" src={content.heroLogoObjectKey ? mediaUrl(content.heroLogoObjectKey) : publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
@@ -200,16 +167,10 @@ export function LandingPage() {
           </div>
           <div className="tour-action-grid">
             <Card className="tour-action-card">
-              <Radio size={32} />
-              <h3>{t(landingLanguage, 'createTour')}</h3>
-              <p>{t(landingLanguage, 'createTourText')}</p>
-              <Button type="button" onClick={() => setHostLoginOpen(true)}>{t(landingLanguage, 'createTour')}</Button>
-            </Card>
-            <Card className="tour-action-card">
               <Users size={32} />
               <h3>{t(landingLanguage, 'joinTour')}</h3>
               <p>{t(landingLanguage, 'joinTourText')}</p>
-              <Button type="button" variant="secondary" onClick={() => setJoinTourOpen(true)}>{t(landingLanguage, 'joinTour')}</Button>
+              <Button type="button" onClick={() => setJoinTourOpen(true)}>{t(landingLanguage, 'joinTour')}</Button>
             </Card>
           </div>
         </section>
@@ -217,14 +178,14 @@ export function LandingPage() {
         <section className="section feature-section" aria-label="Funciones principales">
           <div className="feature-strip">
             <article>
-              <span className="feature-icon"><Headphones size={34} /></span>
+              <Link className="feature-icon feature-icon-link" to="/host/login" aria-label="Acceso anfitriones"><Headphones size={34} /></Link>
               <div>
                 <h2>AUDIOGUÍAS</h2>
                 <p>Recorridos con relatos sonoros para escuchar a tu ritmo.</p>
               </div>
             </article>
             <article>
-              <span className="feature-icon"><Landmark size={34} /></span>
+              <Link className="feature-icon feature-icon-link" to="/admin" aria-label="Acceso administracion"><Landmark size={34} /></Link>
               <div>
                 <h2>HISTORIA</h2>
                 <p>Un viaje riguroso por los siglos de huella cultural.</p>
@@ -268,20 +229,6 @@ export function LandingPage() {
           )}
         </section>
       </main>
-      <Modal title={t(landingLanguage, 'hostLoginTitle')} isOpen={isHostLoginOpen} onClose={() => setHostLoginOpen(false)}>
-        <form className="stack-form modal-form" onSubmit={loginHost}>
-          {tourError ? <div className="state state-error">{tourError}</div> : null}
-          <FormField label={t(landingLanguage, 'email')} type="email" value={hostEmail} onChange={(event) => setHostEmail(event.target.value)} required />
-          <FormField label={t(landingLanguage, 'password')} type="password" value={hostPassword} onChange={(event) => setHostPassword(event.target.value)} required />
-          <button className="text-button" type="button" onClick={requestHostPasswordReset} disabled={isTourSubmitting}>
-            {t(landingLanguage, 'resetPassword')}
-          </button>
-          <div className="modal-actions">
-            <Button type="button" variant="secondary" onClick={() => setHostLoginOpen(false)} disabled={isTourSubmitting}>{t(landingLanguage, 'close')}</Button>
-            <Button type="submit" disabled={isTourSubmitting}>{isTourSubmitting ? t(landingLanguage, 'loggingIn') : t(landingLanguage, 'login')}</Button>
-          </div>
-        </form>
-      </Modal>
       <Modal title={t(landingLanguage, 'enterTourCode')} isOpen={isJoinTourOpen} onClose={() => setJoinTourOpen(false)}>
         <form className="stack-form modal-form" onSubmit={joinTour}>
           {tourError ? <div className="state state-error">{tourError}</div> : null}

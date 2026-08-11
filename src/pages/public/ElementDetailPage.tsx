@@ -5,6 +5,7 @@ import { AudioPlayer } from '../../components/AudioPlayer';
 import { GalleryLightbox } from '../../components/GalleryLightbox';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
+import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -135,6 +136,7 @@ export function ElementDetailPage() {
       <main className="detail-page">
         <div className="detail-language-bar">
           <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
+          <PublicUserMenu />
         </div>
         {contentLanguage !== language ? (
           <div className="notice" role="status">

@@ -4,6 +4,7 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { NearbyPlacesModal } from '../../components/NearbyPlacesModal';
 import { PublicFooter } from '../../components/PublicFooter';
+import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -129,6 +130,7 @@ export function GuidePage() {
       <main className="guide-page">
         <div className="guide-language-bar">
           <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
+          <PublicUserMenu />
         </div>
         <header className="guide-header">
           <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
