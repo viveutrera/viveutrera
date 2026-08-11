@@ -131,7 +131,10 @@ export type TourStatus = 'draft' | 'active' | 'finished' | 'cancelled';
 export interface Tour {
   id: string;
   code: string;
+  name?: string;
   hostId: string;
+  hostName?: string;
+  hostEmail?: string;
   status: TourStatus;
   createdAt: string;
   startedAt?: string;

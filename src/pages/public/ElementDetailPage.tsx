@@ -308,12 +308,12 @@ export function ElementDetailPage() {
       </main>
       <Modal title={t(language, 'sendToTour')} isOpen={Boolean(sendTourId)} onClose={() => setSendTourId(undefined)}>
         <div className="stack-form">
-          <p>Enviar <strong>{translation.name}</strong> al tour <strong>{selectedTour?.code}</strong>.</p>
+          <p>Enviar <strong>{translation.name}</strong> al tour <strong>{tourDisplayName(selectedTour)}</strong>.</p>
           {activeTours.length > 1 ? (
             <label className="form-field">
               <span>Tour activo</span>
               <select value={sendTourId} onChange={(event) => setSendTourId(event.target.value)}>
-                {activeTours.map((tour) => <option key={tour.id} value={tour.id}>{tour.code}</option>)}
+                {activeTours.map((tour) => <option key={tour.id} value={tour.id}>{tourDisplayName(tour)}</option>)}
               </select>
             </label>
           ) : null}
@@ -332,4 +332,9 @@ export function ElementDetailPage() {
       <PublicFooter />
     </>
   );
+}
+
+function tourDisplayName(tour?: Tour) {
+  if (!tour) return 'seleccionado';
+  return tour.name ? `${tour.code} - ${tour.name}` : tour.code;
 }

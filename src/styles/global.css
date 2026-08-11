@@ -1580,17 +1580,37 @@ p { line-height: 1.65; }
 .host-tour-list {
   display: grid;
   gap: 14px;
-  max-width: 920px;
+  max-width: 1180px;
 }
-.host-tour-card {
+.host-tour-table {
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-soft);
+}
+.host-tour-row {
+  min-width: 1040px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: 130px minmax(160px, 1.1fr) minmax(160px, 1fr) 110px 150px 150px minmax(300px, 1.5fr);
+  gap: 12px;
   align-items: center;
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-line);
+}
+.host-tour-row:first-child {
+  border-top: 0;
+}
+.host-tour-head {
+  background: rgba(216, 199, 166, 0.24);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 .tour-status {
   display: inline-flex;
-  margin: 0 0 8px;
+  margin: 0;
   padding: 4px 8px;
   border-radius: 8px;
   background: var(--color-stone);
@@ -1609,15 +1629,11 @@ p { line-height: 1.65; }
 .tour-code {
   display: block;
   color: var(--color-primary);
-  font-size: clamp(2rem, 5vw, 3.4rem);
-  letter-spacing: 0.12em;
-}
-.host-tour-card small {
-  color: var(--color-muted);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
 }
 .tour-presence {
   display: block;
-  margin-top: 8px;
   color: var(--color-primary);
   font-weight: 800;
 }
@@ -1809,8 +1825,8 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     grid-template-columns: 1fr;
   }
   .detail-language-bar .language-selector {
-    right: auto;
-    left: 0;
+    right: 0;
+    left: auto;
   }
   .guide-language-bar .language-selector-menu,
   .detail-language-bar .language-selector-menu {
@@ -1916,9 +1932,6 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .active-tour-indicator .button span {
     display: none;
-  }
-  .host-tour-card {
-    grid-template-columns: 1fr;
   }
   .host-tour-actions {
     justify-content: stretch;

@@ -995,21 +995,25 @@ export const adminRepository = {
 export const tourRepository = {
   async listMyTours(): Promise<Tour[]> {
     const client = ensureSupabase();
-    const { data, error } = await client
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (userError || !userData.user) throw new Error('Debes iniciar sesion como anfitrion.');
+    const isAdmin = await isCurrentUserAdmin(userData.user.id);
+    const query = client
       .from('tours')
-      .select('id, code, host_id, status, created_at, started_at, ended_at, expires_at')
+      .select('id, code, name, host_id, status, created_at, started_at, ended_at, expires_at, profiles!tours_host_id_fkey(display_name, email)')
       .order('created_at', { ascending: false });
+    const { data, error } = isAdmin ? await query : await query.eq('host_id', userData.user.id);
     if (error) throw error;
     return (data ?? []).map(mapTourRow);
   },
-  async createTour(): Promise<Tour> {
+  async createTour(name?: string): Promise<Tour> {
     const client = ensureSupabase();
     const { data: userData, error: userError } = await client.auth.getUser();
     if (userError || !userData.user) throw new Error('Debes iniciar sesion como anfitrion.');
     const { data, error } = await client
       .from('tours')
-      .insert({ host_id: userData.user.id, status: 'draft' })
-      .select('id, code, host_id, status, created_at, started_at, ended_at, expires_at')
+      .insert({ host_id: userData.user.id, status: 'draft', name: name?.trim() || null })
+      .select('id, code, name, host_id, status, created_at, started_at, ended_at, expires_at, profiles!tours_host_id_fkey(display_name, email)')
       .single();
     if (error) throw error;
     return mapTourRow(data);
@@ -1035,6 +1039,11 @@ export const tourRepository = {
       .update({ status: 'finished', ended_at: new Date().toISOString() })
       .eq('id', id)
       .eq('status', 'active');
+    if (error) throw error;
+  },
+  async deleteTour(id: string): Promise<void> {
+    const client = ensureSupabase();
+    const { error } = await client.from('tours').delete().eq('id', id);
     if (error) throw error;
   },
   async joinActiveTour(code: string): Promise<Tour | undefined> {
@@ -1064,23 +1073,39 @@ export const tourRepository = {
 function mapTourRow(row: {
   id: string;
   code: string;
+  name?: string | null;
   host_id: string;
+  profiles?: { display_name?: string | null; email?: string | null } | Array<{ display_name?: string | null; email?: string | null }> | null;
   status: string;
   created_at: string;
   started_at?: string | null;
   ended_at?: string | null;
   expires_at: string;
 }): Tour {
+  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
   return {
     id: row.id,
     code: row.code,
+    name: row.name?.trim() || undefined,
     hostId: row.host_id,
+    hostName: profile?.display_name ?? undefined,
+    hostEmail: profile?.email ?? undefined,
     status: asTourStatus(row.status),
     createdAt: row.created_at,
     startedAt: row.started_at ?? undefined,
     endedAt: row.ended_at ?? undefined,
     expiresAt: row.expires_at
   };
+}
+
+async function isCurrentUserAdmin(userId: string): Promise<boolean> {
+  const client = ensureSupabase();
+  const { data: profile } = await client
+    .from('profiles')
+    .select('role, active')
+    .eq('user_id', userId)
+    .maybeSingle();
+  return profile?.role === 'admin' && Boolean(profile.active);
 }
 
 function asTourStatus(status: string): TourStatus {
