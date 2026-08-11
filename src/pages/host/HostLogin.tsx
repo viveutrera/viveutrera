@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
@@ -41,7 +41,7 @@ export function HostLogin() {
     setError('');
     try {
       await resetPassword(email);
-      setNotice('Si el correo pertenece a un anfitrion, recibira un enlace para restaurar la contrasena.');
+      setNotice('Si el correo pertenece a un anfitrion, recibira un enlace para restaurar la contraseña.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo solicitar la restauracion.');
     } finally {
@@ -71,12 +71,13 @@ export function HostLogin() {
           <div className="login-brand">
             <img src={publicPath('brand/logo-vive-utrera.png')} alt="Vive Utrera" />
             <strong>VIVE UTRERA</strong>
-            <span>NUEVA CONTRASENA</span>
+            <span>NUEVA CONTRASEÑA</span>
           </div>
           {error ? <ErrorState message={error} /> : null}
-          <FormField label="Nueva contrasena" name="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={8} />
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar nueva contrasena'}</Button>
+          <FormField label="Nueva contraseña" name="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={8} />
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar nueva contraseña'}</Button>
         </form>
+        <Link className="login-guide-link" to="/guia/es">Ir a la guia</Link>
         <Modal title="Contrasena actualizada" isOpen={Boolean(notice)} onClose={() => setNotice('')}>
           <p>{notice}</p>
           <div className="modal-actions">
@@ -96,16 +97,17 @@ export function HostLogin() {
           <span>ANFITRIONES</span>
         </div>
         {!isSupabaseConfigured ? (
-          <p className="hint">Modo maqueta: se acepta cualquier correo y contrasena hasta configurar Supabase.</p>
+          <p className="hint">Modo maqueta: se acepta cualquier correo y contraseña hasta configurar Supabase.</p>
         ) : null}
         {error ? <ErrorState message={error} /> : null}
         <FormField label="Correo" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-        <FormField label="Contrasena" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <FormField label="Contraseña" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Entrando...' : 'Entrar como anfitrion'}</Button>
         <button className="text-button" type="button" onClick={handleResetPassword} disabled={isSubmitting}>
-          Restablecer contrasena
+          Restablecer contraseña
         </button>
       </form>
+      <Link className="login-guide-link" to="/guia/es">Ir a la guia</Link>
       <Modal title="Solicitud enviada" isOpen={Boolean(notice)} onClose={() => setNotice('')}>
         <p>{notice}</p>
         <div className="modal-actions">

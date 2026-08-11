@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { FormField } from '../../components/ui/FormField';
 import { ErrorState } from '../../components/ui/States';
@@ -49,6 +49,7 @@ export function AdminLogin() {
         <FormField label="Contraseña" name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Entrando' : 'Entrar'}</Button>
       </form>
+      <Link className="login-guide-link" to="/guia/es">Ir a la guia</Link>
     </main>
   );
 }
