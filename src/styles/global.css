@@ -853,12 +853,9 @@ p { line-height: 1.65; }
 }
 .nearby-result small {
   display: block;
-  margin-top: 3px;
+  margin: 3px 0 12px;
   color: var(--color-muted);
   font-weight: 800;
-}
-.nearby-result p {
-  margin: 8px 0 12px;
 }
 
 .detail-page { max-width: 900px; }

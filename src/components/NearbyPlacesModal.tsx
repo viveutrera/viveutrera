@@ -66,7 +66,6 @@ export function NearbyPlacesModal({
                       <span>{formatDistance(distanceMeters, language)}</span>
                     </div>
                     <small>{type?.name[language] ?? ''}</small>
-                    <p>{translation.shortText}</p>
                     <ButtonLink to={detailPath} variant="secondary">{t(language, 'openPlace')}</ButtonLink>
                   </div>
                 </article>
