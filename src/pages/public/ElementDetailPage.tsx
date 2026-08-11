@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Radio } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { GalleryLightbox } from '../../components/GalleryLightbox';
 import { LanguageSelector } from '../../components/LanguageSelector';
@@ -135,8 +136,11 @@ export function ElementDetailPage() {
     <>
       <main className="detail-page">
         <div className="detail-language-bar">
-          <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
-          <PublicUserMenu />
+          <ActiveTourIndicator />
+          <div className="public-top-actions">
+            <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
+            <PublicUserMenu />
+          </div>
         </div>
         {contentLanguage !== language ? (
           <div className="notice" role="status">

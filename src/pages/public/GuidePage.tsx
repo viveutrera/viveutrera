@@ -1,6 +1,7 @@
 import { MapPin, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { NearbyPlacesModal } from '../../components/NearbyPlacesModal';
 import { PublicFooter } from '../../components/PublicFooter';
@@ -129,8 +130,11 @@ export function GuidePage() {
     <>
       <main className="guide-page">
         <div className="guide-language-bar">
-          <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
-          <PublicUserMenu />
+          <ActiveTourIndicator />
+          <div className="public-top-actions">
+            <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}`} />
+            <PublicUserMenu />
+          </div>
         </div>
         <header className="guide-header">
           <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">

@@ -2,6 +2,7 @@ import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, U
 import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { PublicFooter } from '../../components/PublicFooter';
 import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button, ButtonLink } from '../../components/ui/Button';
@@ -105,30 +106,33 @@ export function LandingPage() {
         style={content.heroImageObjectKey ? { '--hero-image': `url(${mediaUrl(content.heroImageObjectKey)})` } as CSSProperties : undefined}
       >
         <nav className="hero-nav" aria-label="Principal">
-          <button
-            className="landing-language-menu-button"
-            type="button"
-            aria-label="Cambiar idioma"
-            aria-expanded={isLanguageMenuOpen}
-            onClick={() => setLanguageMenuOpen((value) => !value)}
-          >
-            <Globe2 size={22} />
-          </button>
-          <div className={isLanguageMenuOpen ? 'landing-language-switcher open' : 'landing-language-switcher'} aria-label="Cambiar idioma de la pagina principal">
-            {languages.map((language) => (
-              <button
-                key={language.id}
-                type="button"
-                className={language.code === landingLanguage ? 'active' : ''}
-                onClick={() => changeLandingLanguage(language.code)}
-                aria-label={language.nativeName}
-                aria-pressed={language.code === landingLanguage}
-              >
-                <img src={publicPath(flagPath(language.code, false))} alt="" />
-              </button>
-            ))}
+          <ActiveTourIndicator />
+          <div className="public-top-actions">
+            <button
+              className="landing-language-menu-button"
+              type="button"
+              aria-label="Cambiar idioma"
+              aria-expanded={isLanguageMenuOpen}
+              onClick={() => setLanguageMenuOpen((value) => !value)}
+            >
+              <Globe2 size={22} />
+            </button>
+            <div className={isLanguageMenuOpen ? 'landing-language-switcher open' : 'landing-language-switcher'} aria-label="Cambiar idioma de la pagina principal">
+              {languages.map((language) => (
+                <button
+                  key={language.id}
+                  type="button"
+                  className={language.code === landingLanguage ? 'active' : ''}
+                  onClick={() => changeLandingLanguage(language.code)}
+                  aria-label={language.nativeName}
+                  aria-pressed={language.code === landingLanguage}
+                >
+                  <img src={publicPath(flagPath(language.code, false))} alt="" />
+                </button>
+              ))}
+            </div>
+            <PublicUserMenu />
           </div>
-          <PublicUserMenu />
         </nav>
         <div className="hero-content hero-brand-lockup">
           <img className="hero-mark" src={content.heroLogoObjectKey ? mediaUrl(content.heroLogoObjectKey) : publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />

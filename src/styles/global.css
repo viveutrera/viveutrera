@@ -126,7 +126,14 @@ button, input { font: inherit; }
 }
 
 .hero-nav .brand-logo { width: clamp(72px, 9vw, 118px); }
-.hero-nav .landing-language-switcher { margin-left: auto; }
+.hero-nav .public-top-actions { margin-left: auto; }
+.public-top-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
 .landing-language-menu-button {
   display: none;
 }
@@ -499,15 +506,11 @@ p { line-height: 1.65; }
   font-size: 1.35rem;
 }
 .active-tour-indicator {
-  position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 40;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  max-width: calc(100vw - 24px);
+  max-width: min(460px, 100%);
   padding: 8px 10px 8px 14px;
   border: 1px solid rgba(216, 199, 166, 0.55);
   border-radius: 8px;
@@ -597,13 +600,10 @@ p { line-height: 1.65; }
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: space-between;
   position: relative;
   z-index: 5;
   margin-bottom: 8px;
-}
-.detail-language-bar {
-  justify-content: flex-start;
 }
 .guide-language-bar .language-selector-menu,
 .detail-language-bar .language-selector-menu {
@@ -1864,6 +1864,10 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .hero-nav { align-items: flex-start; position: relative; min-height: 40px; }
   .hero-nav .brand-logo { width: 78px; }
+  .public-top-actions {
+    position: relative;
+    gap: 6px;
+  }
   .landing-language-menu-button {
     width: 42px;
     height: 42px;
@@ -1949,13 +1953,11 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .guide-language-bar,
   .detail-language-bar {
+    align-items: flex-start;
+    justify-content: space-between;
     margin-bottom: 8px;
   }
-  .guide-language-bar {
-    justify-content: flex-end;
-  }
   .detail-language-bar {
-    justify-content: flex-end;
     margin-top: -8px;
   }
   .nearby-result {
@@ -2067,8 +2069,7 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     text-align: center;
   }
   .active-tour-indicator {
-    top: 8px;
-    left: 8px;
+    max-width: calc(100% - 104px);
     font-size: 0.86rem;
   }
   .active-tour-indicator .button span {
