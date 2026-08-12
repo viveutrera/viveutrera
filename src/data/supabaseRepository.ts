@@ -2,10 +2,13 @@ import type {
   Collaborator,
   ElementType,
   GuideElement,
+  GuideElementPage,
+  GuideElementQuery,
   Language,
   LanguageCode,
   MediaAsset,
   MediaVariant,
+  NearbyElementCandidate,
   SiteContent,
   Tour,
   TourEvent,
@@ -18,6 +21,9 @@ import { languages as mockLanguages, siteContent as mockSiteContent } from './mo
 const languageCodes: LanguageCode[] = ['es', 'en', 'fr', 'de'];
 const publicElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
 const publicElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations!inner(name, short_text, long_text, seo_title, seo_description, is_published, language_id)';
+const publicElementCardSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations!inner(name, short_text, is_published, language_id)';
+const publicElementCardSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations!inner(name, short_text, is_published, language_id)';
+const publicElementCoordinateSelect = 'id, latitude, longitude, element_translations!inner(is_published, language_id)';
 const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 
@@ -46,16 +52,16 @@ interface ElementRowRaw {
   element_translations?: Array<{
     name: string;
     short_text: string;
-    long_text: string | null;
-    seo_title: string | null;
-    seo_description: string | null;
+    long_text?: string | null;
+    seo_title?: string | null;
+    seo_description?: string | null;
     is_published: boolean;
   }> | {
     name: string;
     short_text: string;
-    long_text: string | null;
-    seo_title: string | null;
-    seo_description: string | null;
+    long_text?: string | null;
+    seo_title?: string | null;
+    seo_description?: string | null;
     is_published: boolean;
   };
 }
@@ -325,6 +331,123 @@ export const supabaseGuideRepository = {
     const elements = ((data ?? []) as ElementRowRaw[]).map((row) => mapElementRow(row, language));
     await hydrateElementMedia(elements, languageId, language);
     return elements;
+  },
+
+  async getElementPage(language: LanguageCode, options: GuideElementQuery): Promise<GuideElementPage> {
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return { items: [], hasMore: false, contentLanguage: language };
+
+    const response = await selectElementCardRows(client, publicElementCardSelect, languageId, options);
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+
+    if (error && isMissingColumnError(error)) {
+      const legacy = await selectElementCardRows(client, publicElementCardSelectLegacy, languageId, options);
+      data = legacy.data;
+      error = legacy.error;
+    }
+
+    if (error) throw error;
+
+    const rows = (data ?? []) as ElementRowRaw[];
+    const pageRows = rows.slice(0, options.limit);
+    const elements = pageRows.map((row) => mapElementRow(row, language));
+    await hydrateElementCoverImages(elements, language);
+    return {
+      items: elements,
+      hasMore: rows.length > options.limit,
+      contentLanguage: language
+    };
+  },
+
+  async getElementsByIds(language: LanguageCode, ids: string[]): Promise<GuideElement[]> {
+    if (ids.length === 0) return [];
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return [];
+
+    const response = await client
+      .from('elements')
+      .select(publicElementCardSelect)
+      .in('id', ids)
+      .eq('status', 'published')
+      .eq('element_translations.language_id', languageId)
+      .eq('element_translations.is_published', true);
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('elements')
+        .select(publicElementCardSelectLegacy)
+        .in('id', ids)
+        .eq('status', 'published')
+        .eq('element_translations.language_id', languageId)
+        .eq('element_translations.is_published', true);
+      data = legacy.data;
+      error = legacy.error;
+    }
+
+    if (error) throw error;
+
+    const elements = ((data ?? []) as ElementRowRaw[]).map((row) => mapElementRow(row, language));
+    await hydrateElementCoverImages(elements, language);
+    const order = new Map(ids.map((id, index) => [id, index]));
+    return elements.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
+  },
+
+  async getElementNavigation(language: LanguageCode): Promise<GuideElement[]> {
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return [];
+
+    const response = await client
+      .from('elements')
+      .select(publicElementCardSelect)
+      .eq('status', 'published')
+      .eq('element_translations.language_id', languageId)
+      .eq('element_translations.is_published', true)
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: true });
+    let data: unknown = response.data;
+    let error: unknown = response.error;
+
+    if (error && isMissingColumnError(error)) {
+      const legacy = await client
+        .from('elements')
+        .select(publicElementCardSelectLegacy)
+        .eq('status', 'published')
+        .eq('element_translations.language_id', languageId)
+        .eq('element_translations.is_published', true)
+        .order('sort_order', { ascending: true })
+        .order('id', { ascending: true });
+      data = legacy.data;
+      error = legacy.error;
+    }
+
+    if (error) throw error;
+    return ((data ?? []) as ElementRowRaw[]).map((row) => mapElementRow(row, language));
+  },
+
+  async getNearbyElementCandidates(language: LanguageCode): Promise<NearbyElementCandidate[]> {
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return [];
+
+    const { data, error } = await client
+      .from('elements')
+      .select(publicElementCoordinateSelect)
+      .eq('status', 'published')
+      .eq('element_translations.language_id', languageId)
+      .eq('element_translations.is_published', true)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null);
+    if (error) throw error;
+
+    return ((data ?? []) as Array<{ id: string; latitude: number | null; longitude: number | null }>)
+      .filter((row): row is { id: string; latitude: number; longitude: number } => typeof row.latitude === 'number' && typeof row.longitude === 'number')
+      .map((row) => ({ id: row.id, latitude: row.latitude, longitude: row.longitude }));
   },
 
   async getElementBySlug(language: LanguageCode, slug: string): Promise<GuideElement | undefined> {
@@ -1144,6 +1267,28 @@ async function getLanguageId(language: LanguageCode): Promise<string | undefined
   return data?.id;
 }
 
+function selectElementCardRows(client: ReturnType<typeof ensureSupabase>, select: string, languageId: string, options: GuideElementQuery) {
+  const end = options.offset + options.limit;
+  let request = client
+    .from('elements')
+    .select(select)
+    .eq('status', 'published')
+    .eq('element_translations.language_id', languageId)
+    .eq('element_translations.is_published', true)
+    .order('sort_order', { ascending: true })
+    .order('id', { ascending: true })
+    .range(options.offset, end);
+
+  if (options.typeId) request = request.eq('element_type_id', options.typeId);
+  const search = options.search?.trim();
+  if (search) {
+    const pattern = `%${search.replace(/[%_]/g, '\\$&')}%`;
+    request = request.or(`name.ilike.${pattern},short_text.ilike.${pattern}`, { foreignTable: 'element_translations' });
+  }
+
+  return request;
+}
+
 async function hydrateElementMedia(elements: GuideElement[], languageId: string, language: LanguageCode) {
   if (elements.length === 0) return;
   const client = ensureSupabase();
@@ -1168,28 +1313,7 @@ async function hydrateElementMedia(elements: GuideElement[], languageId: string,
   elements.forEach((element) => {
     const images = ((imageRows ?? []) as unknown as ElementImageRowRaw[])
       .filter((row) => row.element_id === element.id)
-      .map((row) => {
-        const mediaAsset = mapMediaAsset(row.media_assets) ?? placeholderAsset;
-        const translations = emptyTranslations(() => ({ title: mediaAsset.originalName, altText: mediaAsset.originalName, caption: undefined as string | undefined }));
-        row.element_image_translations?.forEach((translation) => {
-          const code = asLanguageCode(relatedLanguageCode(translation.languages));
-          translations[code] = {
-            title: translation.title ?? mediaAsset.originalName,
-            altText: translation.alt_text,
-            caption: translation.caption ?? undefined
-          };
-        });
-        if (!translations[language].altText) {
-          translations[language] = { title: mediaAsset.originalName, altText: element.translations[language].name, caption: undefined };
-        }
-        return {
-          id: row.id,
-          mediaAsset,
-          isCover: row.is_cover,
-          sortOrder: row.sort_order,
-          translations
-        };
-      });
+      .map((row) => mapElementImage(row, element, language));
 
     const audios = ((audioRows ?? []) as unknown as ElementAudioRowRaw[])
       .filter((row) => row.element_id === element.id)
@@ -1209,6 +1333,26 @@ async function hydrateElementMedia(elements: GuideElement[], languageId: string,
 
     element.images = images.length ? images : element.images;
     element.audios = audios;
+  });
+}
+
+async function hydrateElementCoverImages(elements: GuideElement[], language: LanguageCode) {
+  if (elements.length === 0) return;
+  const client = ensureSupabase();
+  const ids = elements.map((element) => element.id);
+
+  const { data: imageRows, error } = await client
+    .from('element_images')
+    .select('id, element_id, is_cover, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(title, alt_text, caption, languages(code))')
+    .in('element_id', ids)
+    .order('is_cover', { ascending: false })
+    .order('sort_order');
+  if (error) throw error;
+
+  elements.forEach((element) => {
+    const row = ((imageRows ?? []) as unknown as ElementImageRowRaw[])
+      .find((candidate) => candidate.element_id === element.id);
+    element.images = row ? [mapElementImage(row, element, language)] : [];
   });
 }
 
@@ -1269,6 +1413,29 @@ function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement
     images: [],
     audios: [],
     links: []
+  };
+}
+
+function mapElementImage(row: ElementImageRowRaw, element: GuideElement, language: LanguageCode) {
+  const mediaAsset = mapMediaAsset(row.media_assets) ?? placeholderAsset;
+  const translations = emptyTranslations(() => ({ title: mediaAsset.originalName, altText: mediaAsset.originalName, caption: undefined as string | undefined }));
+  row.element_image_translations?.forEach((translation) => {
+    const code = asLanguageCode(relatedLanguageCode(translation.languages));
+    translations[code] = {
+      title: translation.title ?? mediaAsset.originalName,
+      altText: translation.alt_text,
+      caption: translation.caption ?? undefined
+    };
+  });
+  if (!translations[language].altText) {
+    translations[language] = { title: mediaAsset.originalName, altText: element.translations[language].name, caption: undefined };
+  }
+  return {
+    id: row.id,
+    mediaAsset,
+    isCover: row.is_cover,
+    sortOrder: row.sort_order,
+    translations
   };
 }
 

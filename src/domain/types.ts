@@ -99,6 +99,25 @@ export interface GuideElement {
   links: ElementLink[];
 }
 
+export interface GuideElementQuery {
+  offset: number;
+  limit: number;
+  typeId?: string;
+  search?: string;
+}
+
+export interface GuideElementPage {
+  items: GuideElement[];
+  hasMore: boolean;
+  contentLanguage: LanguageCode;
+}
+
+export interface NearbyElementCandidate {
+  id: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface Collaborator {
   id: string;
   name: string;

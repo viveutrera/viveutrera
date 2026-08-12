@@ -51,7 +51,7 @@ export function ElementDetailPage() {
 
       Promise.all([
         guideRepository.getElementBySlug(resolved, slug),
-        guideRepository.getElements(resolved),
+        guideRepository.getElementNavigation(resolved),
         guideRepository.getElementTypes()
       ]).then(async ([elementData, siblingData, typeData]) => {
         let visibleElement = elementData;
@@ -60,7 +60,7 @@ export function ElementDetailPage() {
 
         if (!visibleElement && resolved !== defaultLanguageCode) {
           visibleElement = await guideRepository.getElementBySlug(defaultLanguageCode, slug);
-          visibleSiblings = await guideRepository.getElements(defaultLanguageCode);
+          visibleSiblings = await guideRepository.getElementNavigation(defaultLanguageCode);
           visibleLanguage = defaultLanguageCode;
         }
 

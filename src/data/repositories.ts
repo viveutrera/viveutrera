@@ -1,5 +1,5 @@
 import { collaborators, elements, elementTypes, languages, siteContent } from './mockData';
-import type { GuideElement, LanguageCode, UploadRequest, UploadResult } from '../domain/types';
+import type { GuideElement, GuideElementQuery, LanguageCode, NearbyElementCandidate, UploadRequest, UploadResult } from '../domain/types';
 import { mediaUrl } from '../lib/media';
 import { canUseSupabase, supabaseGuideRepository } from './supabaseRepository';
 
@@ -38,6 +38,58 @@ export const guideRepository = {
       () => elements
         .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
         .sort((a, b) => a.sortOrder - b.sortOrder)
+    );
+  },
+  async getElementPage(language: LanguageCode, options: GuideElementQuery) {
+    return withFallback(
+      () => supabaseGuideRepository.getElementPage(language, options),
+      () => {
+        const normalized = options.search?.trim().toLocaleLowerCase() ?? '';
+        const rows = elements
+          .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
+          .filter((element) => !options.typeId || element.typeId === options.typeId)
+          .filter((element) => {
+            const translation = element.translations[language];
+            return !normalized || `${translation.name} ${translation.shortText}`.toLocaleLowerCase().includes(normalized);
+          })
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+        const page = rows.slice(options.offset, options.offset + options.limit);
+        return {
+          items: page.map((element) => ({ ...element, audios: [], links: [], images: element.images.slice(0, 1) })),
+          hasMore: options.offset + options.limit < rows.length,
+          contentLanguage: language
+        };
+      }
+    );
+  },
+  async getElementsByIds(language: LanguageCode, ids: string[]) {
+    return withFallback(
+      () => supabaseGuideRepository.getElementsByIds(language, ids),
+      () => {
+        const order = new Map(ids.map((id, index) => [id, index]));
+        return elements
+          .filter((element) => ids.includes(element.id) && element.status === 'published' && element.translations[language]?.isPublished)
+          .sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0))
+          .map((element) => ({ ...element, audios: [], links: [], images: element.images.slice(0, 1) }));
+      }
+    );
+  },
+  async getElementNavigation(language: LanguageCode) {
+    return withFallback(
+      () => supabaseGuideRepository.getElementNavigation(language),
+      () => elements
+        .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id))
+        .map((element) => ({ ...element, images: [], audios: [], links: [] }))
+    );
+  },
+  async getNearbyElementCandidates(language: LanguageCode): Promise<NearbyElementCandidate[]> {
+    return withFallback(
+      () => supabaseGuideRepository.getNearbyElementCandidates(language),
+      () => elements
+        .filter((element) => element.status === 'published' && element.translations[language]?.isPublished)
+        .filter((element): element is GuideElement & { latitude: number; longitude: number } => typeof element.latitude === 'number' && typeof element.longitude === 'number')
+        .map((element) => ({ id: element.id, latitude: element.latitude, longitude: element.longitude }))
     );
   },
   async getElementBySlug(language: LanguageCode, slug: string): Promise<GuideElement | undefined> {
