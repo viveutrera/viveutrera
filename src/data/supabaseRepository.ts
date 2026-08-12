@@ -39,7 +39,7 @@ export const defaultDonationContent: DonationContent = {
   bizumTitle: 'Donar por Bizum',
   bizumText: 'Envia tu aportacion mediante Bizum',
   bizumCode: '07258',
-  bizumButtonLabel: 'Donar por Bizum',
+  bizumButtonLabel: 'Copiar codigo',
   bankTitle: 'Transferencia bancaria',
   bankText: 'Tambien puedes colaborar mediante transferencia',
   bankAccountHolder: 'Asociacion Vive Utrera',
@@ -1450,7 +1450,7 @@ function normalizeDonationContent(value: unknown): DonationContent {
     bizumTitle: stringSetting(candidate.bizumTitle, defaultDonationContent.bizumTitle),
     bizumText: stringSetting(candidate.bizumText, defaultDonationContent.bizumText),
     bizumCode: stringSetting(candidate.bizumCode, defaultDonationContent.bizumCode),
-    bizumButtonLabel: stringSetting(candidate.bizumButtonLabel, defaultDonationContent.bizumButtonLabel),
+    bizumButtonLabel: normalizeBizumButtonLabel(candidate.bizumButtonLabel),
     bankTitle: stringSetting(candidate.bankTitle, defaultDonationContent.bankTitle),
     bankText: stringSetting(candidate.bankText, defaultDonationContent.bankText),
     bankAccountHolder: stringSetting(candidate.bankAccountHolder, defaultDonationContent.bankAccountHolder),
@@ -1482,6 +1482,13 @@ export function normalizeCollaboratorsPageContent(value: unknown): Collaborators
 
 function stringSetting(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function normalizeBizumButtonLabel(value: unknown) {
+  const label = stringSetting(value, defaultDonationContent.bizumButtonLabel);
+  return label.trim().toLocaleLowerCase() === 'donar por bizum'
+    ? defaultDonationContent.bizumButtonLabel
+    : label;
 }
 
 function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement {

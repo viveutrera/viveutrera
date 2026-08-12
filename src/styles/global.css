@@ -345,10 +345,8 @@ button, input { font: inherit; }
 }
 
 .public-footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  justify-items: center;
   gap: 10px 22px;
   padding: 12px 16px;
   margin-bottom: 16px;
@@ -356,11 +354,23 @@ button, input { font: inherit; }
   border-radius: 8px;
   background: #173a61;
 }
+.public-footer-links-featured,
+.public-footer-links-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 24px;
+}
 .public-footer-links a {
   color: rgba(255, 255, 255, 0.88);
   font-size: 0.95rem;
   font-weight: 500;
   text-decoration: none;
+}
+.public-footer-links-featured a {
+  font-size: clamp(1.12rem, 2vw, 1.35rem);
+  font-weight: 700;
 }
 .public-footer-links a:hover {
   color: var(--color-stone);
@@ -603,7 +613,7 @@ button, input { font: inherit; }
 }
 .donation-card {
   display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 26px;
   align-items: start;
   margin: 24px auto;

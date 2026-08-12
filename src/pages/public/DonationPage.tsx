@@ -1,4 +1,3 @@
-import { Building2, CheckCircle2, Copy, Globe2, Headphones, Heart, PenLine, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
@@ -12,7 +11,8 @@ import { setSeo } from '../../lib/seo';
 export function DonationPage() {
   const language = getPersistedLanguage() ?? defaultLanguageCode;
   const [content, setContent] = useState<DonationContent>();
-  const [copyMessage, setCopyMessage] = useState('');
+  const [bizumCopyMessage, setBizumCopyMessage] = useState('');
+  const [bankCopyMessage, setBankCopyMessage] = useState('');
 
   useEffect(() => {
     guideRepository.getDonationContent().then((donationContent) => {
@@ -37,9 +37,19 @@ export function DonationPage() {
     ].join('\n');
     try {
       await navigator.clipboard.writeText(value);
-      setCopyMessage('Datos copiados.');
+      setBankCopyMessage('Datos copiados.');
     } catch {
-      setCopyMessage(value);
+      setBankCopyMessage(value);
+    }
+  }
+
+  async function copyBizumCode() {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content.bizumCode);
+      setBizumCopyMessage('Codigo Bizum copiado.');
+    } catch {
+      setBizumCopyMessage(content.bizumCode);
     }
   }
 
@@ -54,7 +64,6 @@ export function DonationPage() {
         </header>
 
         <section className="donation-card">
-          <span className="project-icon"><Heart size={44} /></span>
           <div>
             <h2>{content.introTitle}</h2>
             <p>{content.introText}</p>
@@ -62,19 +71,16 @@ export function DonationPage() {
         </section>
 
         <section className="donation-card donation-card-stack">
-          <span className="project-icon"><Heart size={44} /></span>
           <div>
             <h2>{content.bizumTitle}</h2>
             <p>{content.bizumText}</p>
             <p className="bizum-code">Codigo Bizum: <strong>{content.bizumCode}</strong></p>
-            <a className="button button-primary donation-wide-button" href={`https://bizum.es/`} target="_blank" rel="noreferrer">
-              <span>{content.bizumButtonLabel}</span>
-            </a>
+            <Button type="button" className="donation-wide-button" onClick={copyBizumCode}>{content.bizumButtonLabel}</Button>
+            {bizumCopyMessage ? <p className="hint" role="status">{bizumCopyMessage}</p> : null}
           </div>
         </section>
 
         <section className="donation-card donation-card-stack">
-          <span className="project-icon"><Building2 size={44} /></span>
           <div>
             <h2>{content.bankTitle}</h2>
             <p>{content.bankText}</p>
@@ -83,18 +89,17 @@ export function DonationPage() {
               <div><dt>IBAN:</dt><dd>{content.bankIban}</dd></div>
               <div><dt>Concepto:</dt><dd>{content.bankConcept}</dd></div>
             </dl>
-            <Button type="button" variant="secondary" className="donation-wide-button" icon={<Copy size={20} />} onClick={copyBankData}>{content.copyButtonLabel}</Button>
-            {copyMessage ? <p className="hint" role="status">{copyMessage}</p> : null}
+            <Button type="button" variant="secondary" className="donation-wide-button" onClick={copyBankData}>{content.copyButtonLabel}</Button>
+            {bankCopyMessage ? <p className="hint" role="status">{bankCopyMessage}</p> : null}
           </div>
         </section>
 
         <section className="donation-card transparency-card">
-          <span className="project-icon"><ShieldCheck size={44} /></span>
           <div>
             <h2>{content.transparencyTitle}</h2>
             <ul>
               {content.transparencyItems.map((item, index) => (
-                <li key={item}>{transparencyIcon(index)}<span>{item}</span></li>
+                <li key={`${item}-${index}`}><span>{item}</span></li>
               ))}
             </ul>
           </div>
@@ -105,11 +110,4 @@ export function DonationPage() {
       <PublicFooter />
     </>
   );
-}
-
-function transparencyIcon(index: number) {
-  if (index === 0) return <Globe2 size={30} />;
-  if (index === 1) return <PenLine size={30} />;
-  if (index === 2) return <Headphones size={30} />;
-  return <CheckCircle2 size={30} />;
 }

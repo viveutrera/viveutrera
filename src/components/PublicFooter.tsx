@@ -8,12 +8,16 @@ export function PublicFooter() {
   return (
     <footer className="public-footer" aria-label="Vive Utrera">
       <nav className="public-footer-links" aria-label="Enlaces del sitio">
-        <Link to="/preview">Inicio</Link>
-        <Link to={`/guia/${language}`}>Guia</Link>
-        <Link to="/admin">Administracion</Link>
-        <Link to="/host/login">Anfitriones</Link>
-        <Link to="/colaboradores">Colaboradores</Link>
-        <Link to="/donativos">Donativos</Link>
+        <div className="public-footer-links-featured">
+          <Link to="/donativos">Donativos</Link>
+          <Link to="/colaboradores">Colaboradores</Link>
+        </div>
+        <div className="public-footer-links-secondary">
+          <Link to="/preview">Inicio</Link>
+          <Link to={`/guia/${language}`}>Guia</Link>
+          <Link to="/admin">Administracion</Link>
+          <Link to="/host/login">Anfitriones</Link>
+        </div>
       </nav>
       <div className="public-footer-inner">
         <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
