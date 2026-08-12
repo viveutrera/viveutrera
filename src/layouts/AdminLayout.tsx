@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/tipos', label: 'Tipos', icon: Landmark },
   { to: '/admin/elementos', label: 'Elementos', icon: Landmark },
   { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users },
+  { to: '/admin/colaboradores-pagina', label: 'Textos colaboradores', icon: Users },
   { to: '/admin/anfitriones', label: 'Anfitriones', icon: Users }
 ];
 

@@ -1,7 +1,7 @@
 import { collaborators, elements, elementTypes, languages, siteContent } from './mockData';
-import type { DonationContent, GuideElement, GuideElementQuery, LanguageCode, NearbyElementCandidate, UploadRequest, UploadResult } from '../domain/types';
+import type { CollaboratorsPageContent, DonationContent, GuideElement, GuideElementQuery, LanguageCode, NearbyElementCandidate, UploadRequest, UploadResult } from '../domain/types';
 import { mediaUrl } from '../lib/media';
-import { canUseSupabase, defaultDonationContent, supabaseGuideRepository } from './supabaseRepository';
+import { canUseSupabase, defaultCollaboratorsPageContent, defaultDonationContent, supabaseGuideRepository } from './supabaseRepository';
 
 async function withFallback<T>(action: () => Promise<T>, fallback: () => T | Promise<T>) {
   if (!canUseSupabase()) return fallback();
@@ -108,6 +108,12 @@ export const guideRepository = {
     return withFallback(
       () => supabaseGuideRepository.getDonationContent(),
       () => defaultDonationContent
+    );
+  },
+  async getCollaboratorsPageContent(): Promise<CollaboratorsPageContent> {
+    return withFallback(
+      () => supabaseGuideRepository.getCollaboratorsPageContent(),
+      () => defaultCollaboratorsPageContent
     );
   }
 };

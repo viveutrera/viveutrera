@@ -578,14 +578,13 @@ button, input { font: inherit; }
 }
 .supporter-callout {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
   margin: 34px 0;
   padding: 22px;
   background: rgba(216, 199, 166, 0.18);
 }
-.supporter-callout > span,
 .project-icon {
   width: 86px;
   height: 86px;

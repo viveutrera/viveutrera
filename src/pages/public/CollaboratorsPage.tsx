@@ -1,10 +1,10 @@
-import { ExternalLink, Heart, Users } from 'lucide-react';
+import { ExternalLink, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { Collaborator, LanguageCode, SiteContent } from '../../domain/types';
+import type { Collaborator, CollaboratorsPageContent, LanguageCode } from '../../domain/types';
 import { defaultLanguageCode, getPersistedLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
@@ -12,19 +12,19 @@ import { setSeo } from '../../lib/seo';
 
 export function CollaboratorsPage() {
   const language = getPersistedLanguage() ?? defaultLanguageCode;
-  const [content, setContent] = useState<SiteContent>();
+  const [content, setContent] = useState<CollaboratorsPageContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
   useEffect(() => {
     Promise.all([
-      guideRepository.getSiteContent(language),
+      guideRepository.getCollaboratorsPageContent(),
       guideRepository.getCollaborators()
-    ]).then(([siteContent, collaboratorRows]) => {
-      setContent(siteContent);
+    ]).then(([pageContent, collaboratorRows]) => {
+      setContent(pageContent);
       setCollaborators(collaboratorRows);
       setSeo({
-        title: 'Colaboradores Vive Utrera',
-        description: 'Entidades, empresas y personas que apoyan el proyecto cultural Vive Utrera.',
+        title: `${pageContent.title} Vive Utrera`,
+        description: pageContent.subtitle,
         path: '/colaboradores',
         language
       });
@@ -42,15 +42,15 @@ export function CollaboratorsPage() {
         <header className="project-hero">
           <img className="project-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
           <p className="project-wordmark"><span>VIVE</span><strong>UTRERA</strong></p>
-          <h1>Colaboradores</h1>
-          <p>Entidades, empresas y personas que apoyan este proyecto cultural.</p>
+          <h1>{content.title}</h1>
+          <p>{content.subtitle}</p>
         </header>
 
         <section className="project-section">
           <div className="special-supporter-list">
             {special.length ? special.map((collaborator) => (
               <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} />
-            )) : <p className="hint">Los colaboradores especiales apareceran cuando esten configurados.</p>}
+            )) : <p className="hint">{content.specialSectionEmptyText}</p>}
           </div>
         </section>
 
@@ -58,20 +58,19 @@ export function CollaboratorsPage() {
           <div className="general-supporter-grid">
             {general.length ? general.map((collaborator) => (
               <GeneralSupporter key={collaborator.id} collaborator={collaborator} language={language} />
-            )) : <p className="hint">Los colaboradores generales apareceran cuando esten configurados.</p>}
+            )) : <p className="hint">{content.generalSectionEmptyText}</p>}
           </div>
         </section>
 
         <section className="supporter-callout">
-          <span><Heart size={38} /></span>
           <div>
-            <h2>¿Eres una entidad o empresa de Utrera?</h2>
-            <p>Unete a Vive Utrera y forma parte de este proyecto cultural que pone en valor nuestra ciudad.</p>
+            <h2>{content.calloutTitle}</h2>
+            <p>{content.calloutText}</p>
           </div>
-          <Link className="button button-primary" to="/donativos"><span>Quiero colaborar</span></Link>
+          <Link className="button button-primary" to="/donativos"><span>{content.calloutButtonLabel}</span></Link>
         </section>
 
-        <p className="project-closing">Gracias por apoyar la cultura local</p>
+        <p className="project-closing">{content.closingText}</p>
       </main>
       <PublicFooter />
     </>

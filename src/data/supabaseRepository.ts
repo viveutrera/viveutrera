@@ -1,5 +1,6 @@
 import type {
   Collaborator,
+  CollaboratorsPageContent,
   DonationContent,
   ElementType,
   GuideElement,
@@ -28,6 +29,7 @@ const publicElementCoordinateSelect = 'id, latitude, longitude, element_translat
 const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const donationContentKey = 'donation_content';
+export const collaboratorsPageContentKey = 'collaborators_page_content';
 
 export const defaultDonationContent: DonationContent = {
   title: 'Colabora con la asociacion',
@@ -47,6 +49,17 @@ export const defaultDonationContent: DonationContent = {
   transparencyTitle: 'Transparencia y compromiso',
   transparencyItems: ['Mantenimiento de la web', 'Mejora de contenidos', 'Nuevas audioguias'],
   footerText: 'Gracias por apoyar este proyecto cultural local.'
+};
+
+export const defaultCollaboratorsPageContent: CollaboratorsPageContent = {
+  title: 'Colaboradores',
+  subtitle: 'Entidades, empresas y personas que apoyan este proyecto cultural.',
+  specialSectionEmptyText: 'Los colaboradores especiales apareceran cuando esten configurados.',
+  generalSectionEmptyText: 'Los colaboradores generales apareceran cuando esten configurados.',
+  calloutTitle: '¿Eres una entidad o empresa de Utrera?',
+  calloutText: 'Unete a Vive Utrera y forma parte de este proyecto cultural que pone en valor nuestra ciudad.',
+  calloutButtonLabel: 'Quiero colaborar',
+  closingText: 'Gracias por apoyar la cultura local'
 };
 
 const placeholderAsset: MediaAsset = {
@@ -582,6 +595,17 @@ export const supabaseGuideRepository = {
       .maybeSingle();
     if (error) throw error;
     return normalizeDonationContent(data?.value_json);
+  },
+
+  async getCollaboratorsPageContent(): Promise<CollaboratorsPageContent> {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('site_settings')
+      .select('value_json')
+      .eq('key', collaboratorsPageContentKey)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCollaboratorsPageContent(data?.value_json);
   }
 };
 
@@ -1438,6 +1462,21 @@ function normalizeDonationContent(value: unknown): DonationContent {
       ? candidate.transparencyItems.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
       : defaultDonationContent.transparencyItems,
     footerText: stringSetting(candidate.footerText, defaultDonationContent.footerText)
+  };
+}
+
+export function normalizeCollaboratorsPageContent(value: unknown): CollaboratorsPageContent {
+  if (!value || typeof value !== 'object') return defaultCollaboratorsPageContent;
+  const candidate = value as Partial<Record<keyof CollaboratorsPageContent, unknown>>;
+  return {
+    title: stringSetting(candidate.title, defaultCollaboratorsPageContent.title),
+    subtitle: stringSetting(candidate.subtitle, defaultCollaboratorsPageContent.subtitle),
+    specialSectionEmptyText: stringSetting(candidate.specialSectionEmptyText, defaultCollaboratorsPageContent.specialSectionEmptyText),
+    generalSectionEmptyText: stringSetting(candidate.generalSectionEmptyText, defaultCollaboratorsPageContent.generalSectionEmptyText),
+    calloutTitle: stringSetting(candidate.calloutTitle, defaultCollaboratorsPageContent.calloutTitle),
+    calloutText: stringSetting(candidate.calloutText, defaultCollaboratorsPageContent.calloutText),
+    calloutButtonLabel: stringSetting(candidate.calloutButtonLabel, defaultCollaboratorsPageContent.calloutButtonLabel),
+    closingText: stringSetting(candidate.closingText, defaultCollaboratorsPageContent.closingText)
   };
 }
 

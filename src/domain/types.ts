@@ -165,6 +165,17 @@ export interface DonationContent {
   footerText: string;
 }
 
+export interface CollaboratorsPageContent {
+  title: string;
+  subtitle: string;
+  specialSectionEmptyText: string;
+  generalSectionEmptyText: string;
+  calloutTitle: string;
+  calloutText: string;
+  calloutButtonLabel: string;
+  closingText: string;
+}
+
 export type TourStatus = 'draft' | 'active' | 'finished' | 'cancelled';
 
 export interface Tour {

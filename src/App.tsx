@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { AdminCollaboratorEdit } from './pages/admin/AdminCollaboratorEdit';
+import { AdminCollaboratorPageSettings } from './pages/admin/AdminCollaboratorPageSettings';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -58,6 +59,7 @@ export function App() {
         <Route path="elementos/:id" element={<AdminElementEdit />} />
         <Route path="multimedia" element={<AdminMedia />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
+        <Route path="colaboradores-pagina" element={<AdminCollaboratorPageSettings />} />
         <Route path="colaboradores/:id" element={<AdminCollaboratorEdit />} />
         <Route path="anfitriones" element={<AdminHosts />} />
       </Route>
