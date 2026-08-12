@@ -852,7 +852,9 @@ export const adminRepository = {
     const { data, error } = await client
       .from('element_images')
       .select('id, element_id, media_asset_id, is_cover, sort_order, elements(slug), media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(id, title, alt_text, caption, language_id, languages(code))')
-      .order('sort_order');
+      .order('element_id')
+      .order('sort_order')
+      .order('id');
     if (error) throw error;
     return data ?? [];
   },
@@ -1298,7 +1300,9 @@ async function hydrateElementMedia(elements: GuideElement[], languageId: string,
     .from('element_images')
     .select('id, element_id, is_cover, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(title, alt_text, caption, languages(code))')
     .in('element_id', ids)
-    .order('sort_order');
+    .order('element_id')
+    .order('sort_order')
+    .order('id');
   if (imageError) throw imageError;
 
   const { data: audioRows, error: audioError } = await client
@@ -1345,13 +1349,13 @@ async function hydrateElementCoverImages(elements: GuideElement[], language: Lan
     .from('element_images')
     .select('id, element_id, is_cover, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), element_image_translations(title, alt_text, caption, languages(code))')
     .in('element_id', ids)
-    .order('is_cover', { ascending: false })
-    .order('sort_order');
+    .order('element_id')
+    .order('sort_order')
+    .order('id');
   if (error) throw error;
 
   elements.forEach((element) => {
-    const row = ((imageRows ?? []) as unknown as ElementImageRowRaw[])
-      .find((candidate) => candidate.element_id === element.id);
+    const row = selectCoverImageRow(((imageRows ?? []) as unknown as ElementImageRowRaw[]), element.id);
     element.images = row ? [mapElementImage(row, element, language)] : [];
   });
 }
@@ -1437,6 +1441,12 @@ function mapElementImage(row: ElementImageRowRaw, element: GuideElement, languag
     sortOrder: row.sort_order,
     translations
   };
+}
+
+function selectCoverImageRow(rows: ElementImageRowRaw[], elementId: string) {
+  return rows
+    .filter((row) => row.element_id === elementId)
+    .sort((left, right) => Number(right.is_cover) - Number(left.is_cover) || left.sort_order - right.sort_order || left.id.localeCompare(right.id))[0];
 }
 
 function mapMediaAsset(relation: MediaAssetRowRaw | MediaAssetRowRaw[] | null | undefined): MediaAsset | undefined {

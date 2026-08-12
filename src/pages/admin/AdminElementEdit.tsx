@@ -250,7 +250,7 @@ export function AdminElementEdit() {
     setItems(nextElements);
     setTypes(typeRows as unknown as TypeRow[]);
     setLanguages(nextLanguages);
-    setImages((imageRows as unknown as ElementImageRow[]).filter((item) => item.element_id === id));
+    setImages((imageRows as unknown as ElementImageRow[]).filter((item) => item.element_id === id).sort(compareElementImages));
     setAudios((audioRows as unknown as ElementAudioRow[]).filter((item) => item.element_id === id));
     setLinks((linkRows as unknown as ElementLinkRow[]).filter((item) => item.element_id === id));
     setAudioForm((current) => ({ ...current, language_id: current.language_id || nextLanguages[0]?.id || '' }));
@@ -1180,6 +1180,10 @@ function validateCoordinate(value: string, label: string, min: number, max: numb
 
 function getCode(relation: { code: string } | { code: string }[] | null | undefined) {
   return Array.isArray(relation) ? relation[0]?.code : relation?.code;
+}
+
+function compareElementImages(left: ElementImageRow, right: ElementImageRow) {
+  return left.sort_order - right.sort_order || String(left.id ?? '').localeCompare(String(right.id ?? ''));
 }
 
 function typeName(type?: TypeRow) {

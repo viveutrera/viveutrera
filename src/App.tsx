@@ -3,6 +3,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { AdminCollaboratorEdit } from './pages/admin/AdminCollaboratorEdit';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminElements } from './pages/admin/AdminElements';
 import { AdminElementEdit } from './pages/admin/AdminElementEdit';
 import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
@@ -41,6 +42,7 @@ export function App() {
         }
       >
         <Route index element={<Navigate to="configuracion" replace />} />
+        <Route path="panel" element={<AdminDashboard />} />
         <Route path="configuracion" element={<AdminSettings />} />
         <Route path="idiomas" element={<AdminLanguages />} />
         <Route path="idiomas/:id" element={<AdminLanguageEdit />} />

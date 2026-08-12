@@ -15,7 +15,7 @@ const links = [
 ];
 
 const advancedLinks = [
-  { to: '/admin', label: 'Panel', icon: LayoutDashboard, end: true },
+  { to: '/admin/panel', label: 'Panel', icon: LayoutDashboard },
   { to: '/admin/idiomas', label: 'Idiomas', icon: Languages },
   { to: '/admin/multimedia', label: 'Multimedia', icon: Image }
 ];
@@ -24,7 +24,7 @@ export function AdminLayout() {
   const { signOut, userEmail } = useAuth();
   const location = useLocation();
   const [isSignOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
-  const isAdvancedRoute = location.pathname === '/admin' || advancedLinks.some((link) => link.to !== '/admin' && location.pathname.startsWith(link.to));
+  const isAdvancedRoute = advancedLinks.some((link) => location.pathname.startsWith(link.to));
 
   async function confirmSignOut() {
     setSignOutConfirmOpen(false);
@@ -55,8 +55,8 @@ export function AdminLayout() {
               <span>Advanced Setup - Webmaster</span>
               <ChevronDown size={16} />
             </summary>
-            {advancedLinks.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end}>
+            {advancedLinks.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to}>
                 <Icon size={18} />
                 <span>{label}</span>
               </NavLink>
