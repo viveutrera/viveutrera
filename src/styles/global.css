@@ -507,7 +507,7 @@ button, input { font: inherit; }
 .special-supporter-card {
   position: relative;
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
+  grid-template-columns: 150px minmax(0, 1fr);
   align-items: center;
   gap: 28px;
   padding: 24px;
@@ -613,9 +613,10 @@ button, input { font: inherit; }
 .donation-card-stack > div {
   display: grid;
   gap: 14px;
+  justify-items: start;
 }
 .bizum-code {
-  max-width: 580px;
+  width: min(760px, 100%);
   padding: 14px 18px;
   border: 1px solid rgba(210, 171, 109, 0.48);
   border-radius: 8px;

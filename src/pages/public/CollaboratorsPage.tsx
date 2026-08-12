@@ -1,4 +1,4 @@
-import { ExternalLink, Heart, Star, Users } from 'lucide-react';
+import { ExternalLink, Heart, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
@@ -49,7 +49,7 @@ export function CollaboratorsPage() {
         <section className="project-section">
           <div className="special-supporter-list">
             {special.length ? special.map((collaborator) => (
-              <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} label={content.specialCollaboratorLabel} />
+              <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} />
             )) : <p className="hint">Los colaboradores especiales apareceran cuando esten configurados.</p>}
           </div>
         </section>
@@ -78,7 +78,7 @@ export function CollaboratorsPage() {
   );
 }
 
-function SpecialSupporter({ collaborator, language, label }: { collaborator: Collaborator; language: LanguageCode; label?: string }) {
+function SpecialSupporter({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
   const translation = collaborator.translations[language] ?? collaborator.translations.es;
   const content = (
     <>
@@ -87,7 +87,6 @@ function SpecialSupporter({ collaborator, language, label }: { collaborator: Col
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
         {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
       </div>
-      <span className="special-badge"><Star size={22} /> {label || 'Colaborador especial'}</span>
     </>
   );
 
