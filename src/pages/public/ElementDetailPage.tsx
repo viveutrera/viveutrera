@@ -116,6 +116,7 @@ export function ElementDetailPage() {
   const typeQuery = selectedTypeId ? `?tipo=${encodeURIComponent(selectedTypeId)}` : '';
   const backPath = `/guia/${language}${typeQuery}`;
   const selectedTour = activeTours.find((tour) => tour.id === sendTourId);
+  const featuredImageCaption = element.images[0]?.translations[contentLanguage].caption?.trim();
 
   async function sendElementToTour() {
     if (!selectedTour || !element) return;
@@ -178,7 +179,7 @@ export function ElementDetailPage() {
                 <button type="button" className="gallery-open" onClick={() => setSelectedImageIndex(0)}>
                   <img src={mediaUrl(element.images[0].mediaAsset.objectKey)} alt={element.images[0].translations[contentLanguage].altText} loading="lazy" />
                 </button>
-                <figcaption>{element.images[0].translations[contentLanguage].caption ?? element.images[0].translations[contentLanguage].title}</figcaption>
+                {featuredImageCaption ? <figcaption>{featuredImageCaption}</figcaption> : null}
               </figure>
               {element.images.length > 1 ? (
                 <div className="gallery-thumbs" aria-label="Miniaturas">

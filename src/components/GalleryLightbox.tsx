@@ -77,7 +77,7 @@ export function GalleryLightbox({ images, language, selectedIndex, onChangeIndex
   }
 
   const translation = selectedImage.translations[language] ?? selectedImage.translations.es;
-  const caption = translation.caption ?? translation.title;
+  const caption = translation.caption?.trim();
 
   return createPortal(
     <div
@@ -99,10 +99,11 @@ export function GalleryLightbox({ images, language, selectedIndex, onChangeIndex
       ) : null}
       <figure>
         <img src={mediaUrl(selectedImage.mediaAsset.objectKey)} alt={translation.altText} />
-        <figcaption>
-          <span>{caption}</span>
-          {imageCount > 1 ? <small>{selectedIndex + 1} / {imageCount}</small> : null}
-        </figcaption>
+        {caption ? (
+          <figcaption>
+            <span>{caption}</span>
+          </figcaption>
+        ) : null}
       </figure>
       {imageCount > 1 ? (
         <button type="button" className="lightbox-next" onClick={() => moveImage(1)} aria-label="Imagen siguiente">
