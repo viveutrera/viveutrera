@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { AdminCollaboratorEdit } from './pages/admin/AdminCollaboratorEdit';
 import { PublicLayout } from './layouts/PublicLayout';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
 import { AdminElements } from './pages/admin/AdminElements';
 import { AdminElementEdit } from './pages/admin/AdminElementEdit';
@@ -41,7 +40,7 @@ export function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<AdminDashboard />} />
+        <Route index element={<Navigate to="configuracion" replace />} />
         <Route path="configuracion" element={<AdminSettings />} />
         <Route path="idiomas" element={<AdminLanguages />} />
         <Route path="idiomas/:id" element={<AdminLanguageEdit />} />
