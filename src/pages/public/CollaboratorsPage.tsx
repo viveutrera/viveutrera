@@ -1,4 +1,4 @@
-import { ExternalLink, Globe2, Heart, Star, Users } from 'lucide-react';
+import { ExternalLink, Heart, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
@@ -39,7 +39,6 @@ export function CollaboratorsPage() {
   return (
     <>
       <main className="project-page project-page-collaborators">
-        <ProjectTopLink />
         <header className="project-hero">
           <img className="project-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
           <p className="project-wordmark"><span>VIVE</span><strong>UTRERA</strong></p>
@@ -48,7 +47,6 @@ export function CollaboratorsPage() {
         </header>
 
         <section className="project-section">
-          <h2><Star size={32} /> Colaboradores especiales</h2>
           <div className="special-supporter-list">
             {special.length ? special.map((collaborator) => (
               <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} label={content.specialCollaboratorLabel} />
@@ -57,7 +55,6 @@ export function CollaboratorsPage() {
         </section>
 
         <section className="project-section">
-          <h2><Users size={34} /> Colaboradores generales</h2>
           <div className="general-supporter-grid">
             {general.length ? general.map((collaborator) => (
               <GeneralSupporter key={collaborator.id} collaborator={collaborator} language={language} />
@@ -78,14 +75,6 @@ export function CollaboratorsPage() {
       </main>
       <PublicFooter />
     </>
-  );
-}
-
-function ProjectTopLink() {
-  return (
-    <Link className="project-top-link" to="/preview" aria-label="Volver al inicio">
-      <Globe2 size={28} />
-    </Link>
   );
 }
 

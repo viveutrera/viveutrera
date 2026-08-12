@@ -1,6 +1,5 @@
 import { Building2, CheckCircle2, Copy, Globe2, Headphones, Heart, PenLine, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
 import { Button } from '../../components/ui/Button';
 import { LoadingState } from '../../components/ui/States';
@@ -47,9 +46,6 @@ export function DonationPage() {
   return (
     <>
       <main className="project-page project-page-donations">
-        <Link className="project-top-link" to="/preview" aria-label="Volver al inicio">
-          <Globe2 size={28} />
-        </Link>
         <header className="project-hero">
           <img className="project-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />
           <p className="project-wordmark"><span>VIVE</span><strong>UTRERA</strong></p>
