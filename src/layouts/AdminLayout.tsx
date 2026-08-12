@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, ExternalLink, HeartHandshake, Image, LogOut, Settings, Languages, Landmark, Users, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
@@ -8,6 +8,7 @@ import { useAuth } from '../routes/authContext';
 
 const links = [
   { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
+  { to: '/admin/donativos', label: 'Donativos', icon: HeartHandshake },
   { to: '/admin/tipos', label: 'Tipos', icon: Landmark },
   { to: '/admin/elementos', label: 'Elementos', icon: Landmark },
   { to: '/admin/colaboradores', label: 'Colaboradores', icon: Users },

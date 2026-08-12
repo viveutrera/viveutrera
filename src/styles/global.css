@@ -344,6 +344,26 @@ button, input { font: inherit; }
   color: var(--color-white);
 }
 
+.public-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 22px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+.public-footer-links a {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.public-footer-links a:hover {
+  color: var(--color-stone);
+}
+
 .public-footer-inner {
   min-height: 58px;
   display: flex;
@@ -397,6 +417,257 @@ button, input { font: inherit; }
   font-size: 1rem;
   font-weight: 800;
   line-height: 1;
+}
+
+.project-page {
+  position: relative;
+  min-height: 100svh;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 58px) clamp(18px, 5vw, 54px) 46px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.96)),
+    url('/brand/logo-vive-utrera.png') center 24px / min(840px, 94vw) auto no-repeat;
+}
+.project-top-link {
+  position: absolute;
+  top: clamp(18px, 4vw, 34px);
+  right: clamp(18px, 4vw, 38px);
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(13, 43, 77, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-soft);
+}
+.project-hero {
+  max-width: 900px;
+  margin: 0 auto 36px;
+  text-align: center;
+}
+.project-logo {
+  width: min(240px, 50vw);
+  margin: 0 auto 6px;
+}
+.project-wordmark {
+  display: inline-flex;
+  gap: 0.32em;
+  margin: 0 0 24px;
+  color: var(--color-primary);
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.12em;
+}
+.project-wordmark span {
+  font-weight: 500;
+}
+.project-wordmark strong {
+  font-weight: 800;
+}
+.project-hero h1 {
+  font-size: clamp(2.5rem, 7vw, 5.2rem);
+}
+.project-hero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #34445a;
+  font-size: clamp(1.15rem, 2.8vw, 2rem);
+}
+.project-section {
+  margin: 34px 0;
+}
+.project-section h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+}
+.project-section h2 svg {
+  color: #d2ab6d;
+}
+.special-supporter-list {
+  display: grid;
+  gap: 18px;
+}
+.special-supporter-card,
+.general-supporter-card,
+.donation-card,
+.supporter-callout {
+  border: 1px solid rgba(216, 199, 166, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 34px rgba(13, 43, 77, 0.1);
+}
+.special-supporter-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+.special-supporter-card img,
+.general-supporter-card img,
+.supporter-placeholder {
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f4e4c8, #d8c7a6);
+  color: var(--color-primary);
+  object-fit: contain;
+  justify-self: center;
+}
+.special-supporter-card h3,
+.general-supporter-card h3,
+.donation-card h2,
+.supporter-callout h2 {
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+}
+.special-supporter-card p,
+.donation-card p,
+.supporter-callout p {
+  margin: 0;
+  color: #34445a;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+}
+.special-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid rgba(210, 171, 109, 0.55);
+  border-radius: 8px;
+  background: rgba(216, 199, 166, 0.2);
+  color: var(--color-primary);
+  font-weight: 800;
+}
+.supporter-external {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+}
+.general-supporter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.general-supporter-card {
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 22px;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+}
+.general-supporter-card img,
+.general-supporter-card .supporter-placeholder {
+  width: 86px;
+  height: 86px;
+}
+.supporter-callout {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  margin: 34px 0;
+  padding: 22px;
+  background: rgba(216, 199, 166, 0.18);
+}
+.supporter-callout > span,
+.project-icon {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f1dfbd, #d8c7a6);
+  color: var(--color-primary);
+}
+.project-closing {
+  margin: 36px auto 0;
+  color: var(--color-primary);
+  text-align: center;
+  font-size: clamp(1.05rem, 2vw, 1.45rem);
+  font-weight: 800;
+}
+.donation-card {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+  margin: 24px auto;
+  padding: clamp(22px, 4vw, 36px);
+}
+.donation-card-stack > div {
+  display: grid;
+  gap: 14px;
+}
+.bizum-code {
+  max-width: 580px;
+  padding: 14px 18px;
+  border: 1px solid rgba(210, 171, 109, 0.48);
+  border-radius: 8px;
+  background: rgba(216, 199, 166, 0.16);
+  color: var(--color-primary);
+  text-align: center;
+}
+.bizum-code strong {
+  font-size: 1.4em;
+}
+.donation-wide-button {
+  width: min(760px, 100%);
+}
+.bank-details {
+  width: min(760px, 100%);
+  margin: 0;
+  border: 1px solid rgba(216, 199, 166, 0.72);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.bank-details div {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  border-bottom: 1px solid rgba(216, 199, 166, 0.72);
+}
+.bank-details div:last-child {
+  border-bottom: 0;
+}
+.bank-details dt,
+.bank-details dd {
+  margin: 0;
+  padding: 12px 16px;
+}
+.bank-details dt {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+.bank-details dd {
+  color: #34445a;
+}
+.transparency-card ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+.transparency-card li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .section-heading { max-width: 720px; margin-bottom: 28px; }
@@ -2039,6 +2310,11 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     padding-top: 16px;
     padding-bottom: 16px;
   }
+  .public-footer-links {
+    gap: 10px 14px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+  }
   .public-footer-inner {
     min-height: 48px;
     gap: 12px;
@@ -2057,6 +2333,39 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .public-footer-social span {
     width: 34px;
     height: 34px;
+  }
+  .project-page {
+    padding-inline: 14px;
+  }
+  .project-top-link {
+    width: 46px;
+    height: 46px;
+  }
+  .project-logo {
+    width: min(190px, 48vw);
+  }
+  .project-wordmark {
+    font-size: clamp(1.6rem, 9vw, 2.6rem);
+  }
+  .special-supporter-card,
+  .supporter-callout,
+  .donation-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .special-badge,
+  .supporter-callout .button,
+  .donation-wide-button {
+    justify-self: center;
+  }
+  .general-supporter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bank-details div {
+    grid-template-columns: 1fr;
+  }
+  .transparency-card ul {
+    justify-content: center;
   }
   .landing-language-section .language-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

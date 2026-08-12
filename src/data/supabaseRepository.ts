@@ -1,5 +1,6 @@
 import type {
   Collaborator,
+  DonationContent,
   ElementType,
   GuideElement,
   GuideElementPage,
@@ -26,6 +27,27 @@ const publicElementCardSelectLegacy = 'id, slug, element_type_id, maps_url, stat
 const publicElementCoordinateSelect = 'id, latitude, longitude, element_translations!inner(is_published, language_id)';
 const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longitude, status, is_featured, show_long_text_default, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
+const donationContentKey = 'donation_content';
+
+export const defaultDonationContent: DonationContent = {
+  title: 'Colabora con la asociacion',
+  subtitle: 'Tu ayuda contribuye a mantener y mejorar esta guia cultural de Utrera.',
+  introTitle: 'Tu aportacion hace la diferencia',
+  introText: 'Con tu donacion ayudas a mantener la web, mejorar los contenidos y seguir compartiendo la historia, las calles y las tradiciones de Utrera.',
+  bizumTitle: 'Donar por Bizum',
+  bizumText: 'Envia tu aportacion mediante Bizum',
+  bizumCode: '07258',
+  bizumButtonLabel: 'Donar por Bizum',
+  bankTitle: 'Transferencia bancaria',
+  bankText: 'Tambien puedes colaborar mediante transferencia',
+  bankAccountHolder: 'Asociacion Vive Utrera',
+  bankIban: 'ES12 3456 7890 1234 5678 9012',
+  bankConcept: 'Donacion',
+  copyButtonLabel: 'Copiar datos',
+  transparencyTitle: 'Transparencia y compromiso',
+  transparencyItems: ['Mantenimiento de la web', 'Mejora de contenidos', 'Nuevas audioguias'],
+  footerText: 'Gracias por apoyar este proyecto cultural local.'
+};
 
 const placeholderAsset: MediaAsset = {
   id: 'placeholder',
@@ -549,6 +571,17 @@ export const supabaseGuideRepository = {
         translations
       };
     });
+  },
+
+  async getDonationContent(): Promise<DonationContent> {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('site_settings')
+      .select('value_json')
+      .eq('key', donationContentKey)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeDonationContent(data?.value_json);
   }
 };
 
@@ -1380,6 +1413,36 @@ function settingObjectKey(value: unknown) {
   if (!value || typeof value !== 'object' || !('object_key' in value)) return undefined;
   const objectKey = (value as { object_key?: unknown }).object_key;
   return typeof objectKey === 'string' && objectKey.trim() ? objectKey : undefined;
+}
+
+function normalizeDonationContent(value: unknown): DonationContent {
+  if (!value || typeof value !== 'object') return defaultDonationContent;
+  const candidate = value as Partial<Record<keyof DonationContent, unknown>>;
+  return {
+    title: stringSetting(candidate.title, defaultDonationContent.title),
+    subtitle: stringSetting(candidate.subtitle, defaultDonationContent.subtitle),
+    introTitle: stringSetting(candidate.introTitle, defaultDonationContent.introTitle),
+    introText: stringSetting(candidate.introText, defaultDonationContent.introText),
+    bizumTitle: stringSetting(candidate.bizumTitle, defaultDonationContent.bizumTitle),
+    bizumText: stringSetting(candidate.bizumText, defaultDonationContent.bizumText),
+    bizumCode: stringSetting(candidate.bizumCode, defaultDonationContent.bizumCode),
+    bizumButtonLabel: stringSetting(candidate.bizumButtonLabel, defaultDonationContent.bizumButtonLabel),
+    bankTitle: stringSetting(candidate.bankTitle, defaultDonationContent.bankTitle),
+    bankText: stringSetting(candidate.bankText, defaultDonationContent.bankText),
+    bankAccountHolder: stringSetting(candidate.bankAccountHolder, defaultDonationContent.bankAccountHolder),
+    bankIban: stringSetting(candidate.bankIban, defaultDonationContent.bankIban),
+    bankConcept: stringSetting(candidate.bankConcept, defaultDonationContent.bankConcept),
+    copyButtonLabel: stringSetting(candidate.copyButtonLabel, defaultDonationContent.copyButtonLabel),
+    transparencyTitle: stringSetting(candidate.transparencyTitle, defaultDonationContent.transparencyTitle),
+    transparencyItems: Array.isArray(candidate.transparencyItems) && candidate.transparencyItems.length
+      ? candidate.transparencyItems.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : defaultDonationContent.transparencyItems,
+    footerText: stringSetting(candidate.footerText, defaultDonationContent.footerText)
+  };
+}
+
+function stringSetting(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
 function mapElementRow(row: ElementRowRaw, language: LanguageCode): GuideElement {

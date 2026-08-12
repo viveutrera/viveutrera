@@ -4,6 +4,7 @@ import { AdminCollaboratorEdit } from './pages/admin/AdminCollaboratorEdit';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AdminCollaborators } from './pages/admin/AdminCollaborators';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminDonations } from './pages/admin/AdminDonations';
 import { AdminElements } from './pages/admin/AdminElements';
 import { AdminElementEdit } from './pages/admin/AdminElementEdit';
 import { AdminElementTypeEdit } from './pages/admin/AdminElementTypeEdit';
@@ -17,6 +18,8 @@ import { AdminSettings } from './pages/admin/AdminSettings';
 import { HostDashboard } from './pages/host/HostDashboard';
 import { HostLogin } from './pages/host/HostLogin';
 import { ComingSoonPage } from './pages/public/ComingSoonPage';
+import { CollaboratorsPage } from './pages/public/CollaboratorsPage';
+import { DonationPage } from './pages/public/DonationPage';
 import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
 import { LandingPage } from './pages/public/LandingPage';
@@ -29,6 +32,8 @@ export function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<ComingSoonPage />} />
         <Route path="/preview" element={<LandingPage />} />
+        <Route path="/colaboradores" element={<CollaboratorsPage />} />
+        <Route path="/donativos" element={<DonationPage />} />
         <Route path="/guia/:idioma" element={<GuidePage />} />
         <Route path="/guia/:idioma/elemento/:slug" element={<ElementDetailPage />} />
       </Route>
@@ -44,6 +49,7 @@ export function App() {
         <Route index element={<Navigate to="configuracion" replace />} />
         <Route path="panel" element={<AdminDashboard />} />
         <Route path="configuracion" element={<AdminSettings />} />
+        <Route path="donativos" element={<AdminDonations />} />
         <Route path="idiomas" element={<AdminLanguages />} />
         <Route path="idiomas/:id" element={<AdminLanguageEdit />} />
         <Route path="tipos" element={<AdminElementTypes />} />

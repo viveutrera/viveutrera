@@ -145,6 +145,26 @@ export interface SiteContent {
   cityImageObjectKey?: string;
 }
 
+export interface DonationContent {
+  title: string;
+  subtitle: string;
+  introTitle: string;
+  introText: string;
+  bizumTitle: string;
+  bizumText: string;
+  bizumCode: string;
+  bizumButtonLabel: string;
+  bankTitle: string;
+  bankText: string;
+  bankAccountHolder: string;
+  bankIban: string;
+  bankConcept: string;
+  copyButtonLabel: string;
+  transparencyTitle: string;
+  transparencyItems: string[];
+  footerText: string;
+}
+
 export type TourStatus = 'draft' | 'active' | 'finished' | 'cancelled';
 
 export interface Tour {
