@@ -3,6 +3,7 @@ import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
+import { ExpandableText } from '../../components/ExpandableText';
 import { PublicFooter } from '../../components/PublicFooter';
 import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button, ButtonLink } from '../../components/ui/Button';
@@ -262,21 +263,17 @@ function SpecialCollaboratorCard({ collaborator, language, label }: { collaborat
       <div>
         {label ? <p className="special-collaborator-kicker">{label}</p> : null}
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
-        {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
+        {translation.thankYouText ? <ExpandableText text={translation.thankYouText} /> : null}
       </div>
-      {collaborator.url ? <ExternalLink className="special-collaborator-link-icon" size={18} aria-hidden="true" /> : null}
+      {collaborator.url ? (
+        <a className="special-collaborator-link-icon" href={collaborator.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${translation.displayName}`}>
+          <ExternalLink size={18} aria-hidden="true" />
+        </a>
+      ) : null}
     </>
   );
 
-  return collaborator.url ? (
-    <a className="special-collaborator" href={collaborator.url} target="_blank" rel="noreferrer" aria-label={translation.displayName}>
-      {content}
-    </a>
-  ) : (
-    <article className="special-collaborator">
-      {content}
-    </article>
-  );
+  return <article className="special-collaborator">{content}</article>;
 }
 
 function CollaboratorCard({ collaborator, language, ariaHidden = false }: { collaborator: Collaborator; language: LanguageCode; ariaHidden?: boolean }) {

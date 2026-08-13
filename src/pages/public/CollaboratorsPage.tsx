@@ -1,6 +1,7 @@
 import { ExternalLink, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ExpandableText } from '../../components/ExpandableText';
 import { PublicFooter } from '../../components/PublicFooter';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
@@ -84,17 +85,21 @@ function SpecialSupporter({ collaborator, language }: { collaborator: Collaborat
       <SupporterImage collaborator={collaborator} name={translation.displayName} />
       <div>
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
-        {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
+        {translation.thankYouText ? <ExpandableText text={translation.thankYouText} /> : null}
       </div>
     </>
   );
 
-  return collaborator.url ? (
-    <a className="special-supporter-card" href={collaborator.url} target="_blank" rel="noreferrer">
+  return (
+    <article className="special-supporter-card">
       {content}
-      <ExternalLink className="supporter-external" size={16} />
-    </a>
-  ) : <article className="special-supporter-card">{content}</article>;
+      {collaborator.url ? (
+        <a className="supporter-external" href={collaborator.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${translation.displayName}`}>
+          <ExternalLink size={16} aria-hidden="true" />
+        </a>
+      ) : null}
+    </article>
+  );
 }
 
 function GeneralSupporter({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
