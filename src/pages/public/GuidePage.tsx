@@ -171,7 +171,6 @@ export function GuidePage() {
       setInitialLoading(true);
       setElements([]);
       elementCountRef.current = 0;
-      window.scrollTo({ top: 0 });
     } else {
       loadingMoreRef.current = true;
       setLoadingMore(true);

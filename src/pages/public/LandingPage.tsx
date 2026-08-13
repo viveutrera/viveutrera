@@ -182,14 +182,14 @@ export function LandingPage() {
         <section className="section feature-section" aria-label="Funciones principales">
           <div className="feature-strip">
             <article>
-              <Link className="feature-icon feature-icon-link" to="/host/login" aria-label="Acceso anfitriones"><Headphones size={34} /></Link>
+              <span className="feature-icon"><Headphones size={34} /></span>
               <div>
                 <h2>AUDIOGUÍAS</h2>
                 <p>Recorridos con relatos sonoros para escuchar a tu ritmo.</p>
               </div>
             </article>
             <article>
-              <Link className="feature-icon feature-icon-link" to="/admin" aria-label="Acceso administracion"><Landmark size={34} /></Link>
+              <span className="feature-icon"><Landmark size={34} /></span>
               <div>
                 <h2>HISTORIA</h2>
                 <p>Un viaje riguroso por los siglos de huella cultural.</p>
