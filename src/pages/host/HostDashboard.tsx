@@ -139,10 +139,13 @@ export function HostDashboard() {
       {error ? <div className="state state-error">{error}</div> : null}
       <section className="host-tour-list" aria-label="Tours del anfitrion">
         {tours.length === 0 ? <Card><p>No tienes tours creados todavia.</p></Card> : null}
-        {tours.map((tour) => (
+        {tours.map((tour) => {
+          const isExpiredActive = tour.status === 'active' && isTourExpired(tour);
+          const displayStatus = isExpiredActive ? 'expired' : tour.status;
+          return (
           <Card className="host-tour-card" key={tour.id}>
             <div className="host-tour-card-top">
-              <span className={`tour-status tour-status-${tour.status}`}>{statusLabel(tour.status)}</span>
+              <span className={`tour-status tour-status-${displayStatus}`}>{statusLabel(tour.status, isExpiredActive)}</span>
               <div className="host-tour-code-row">
                 <strong className="tour-code">{tour.code}</strong>
                 <button className="icon-button tour-copy-button" type="button" onClick={() => copyCode(tour.code)} aria-label={`Copiar codigo ${tour.code}`}>
@@ -165,16 +168,17 @@ export function HostDashboard() {
               </div>
               <div>
                 <span>Participantes</span>
-                {tour.status === 'active' ? <ConnectedParticipants tourId={tour.id} /> : <strong>No activo</strong>}
+                {tour.status === 'active' && !isExpiredActive ? <ConnectedParticipants tourId={tour.id} /> : <strong>No activo</strong>}
               </div>
             </div>
             <div className="host-tour-actions">
-              {tour.status === 'draft' ? <Button type="button" icon={<Play size={18} />} onClick={() => startTour(tour.id)} disabled={isSubmitting}>Iniciar</Button> : null}
-              {tour.status === 'active' ? <Button type="button" variant="danger" icon={<Square size={18} />} onClick={() => setFinishTourId(tour.id)} disabled={isSubmitting}>Finalizar</Button> : null}
+              {tour.status === 'draft' ? <Button type="button" className="host-tour-start-button" icon={<Play size={18} />} onClick={() => startTour(tour.id)} disabled={isSubmitting}>Iniciar</Button> : null}
+              {tour.status === 'active' && !isExpiredActive ? <Button type="button" className="host-tour-finish-button" icon={<Square size={18} />} onClick={() => setFinishTourId(tour.id)} disabled={isSubmitting}>Finalizar</Button> : null}
               <Button type="button" variant="danger" icon={<Trash2 size={18} />} onClick={() => setDeleteTourId(tour.id)} disabled={isSubmitting}>Borrar</Button>
             </div>
           </Card>
-        ))}
+          );
+        })}
       </section>
       <Modal title="Crear tour" isOpen={isCreateOpen} onClose={() => setCreateOpen(false)}>
         <form className="stack-form modal-form" onSubmit={createTour}>
@@ -222,11 +226,16 @@ function ConnectedParticipants({ tourId }: { tourId: string }) {
   return <small className="tour-presence">Participantes conectados: {Math.max(0, count - 1)}</small>;
 }
 
-function statusLabel(status: Tour['status']) {
+function statusLabel(status: Tour['status'], isExpiredActive = false) {
+  if (isExpiredActive) return 'Caducado';
   if (status === 'active') return 'Activo';
   if (status === 'finished') return 'Finalizado';
   if (status === 'cancelled') return 'Cancelado';
   return 'Borrador';
+}
+
+function isTourExpired(tour: Tour) {
+  return Number.isFinite(new Date(tour.expiresAt).getTime()) && new Date(tour.expiresAt).getTime() <= Date.now();
 }
 
 function formatDate(value: string) {

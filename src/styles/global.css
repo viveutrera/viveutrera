@@ -2056,6 +2056,10 @@ p { line-height: 1.65; }
   background: var(--color-primary);
   color: var(--color-white);
 }
+.tour-status-expired {
+  background: #f1dfbd;
+  color: #7a3e00;
+}
 .tour-status-finished,
 .tour-status-cancelled {
   color: var(--color-muted);
@@ -2083,6 +2087,26 @@ p { line-height: 1.65; }
 }
 .host-tour-actions .button {
   flex: 1 1 130px;
+}
+.host-tour-start-button {
+  border-color: #1d7a46;
+  background: #1d7a46;
+  color: var(--color-white);
+}
+.host-tour-start-button:hover:not(:disabled),
+.host-tour-start-button:focus-visible:not(:disabled) {
+  border-color: #145c34;
+  background: #145c34;
+}
+.host-tour-finish-button {
+  border-color: #d8b35f;
+  background: #d8b35f;
+  color: var(--color-primary);
+}
+.host-tour-finish-button:hover:not(:disabled),
+.host-tour-finish-button:focus-visible:not(:disabled) {
+  border-color: #c79c3a;
+  background: #c79c3a;
 }
 .text-button {
   border: 0;
