@@ -81,9 +81,10 @@ export function AdminDashboard() {
       {summary ? (
         <>
           <div className="admin-grid admin-metric-grid">
-            <MetricCard title="Contenido" value={summary.elements} detail={`${summary.elementTypes} tipos · ${summary.languages} idiomas`} />
-            <MetricCard title="Multimedia" value={summary.mediaAssets} detail={`${summary.imageAssets} imagenes/logos · ${summary.audioAssets} audios`} />
-            <MetricCard title="R2 estimado" value={formatBytes(summary.registeredBytes)} detail={`${summary.elementImages} imagenes · ${summary.elementAudios} audios asociados`} />
+            <MetricCard title="Elementos creados" value={summary.elements} detail="Elementos dados de alta en la guia" />
+            <MetricCard title="Contenido" value={summary.elementTypes} detail={`${summary.languages} idiomas configurados`} />
+            <MetricCard title="Multimedia" value={summary.mediaAssets} detail={`${summary.imageAssets} imagenes/logos - ${summary.audioAssets} audios`} />
+            <MetricCard title="R2 estimado" value={formatBytes(summary.registeredBytes)} detail={`${summary.elementImages} imagenes - ${summary.elementAudios} audios asociados`} />
             <MetricCard title="Colaboradores" value={summary.collaborators} detail={`${summary.elementLinks} enlaces de elementos`} />
           </div>
 
