@@ -97,7 +97,7 @@ export function ElementDetailPage() {
   useEffect(() => {
     if (!isHost) return undefined;
     tourRepository.listMyTours()
-      .then((rows) => setActiveTours(rows.filter((tour) => tour.status === 'active')))
+      .then((rows) => setActiveTours(rows.filter(isActiveAvailableTour)))
       .catch(() => setActiveTours([]));
     return undefined;
   }, [isHost]);
@@ -273,4 +273,9 @@ export function ElementDetailPage() {
 function tourDisplayName(tour?: Tour) {
   if (!tour) return 'seleccionado';
   return tour.name ? `${tour.code} - ${tour.name}` : tour.code;
+}
+
+function isActiveAvailableTour(tour: Tour) {
+  const expiresAt = new Date(tour.expiresAt).getTime();
+  return tour.status === 'active' && Number.isFinite(expiresAt) && expiresAt > Date.now();
 }
