@@ -527,8 +527,8 @@ button, input { font: inherit; }
 .special-supporter-card img,
 .general-supporter-card img,
 .supporter-placeholder {
-  width: 118px;
-  height: 118px;
+  width: 136px;
+  height: 136px;
   display: grid;
   place-items: center;
   border-radius: 0;
@@ -549,32 +549,6 @@ button, input { font: inherit; }
   margin: 0;
   color: #34445a;
   font-size: clamp(1rem, 2vw, 1.35rem);
-}
-.expandable-text-block {
-  display: grid;
-  gap: 8px;
-}
-.expandable-text-clamped {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-.expandable-text-toggle {
-  width: fit-content;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-primary);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.expandable-text-toggle:hover,
-.expandable-text-toggle:focus-visible {
-  color: var(--color-accent);
 }
 .special-badge {
   display: inline-flex;
@@ -607,10 +581,14 @@ button, input { font: inherit; }
   text-align: center;
   text-decoration: none;
 }
-.general-supporter-card img,
+.general-supporter-card img {
+  width: 100%;
+  max-width: 138px;
+  max-height: 110px;
+}
 .general-supporter-card .supporter-placeholder {
-  width: 86px;
-  height: 86px;
+  width: 100px;
+  height: 100px;
 }
 .supporter-callout {
   display: grid;
@@ -939,7 +917,11 @@ p { line-height: 1.65; }
   color: var(--color-primary);
   text-decoration: none;
 }
-.collaborator img { max-height: 58px; }
+.collaborator img {
+  width: min(168px, 92%);
+  max-height: 86px;
+  object-fit: contain;
+}
 
 .special-collaborators {
   display: grid;
@@ -962,7 +944,8 @@ p { line-height: 1.65; }
   box-shadow: var(--shadow-soft);
 }
 .special-collaborator img {
-  max-height: 132px;
+  width: min(200px, 100%);
+  max-height: 150px;
   justify-self: center;
   object-fit: contain;
 }

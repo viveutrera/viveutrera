@@ -1,7 +1,6 @@
 import { ExternalLink, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExpandableText } from '../../components/ExpandableText';
 import { PublicFooter } from '../../components/PublicFooter';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
@@ -85,7 +84,7 @@ function SpecialSupporter({ collaborator, language }: { collaborator: Collaborat
       <SupporterImage collaborator={collaborator} name={translation.displayName} />
       <div>
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
-        {translation.thankYouText ? <ExpandableText text={translation.thankYouText} /> : null}
+        {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
       </div>
     </>
   );
