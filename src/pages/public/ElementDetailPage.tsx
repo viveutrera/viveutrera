@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Radio } from 'lucide-react';
+import { ExternalLink, MapPin, Radio } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { GalleryLightbox } from '../../components/GalleryLightbox';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { NearbyPlacesModal } from '../../components/NearbyPlacesModal';
 import { PublicFooter } from '../../components/PublicFooter';
 import { PublicUserMenu } from '../../components/PublicUserMenu';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +16,7 @@ import { tourRepository } from '../../data/supabaseRepository';
 import type { ElementType, GuideElement, Language, LanguageCode, Tour } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
+import { hasValidCoordinates, haversineDistanceMeters, type NearbyElement } from '../../lib/geolocation';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
 import { broadcastTourElement } from '../../lib/realtimeTourService';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
@@ -40,6 +42,9 @@ export function ElementDetailPage() {
   const [sendTourId, setSendTourId] = useState<string>();
   const [tourMessage, setTourMessage] = useState('');
   const [isSendingTour, setSendingTour] = useState(false);
+  const [isNearbyOpen, setNearbyOpen] = useState(false);
+  const [nearbyResults, setNearbyResults] = useState<NearbyElement[]>([]);
+  const [nearbyError, setNearbyError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -110,13 +115,11 @@ export function ElementDetailPage() {
   const type = types.find((item) => item.id === element.typeId);
   const audios = element.audios.filter((audio) => audio.languageCode === contentLanguage && audio.isPublished);
   const links = element.links.filter((link) => link.languageCode === contentLanguage && link.isPublished);
-  const currentIndex = siblings.findIndex((item) => item.id === element.id);
-  const previous = currentIndex > 0 ? siblings[currentIndex - 1] : undefined;
-  const next = currentIndex >= 0 && currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : undefined;
   const typeQuery = selectedTypeId ? `?tipo=${encodeURIComponent(selectedTypeId)}` : '';
   const backPath = `/guia/${language}${typeQuery}`;
   const selectedTour = activeTours.find((tour) => tour.id === sendTourId);
   const featuredImageCaption = element.images[0]?.translations[contentLanguage].caption?.trim();
+  const canShowNearbyPlaces = hasValidCoordinates(element);
 
   async function sendElementToTour() {
     if (!selectedTour || !element) return;
@@ -130,6 +133,43 @@ export function ElementDetailPage() {
       setTourMessage(caught instanceof Error ? caught.message : 'No se pudo enviar el elemento al tour.');
     } finally {
       setSendingTour(false);
+    }
+  }
+
+  async function showNearbyPlaces() {
+    const currentElement = element;
+    if (!currentElement || !hasValidCoordinates(currentElement)) return;
+    setNearbyOpen(true);
+    setNearbyError('');
+    setNearbyResults([]);
+
+    const origin = {
+      latitude: currentElement.latitude as number,
+      longitude: currentElement.longitude as number
+    };
+    const nearestCandidates = siblings
+      .filter((candidate) => candidate.id !== currentElement.id && candidate.typeId === currentElement.typeId && hasValidCoordinates(candidate))
+      .map((candidate) => ({
+        candidate,
+        distanceMeters: haversineDistanceMeters(origin, {
+          latitude: candidate.latitude as number,
+          longitude: candidate.longitude as number
+        })
+      }))
+      .sort((left, right) => left.distanceMeters - right.distanceMeters)
+      .slice(0, 3);
+
+    try {
+      const nearestElements = await guideRepository.getElementsByIds(contentLanguage, nearestCandidates.map((item) => item.candidate.id));
+      const distances = new Map(nearestCandidates.map((item) => [item.candidate.id, item.distanceMeters]));
+      const nearest = nearestElements.map((nearbyElement) => ({
+        element: nearbyElement,
+        distanceMeters: distances.get(nearbyElement.id) ?? 0
+      }));
+      setNearbyResults(nearest);
+      if (nearest.length === 0) setNearbyError(t(language, 'nearbyNoCoordinates'));
+    } catch (caught) {
+      setNearbyError(caught instanceof Error ? caught.message : t(language, 'nearbyUnavailable'));
     }
   }
 
@@ -218,21 +258,25 @@ export function ElementDetailPage() {
           )) : <div className="state">No hay enlaces complementarios publicados para este idioma.</div>}
         </section>
 
-        <nav className="detail-pagination" aria-label="Elementos">
-          {previous ? (
-            <Link to={`/guia/${language}/elemento/${previous.slug}${typeQuery}`} className="button button-secondary">
-              <ChevronLeft size={18} />
-              <span>{previous.translations[contentLanguage].name}</span>
-            </Link>
-          ) : <span />}
-          {next ? (
-            <Link to={`/guia/${language}/elemento/${next.slug}${typeQuery}`} className="button button-secondary">
-              <span>{next.translations[contentLanguage].name}</span>
-              <ChevronRight size={18} />
-            </Link>
-          ) : null}
-        </nav>
+        {canShowNearbyPlaces ? (
+          <div className="detail-pagination" aria-label="Lugares próximos">
+            <Button type="button" variant="secondary" icon={<MapPin size={18} />} onClick={showNearbyPlaces}>Lugares próximos</Button>
+          </div>
+        ) : null}
       </main>
+      <NearbyPlacesModal
+        isOpen={isNearbyOpen}
+        title="Lugares próximos"
+        intro="Estos son los lugares del mismo tipo mas cercanos a este elemento."
+        language={language}
+        contentLanguage={contentLanguage}
+        results={nearbyResults}
+        types={types}
+        isLocating={false}
+        error={nearbyError}
+        selectedTypeId={selectedTypeId || element.typeId}
+        onClose={() => setNearbyOpen(false)}
+      />
       <Modal title={t(language, 'sendToTour')} isOpen={Boolean(sendTourId)} onClose={() => setSendTourId(undefined)}>
         <div className="stack-form">
           <p>Enviar <strong>{translation.name}</strong> al tour <strong>{tourDisplayName(selectedTour)}</strong>.</p>

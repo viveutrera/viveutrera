@@ -9,6 +9,8 @@ import { Modal } from './ui/Modal';
 
 interface NearbyPlacesModalProps {
   isOpen: boolean;
+  title?: string;
+  intro?: string;
   language: LanguageCode;
   contentLanguage: LanguageCode;
   results: NearbyElement[];
@@ -16,12 +18,14 @@ interface NearbyPlacesModalProps {
   isLocating: boolean;
   error?: string;
   selectedTypeId?: string;
-  onRelocate: () => void;
+  onRelocate?: () => void;
   onClose: () => void;
 }
 
 export function NearbyPlacesModal({
   isOpen,
+  title,
+  intro,
   language,
   contentLanguage,
   results,
@@ -33,9 +37,9 @@ export function NearbyPlacesModal({
   onClose
 }: NearbyPlacesModalProps) {
   return (
-    <Modal isOpen={isOpen} title={t(language, 'nearbyPlacesTitle')} onClose={onClose}>
+    <Modal isOpen={isOpen} title={title ?? t(language, 'nearbyPlacesTitle')} onClose={onClose}>
       <div className="nearby-modal">
-        <p className="nearby-intro">{t(language, 'nearbyPlacesIntro')}</p>
+        <p className="nearby-intro">{intro ?? t(language, 'nearbyPlacesIntro')}</p>
         {isLocating ? (
           <div className="nearby-state" role="status">
             <Navigation size={22} />
@@ -75,7 +79,9 @@ export function NearbyPlacesModal({
         ) : null}
         <div className="modal-actions">
           <Button type="button" variant="secondary" onClick={onClose}>{t(language, 'close')}</Button>
-          <Button type="button" onClick={onRelocate} disabled={isLocating} icon={<Navigation size={18} />}>{t(language, 'locateAgain')}</Button>
+          {onRelocate ? (
+            <Button type="button" onClick={onRelocate} disabled={isLocating} icon={<Navigation size={18} />}>{t(language, 'locateAgain')}</Button>
+          ) : null}
         </div>
       </div>
     </Modal>
