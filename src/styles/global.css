@@ -1158,6 +1158,12 @@ p { line-height: 1.65; }
 }
 
 .detail-page { max-width: 900px; }
+.detail-location-share {
+  display: contents;
+}
+.detail-share-button {
+  display: none;
+}
 .detail-kicker-row {
   display: flex;
   align-items: center;
@@ -2546,6 +2552,23 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     align-self: start;
   }
   .detail-actions, .detail-pagination, .admin-title-row { align-items: stretch; flex-direction: column; }
+  .detail-location-share {
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    gap: 8px;
+  }
+  .detail-location-share .button {
+    width: 100%;
+  }
+  .detail-share-button {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+  .detail-share-button span {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

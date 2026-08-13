@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Radio } from 'lucide-react';
+import { ExternalLink, MapPin, Radio, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
@@ -41,6 +41,7 @@ export function ElementDetailPage() {
   const [activeTours, setActiveTours] = useState<Tour[]>([]);
   const [sendTourId, setSendTourId] = useState<string>();
   const [tourMessage, setTourMessage] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
   const [isSendingTour, setSendingTour] = useState(false);
   const [isNearbyOpen, setNearbyOpen] = useState(false);
   const [nearbyResults, setNearbyResults] = useState<NearbyElement[]>([]);
@@ -173,6 +174,29 @@ export function ElementDetailPage() {
     }
   }
 
+  async function shareElement() {
+    const currentElement = element;
+    if (!currentElement) return;
+    const shareUrl = `${window.location.origin}/guia/${language}/elemento/${currentElement.slug}`;
+    const shareData = {
+      title: translation.name,
+      text: translation.shortText,
+      url: shareUrl
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage('Enlace copiado.');
+    } catch (caught) {
+      if (caught instanceof DOMException && caught.name === 'AbortError') return;
+      setShareMessage('No se pudo compartir el enlace.');
+    }
+  }
+
   return (
     <>
       <main className="detail-page">
@@ -194,22 +218,25 @@ export function ElementDetailPage() {
         </div>
         <h1>{translation.name}</h1>
         <p className="lead">{translation.shortText}</p>
-        {!element.showLongTextDefault || element.mapsUrl || activeTours.length ? (
-          <div className="detail-actions">
-            {!element.showLongTextDefault ? (
-              <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
-            ) : null}
-            {element.mapsUrl ? (
-              <a className="button button-primary" href={element.mapsUrl} target="_blank" rel="noreferrer">
+        <div className="detail-actions">
+          {!element.showLongTextDefault ? (
+            <Button type="button" variant="secondary" onClick={() => setShowLongText((value) => !value)}>{t(language, 'moreInfo')}</Button>
+          ) : null}
+          {element.mapsUrl ? (
+            <div className="detail-location-share">
+              <a className="button button-primary detail-location-button" href={element.mapsUrl} target="_blank" rel="noreferrer">
                 <MapPin size={18} />
                 <span>{t(language, 'location')}</span>
               </a>
-            ) : null}
-            {activeTours.length ? (
-              <Button type="button" icon={<Radio size={18} />} onClick={() => setSendTourId(activeTours[0].id)}>{t(language, 'sendToTour')}</Button>
-            ) : null}
-          </div>
-        ) : null}
+              <Button type="button" variant="secondary" className="detail-share-button" icon={<Share2 size={18} />} onClick={shareElement} aria-label="Compartir elemento">Compartir</Button>
+            </div>
+          ) : (
+            <Button type="button" variant="secondary" className="detail-share-button" icon={<Share2 size={18} />} onClick={shareElement} aria-label="Compartir elemento">Compartir</Button>
+          )}
+          {activeTours.length ? (
+            <Button type="button" icon={<Radio size={18} />} onClick={() => setSendTourId(activeTours[0].id)}>{t(language, 'sendToTour')}</Button>
+          ) : null}
+        </div>
         {showLongText ? <p className="long-text">{translation.longText}</p> : null}
 
         <section className="gallery" aria-label="Galeria">
@@ -298,6 +325,12 @@ export function ElementDetailPage() {
         <p>{tourMessage}</p>
         <div className="modal-actions">
           <Button type="button" onClick={() => setTourMessage('')}>{t(language, 'close')}</Button>
+        </div>
+      </Modal>
+      <Modal title="Compartir" isOpen={Boolean(shareMessage)} onClose={() => setShareMessage('')}>
+        <p>{shareMessage}</p>
+        <div className="modal-actions">
+          <Button type="button" onClick={() => setShareMessage('')}>{t(language, 'close')}</Button>
         </div>
       </Modal>
       {selectedImageIndex !== undefined ? (
