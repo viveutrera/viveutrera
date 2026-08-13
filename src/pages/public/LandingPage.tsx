@@ -213,7 +213,7 @@ export function LandingPage() {
           {specialCollaborators.length ? (
             <div className="special-collaborators" aria-label="Colaboradores especiales">
               {specialCollaborators.map((collaborator) => (
-                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} label={content.specialCollaboratorLabel} />
+                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
               ))}
             </div>
           ) : null}
@@ -254,13 +254,12 @@ export function LandingPage() {
   );
 }
 
-function SpecialCollaboratorCard({ collaborator, language, label }: { collaborator: Collaborator; language: LanguageCode; label?: string }) {
+function SpecialCollaboratorCard({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
   const translation = collaboratorTranslation(collaborator, language);
   const content = (
     <>
       {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={translation.displayName} loading="lazy" /> : null}
       <div>
-        {label ? <p className="special-collaborator-kicker">{label}</p> : null}
         {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
         {translation.thankYouText ? <p>{translation.thankYouText}</p> : null}
       </div>

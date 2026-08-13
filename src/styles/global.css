@@ -956,14 +956,6 @@ p { line-height: 1.65; }
 .special-collaborator p {
   margin: 0;
 }
-.special-collaborator-kicker {
-  margin-bottom: 8px;
-  color: var(--color-accent);
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 .special-collaborator-link-icon {
   display: inline-grid;
   place-items: center;
