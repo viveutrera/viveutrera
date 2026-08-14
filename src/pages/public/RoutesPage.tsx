@@ -100,17 +100,6 @@ function RouteCard({ route, language }: { route: GuideRoute; language: LanguageC
       <div>
         <h2>{translation.name}</h2>
         <p>{translation.description}</p>
-        {route.elements.length ? (
-          <ol className="route-element-list">
-            {route.elements.map((element) => (
-              <li key={element.id}>
-                <Link to={`/guia/${language}/elemento/${element.slug}`}>{element.translations[language].name}</Link>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="hint">{t(language, 'routeWithoutElements')}</p>
-        )}
         {route.elements[0] ? (
           <ButtonLink to={`/guia/${language}/elemento/${route.elements[0].slug}`} variant="secondary">
             {t(language, 'startRoute')} <ArrowRight size={16} />

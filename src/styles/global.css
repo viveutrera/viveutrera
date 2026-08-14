@@ -805,20 +805,6 @@ p { line-height: 1.65; }
 .route-card .button {
   margin-top: 12px;
 }
-.route-element-list {
-  display: grid;
-  gap: 8px;
-  margin: 14px 0 0;
-  padding-left: 20px;
-}
-.route-element-list a {
-  color: var(--color-primary);
-  font-weight: 800;
-  text-decoration: none;
-}
-.route-element-list a:hover {
-  color: var(--color-accent);
-}
 .tour-notification {
   display: grid;
   gap: 10px;
