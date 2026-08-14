@@ -1372,19 +1372,19 @@ p { line-height: 1.65; }
   gap: 14px;
   margin: 26px 0;
   padding: 18px;
-  border: 1px solid rgba(216, 199, 166, 0.72);
+  border: 2px solid var(--color-primary);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(13, 43, 77, 0.98), rgba(20, 70, 113, 0.96));
-  color: var(--color-white);
+  background: var(--color-white);
+  color: var(--color-ink);
 }
 .active-route-card h2 {
   margin: 0;
-  color: var(--color-white);
+  color: var(--color-primary);
   font-size: clamp(1.1rem, 3vw, 1.35rem);
 }
 .active-route-card p {
   margin: 6px 0 0;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--color-muted);
 }
 .active-route-actions {
   display: flex;
