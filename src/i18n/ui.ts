@@ -64,7 +64,13 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     noRoutes: 'No hay rutas publicadas',
     noRoutesText: 'Las rutas apareceran cuando esten configuradas desde administracion.',
     routeWithoutElements: 'Esta ruta aun no tiene elementos publicados.',
-    startRoute: 'Empezar ruta'
+    startRoute: 'Empezar ruta',
+    activeRoute: 'Ruta activa',
+    previousRouteElement: 'Anterior',
+    nextRouteElement: 'Siguiente',
+    finishRoute: 'Finalizar ruta',
+    outsideActiveRoute: 'Estas viendo un elemento que no pertenece a la ruta iniciada.',
+    returnToRoute: 'Volver a la ruta'
   },
   en: {
     guide: 'View guide',
@@ -129,7 +135,13 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     noRoutes: 'No published routes',
     noRoutesText: 'Routes will appear once they are configured from administration.',
     routeWithoutElements: 'This route has no published places yet.',
-    startRoute: 'Start route'
+    startRoute: 'Start route',
+    activeRoute: 'Active route',
+    previousRouteElement: 'Previous',
+    nextRouteElement: 'Next',
+    finishRoute: 'Finish route',
+    outsideActiveRoute: 'You are viewing a place that does not belong to the started route.',
+    returnToRoute: 'Return to route'
   },
   fr: {
     guide: 'Voir le guide',
@@ -194,7 +206,13 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     noRoutes: 'Aucun itineraire publie',
     noRoutesText: 'Les itineraires apparaitront lorsqu ils seront configures dans l administration.',
     routeWithoutElements: 'Cet itineraire ne contient pas encore de lieux publies.',
-    startRoute: 'Commencer'
+    startRoute: 'Commencer',
+    activeRoute: 'Itineraire actif',
+    previousRouteElement: 'Precedent',
+    nextRouteElement: 'Suivant',
+    finishRoute: 'Terminer l itineraire',
+    outsideActiveRoute: 'Vous consultez un lieu qui ne fait pas partie de l itineraire commence.',
+    returnToRoute: 'Retour a l itineraire'
   },
   de: {
     guide: 'Guide ansehen',
@@ -259,7 +277,13 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     noRoutes: 'Keine veroffentlichten Routen',
     noRoutesText: 'Routen erscheinen, sobald sie in der Administration konfiguriert sind.',
     routeWithoutElements: 'Diese Route hat noch keine veroffentlichten Orte.',
-    startRoute: 'Route starten'
+    startRoute: 'Route starten',
+    activeRoute: 'Aktive Route',
+    previousRouteElement: 'Zuruck',
+    nextRouteElement: 'Weiter',
+    finishRoute: 'Route beenden',
+    outsideActiveRoute: 'Du siehst einen Ort, der nicht zur gestarteten Route gehort.',
+    returnToRoute: 'Zur Route zuruck'
   }
 };
 

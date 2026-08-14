@@ -1,11 +1,11 @@
 import { ArrowRight, Map } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
 import { PublicUserMenu } from '../../components/PublicUserMenu';
-import { ButtonLink } from '../../components/ui/Button';
+import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
@@ -13,6 +13,7 @@ import type { GuideRoute, Language, LanguageCode } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, getPersistedLanguage, isLanguageCode, persistLanguage } from '../../lib/language';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
+import { startRoute } from '../../lib/routeSession';
 import { setSeo } from '../../lib/seo';
 
 export function RoutesPage() {
@@ -89,8 +90,16 @@ export function RoutesPage() {
 }
 
 function RouteCard({ route, language }: { route: GuideRoute; language: LanguageCode }) {
+  const navigate = useNavigate();
   const translation = route.translations[language];
   const imageAsset = route.mediaAsset ?? route.elements.find((element) => element.images[0])?.images[0]?.mediaAsset;
+  const firstElement = route.elements[0];
+
+  function beginRoute() {
+    if (!firstElement) return;
+    startRoute(route.id, 0);
+    navigate(`/guia/${language}/elemento/${firstElement.slug}`);
+  }
 
   return (
     <Card className="element-card route-card">
@@ -100,10 +109,10 @@ function RouteCard({ route, language }: { route: GuideRoute; language: LanguageC
       <div>
         <h2>{translation.name}</h2>
         <p>{translation.description}</p>
-        {route.elements[0] ? (
-          <ButtonLink to={`/guia/${language}/elemento/${route.elements[0].slug}`} variant="secondary">
+        {firstElement ? (
+          <Button type="button" variant="secondary" onClick={beginRoute}>
             {t(language, 'startRoute')} <ArrowRight size={16} />
-          </ButtonLink>
+          </Button>
         ) : null}
       </div>
     </Card>

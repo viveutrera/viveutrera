@@ -1,6 +1,6 @@
 import { ExternalLink, MapPin, Radio, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { GalleryLightbox } from '../../components/GalleryLightbox';
@@ -13,17 +13,26 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
 import { tourRepository } from '../../data/supabaseRepository';
-import type { ElementType, GuideElement, Language, LanguageCode, Tour } from '../../domain/types';
+import type { ElementType, GuideElement, GuideRoute, Language, LanguageCode, Tour } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
 import { hasValidCoordinates, haversineDistanceMeters, type NearbyElement } from '../../lib/geolocation';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
 import { broadcastTourElement } from '../../lib/realtimeTourService';
+import {
+  finishRoute,
+  getActiveRouteSession,
+  setRouteCurrentIndex,
+  startRoute,
+  subscribeRouteSessionChange,
+  type ActiveRouteSession
+} from '../../lib/routeSession';
 import { setAlternateLanguages, setSeo } from '../../lib/seo';
 import { useAuth } from '../../routes/authContext';
 
 export function ElementDetailPage() {
   const { isHost } = useAuth();
+  const navigate = useNavigate();
   const { idioma = 'es', slug = '' } = useParams();
   const [searchParams] = useSearchParams();
   const requestedLanguage = isLanguageCode(idioma) ? idioma : undefined;
@@ -33,6 +42,8 @@ export function ElementDetailPage() {
   const [contentLanguage, setContentLanguage] = useState<LanguageCode>(requestedLanguage ?? defaultLanguageCode);
   const [element, setElement] = useState<GuideElement>();
   const [siblings, setSiblings] = useState<GuideElement[]>([]);
+  const [routes, setRoutes] = useState<GuideRoute[]>([]);
+  const [activeRouteSession, setActiveRouteSession] = useState<ActiveRouteSession | undefined>(() => getActiveRouteSession());
   const [types, setTypes] = useState<ElementType[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [showLongText, setShowLongText] = useState(false);
@@ -58,15 +69,20 @@ export function ElementDetailPage() {
       Promise.all([
         guideRepository.getElementBySlug(resolved, slug),
         guideRepository.getElementNavigation(resolved),
-        guideRepository.getElementTypes()
-      ]).then(async ([elementData, siblingData, typeData]) => {
+        guideRepository.getElementTypes(),
+        guideRepository.getRoutes(resolved)
+      ]).then(async ([elementData, siblingData, typeData, routeData]) => {
         let visibleElement = elementData;
         let visibleSiblings = siblingData;
         let visibleLanguage = resolved;
+        let visibleRoutes = routeData;
 
         if (!visibleElement && resolved !== defaultLanguageCode) {
-          visibleElement = await guideRepository.getElementBySlug(defaultLanguageCode, slug);
-          visibleSiblings = await guideRepository.getElementNavigation(defaultLanguageCode);
+          [visibleElement, visibleSiblings, visibleRoutes] = await Promise.all([
+            guideRepository.getElementBySlug(defaultLanguageCode, slug),
+            guideRepository.getElementNavigation(defaultLanguageCode),
+            guideRepository.getRoutes(defaultLanguageCode)
+          ]);
           visibleLanguage = defaultLanguageCode;
         }
 
@@ -74,6 +90,7 @@ export function ElementDetailPage() {
         setShowLongText(visibleElement?.showLongTextDefault ?? false);
         setSiblings(visibleSiblings);
         setTypes(typeData);
+        setRoutes(visibleRoutes);
         setContentLanguage(visibleLanguage);
 
         if (visibleElement) {
@@ -100,6 +117,8 @@ export function ElementDetailPage() {
     });
   }, [idioma, slug]);
 
+  useEffect(() => subscribeRouteSessionChange(() => setActiveRouteSession(getActiveRouteSession())), []);
+
   useEffect(() => {
     if (!isHost) return undefined;
     tourRepository.listMyTours()
@@ -121,6 +140,10 @@ export function ElementDetailPage() {
   const selectedTour = activeTours.find((tour) => tour.id === sendTourId);
   const featuredImageCaption = element.images[0]?.translations[contentLanguage].caption?.trim();
   const canShowNearbyPlaces = hasValidCoordinates(element);
+  const activeRoute = routes.find((route) => route.id === activeRouteSession?.routeId);
+  const activeRouteIndex = activeRoute?.elements.findIndex((item) => item.id === element.id) ?? -1;
+  const isElementInActiveRoute = Boolean(activeRoute && activeRouteIndex >= 0);
+  const activeRouteReturnElement = activeRoute?.elements[Math.min(activeRouteSession?.currentIndex ?? 0, Math.max(activeRoute.elements.length - 1, 0))] ?? activeRoute?.elements[0];
 
   async function sendElementToTour() {
     if (!selectedTour || !element) return;
@@ -195,6 +218,26 @@ export function ElementDetailPage() {
       if (caught instanceof DOMException && caught.name === 'AbortError') return;
       setShareMessage('No se pudo compartir el enlace.');
     }
+  }
+
+  function goToRouteElement(index: number) {
+    if (!activeRoute) return;
+    const target = activeRoute.elements[index];
+    if (!target) return;
+    startRoute(activeRoute.id, index);
+    navigate(`/guia/${language}/elemento/${target.slug}`);
+  }
+
+  function finishActiveRoute() {
+    finishRoute();
+    setActiveRouteSession(undefined);
+  }
+
+  function returnToActiveRoute() {
+    if (!activeRoute || !activeRouteReturnElement) return;
+    const index = activeRoute.elements.findIndex((item) => item.id === activeRouteReturnElement.id);
+    setRouteCurrentIndex(activeRoute.id, Math.max(index, 0));
+    navigate(`/guia/${language}/elemento/${activeRouteReturnElement.slug}`);
   }
 
   return (
@@ -275,6 +318,29 @@ export function ElementDetailPage() {
             />
           )) : <div className="state">No hay audios publicados para este idioma.</div>}
         </section>
+
+        {activeRoute ? (
+          <section className="active-route-card" aria-label={t(language, 'activeRoute')}>
+            <div>
+              <h2>{t(language, 'activeRoute')}: {activeRoute.translations[contentLanguage].name}</h2>
+              {!isElementInActiveRoute ? <p>{t(language, 'outsideActiveRoute')}</p> : null}
+            </div>
+            {isElementInActiveRoute ? (
+              <div className="active-route-actions">
+                {activeRouteIndex > 0 ? (
+                  <Button type="button" variant="secondary" onClick={() => goToRouteElement(activeRouteIndex - 1)}>{t(language, 'previousRouteElement')}</Button>
+                ) : null}
+                {activeRouteIndex >= activeRoute.elements.length - 1 ? (
+                  <Button type="button" onClick={finishActiveRoute}>{t(language, 'finishRoute')}</Button>
+                ) : (
+                  <Button type="button" onClick={() => goToRouteElement(activeRouteIndex + 1)}>{t(language, 'nextRouteElement')}</Button>
+                )}
+              </div>
+            ) : (
+              <Button type="button" variant="secondary" onClick={returnToActiveRoute}>{t(language, 'returnToRoute')}</Button>
+            )}
+          </section>
+        ) : null}
 
         <section className="media-list">
           <h2>{t(language, 'links')}</h2>

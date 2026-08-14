@@ -1367,6 +1367,30 @@ p { line-height: 1.65; }
   color: var(--color-primary);
 }
 .audio-item audio { width: 100%; }
+.active-route-card {
+  display: grid;
+  gap: 14px;
+  margin: 26px 0;
+  padding: 18px;
+  border: 1px solid rgba(216, 199, 166, 0.72);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(13, 43, 77, 0.98), rgba(20, 70, 113, 0.96));
+  color: var(--color-white);
+}
+.active-route-card h2 {
+  margin: 0;
+  color: var(--color-white);
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
+}
+.active-route-card p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+}
+.active-route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .detail-pagination {
   display: flex;
   align-items: center;
