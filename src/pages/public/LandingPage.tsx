@@ -148,13 +148,6 @@ export function LandingPage() {
             <h2>Colaboradores</h2>
             {content.collaboratorSectionText ? <p>{content.collaboratorSectionText}</p> : null}
           </div>
-          {specialCollaborators.length ? (
-            <div className="special-collaborators" aria-label="Colaboradores especiales">
-              {specialCollaborators.map((collaborator) => (
-                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
-              ))}
-            </div>
-          ) : null}
           {generalCollaborators.length ? (
             <div className="collaborator-carousel" aria-label="Colaboradores">
               <div className={generalCollaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
@@ -166,9 +159,17 @@ export function LandingPage() {
                 )) : null}
               </div>
             </div>
-          ) : specialCollaborators.length ? null : (
+          ) : null}
+          {specialCollaborators.length ? (
+            <div className="special-collaborators" aria-label="Colaboradores especiales">
+              {specialCollaborators.map((collaborator) => (
+                <SpecialCollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
+              ))}
+            </div>
+          ) : null}
+          {!generalCollaborators.length && !specialCollaborators.length ? (
             <p className="hint">Los colaboradores se mostraran cuando esten configurados.</p>
-          )}
+          ) : null}
         </section>
       </main>
       <PublicFooter />

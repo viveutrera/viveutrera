@@ -57,18 +57,18 @@ export function CollaboratorsPage() {
         </header>
 
         <section className="project-section">
-          <div className="special-supporter-list">
-            {special.length ? special.map((collaborator) => (
-              <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} />
-            )) : <p className="hint">{content.specialSectionEmptyText}</p>}
-          </div>
-        </section>
-
-        <section className="project-section">
           <div className="general-supporter-grid">
             {general.length ? general.map((collaborator) => (
               <GeneralSupporter key={collaborator.id} collaborator={collaborator} language={language} />
             )) : <p className="hint">{content.generalSectionEmptyText}</p>}
+          </div>
+        </section>
+
+        <section className="project-section">
+          <div className="special-supporter-list">
+            {special.length ? special.map((collaborator) => (
+              <SpecialSupporter key={collaborator.id} collaborator={collaborator} language={language} />
+            )) : <p className="hint">{content.specialSectionEmptyText}</p>}
           </div>
         </section>
 
