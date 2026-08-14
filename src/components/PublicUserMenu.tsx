@@ -33,7 +33,7 @@ export function PublicUserMenu() {
             <span>Administracion</span>
           </Link>
         ) : null}
-        {userRole === 'host' ? (
+        {isAdmin || userRole === 'host' ? (
           <Link to="/host" role="menuitem" onClick={() => setOpen(false)}>
             <LayoutDashboard size={16} />
             <span>Zona anfitrion</span>
