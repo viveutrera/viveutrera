@@ -25,6 +25,7 @@ import { ElementDetailPage } from './pages/public/ElementDetailPage';
 import { GuidePage } from './pages/public/GuidePage';
 import { LandingPage } from './pages/public/LandingPage';
 import { NotFoundPage } from './pages/public/NotFoundPage';
+import { ToursPage } from './pages/public/ToursPage';
 import { RequireAuth } from './routes/RequireAuth';
 
 export function App() {
@@ -35,6 +36,8 @@ export function App() {
         <Route path="/preview" element={<LandingPage />} />
         <Route path="/colaboradores" element={<CollaboratorsPage />} />
         <Route path="/donativos" element={<DonationPage />} />
+        <Route path="/tours" element={<ToursPage />} />
+        <Route path="/tours/:idioma" element={<ToursPage />} />
         <Route path="/guia/:idioma" element={<GuidePage />} />
         <Route path="/guia/:idioma/elemento/:slug" element={<ElementDetailPage />} />
       </Route>
