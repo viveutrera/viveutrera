@@ -1152,6 +1152,11 @@ p { line-height: 1.65; }
 .collaborator-carousel:hover .collaborator-track.is-animated {
   animation-play-state: paused;
 }
+.collaborator-section-text {
+  max-width: 720px;
+  margin: 26px 0;
+  color: var(--color-muted);
+}
 
 .guide-header {
   padding: 34px;

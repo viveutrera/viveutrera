@@ -146,7 +146,6 @@ export function LandingPage() {
         <section className="section section-stone">
           <div className="section-heading">
             <h2>Colaboradores</h2>
-            {content.collaboratorSectionText ? <p>{content.collaboratorSectionText}</p> : null}
           </div>
           {generalCollaborators.length ? (
             <div className="collaborator-carousel" aria-label="Colaboradores">
@@ -160,6 +159,7 @@ export function LandingPage() {
               </div>
             </div>
           ) : null}
+          {content.collaboratorSectionText ? <p className="collaborator-section-text">{content.collaboratorSectionText}</p> : null}
           {specialCollaborators.length ? (
             <div className="special-collaborators" aria-label="Colaboradores especiales">
               {specialCollaborators.map((collaborator) => (
