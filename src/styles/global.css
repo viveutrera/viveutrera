@@ -802,6 +802,23 @@ p { line-height: 1.65; }
 .tour-action-card p {
   margin: 0;
 }
+.route-card .button {
+  margin-top: 12px;
+}
+.route-element-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding-left: 20px;
+}
+.route-element-list a {
+  color: var(--color-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+.route-element-list a:hover {
+  color: var(--color-accent);
+}
 .tour-notification {
   display: grid;
   gap: 10px;
@@ -1599,6 +1616,12 @@ p { line-height: 1.65; }
 .admin-data-table-hosts .admin-data-row {
   grid-template-columns: minmax(170px, 1.3fr) minmax(180px, 1.4fr) minmax(90px, 0.65fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) 92px;
 }
+.admin-data-table-routes .admin-data-row {
+  grid-template-columns: minmax(180px, 1.5fr) minmax(130px, 1fr) minmax(90px, 0.6fr) minmax(90px, 0.6fr) minmax(80px, 0.5fr) 92px;
+}
+.admin-data-table-route-elements .admin-data-row {
+  grid-template-columns: minmax(180px, 1fr) 110px 54px;
+}
 .admin-data-row-links,
 .admin-data-table-collaborators .admin-data-row {
   grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(100px, 0.75fr) minmax(70px, 0.5fr) minmax(74px, 0.55fr) minmax(100px, 0.75fr) minmax(90px, 0.65fr) 92px;
@@ -1685,6 +1708,36 @@ p { line-height: 1.65; }
   padding: 0 8px;
   color: var(--color-primary);
   font-weight: 800;
+}
+.route-admin-preview {
+  width: min(100%, 360px);
+  height: 190px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(216, 199, 166, 0.18);
+}
+.route-elements-editor {
+  display: grid;
+  gap: 14px;
+}
+.route-elements-editor h2 {
+  margin: 0;
+  color: var(--color-primary);
+}
+.route-element-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.admin-inline-number {
+  width: 84px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  font: inherit;
 }
 .language-legend {
   display: inline-flex;
@@ -2554,8 +2607,13 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .admin-data-table-element-audios .admin-data-row,
   .admin-data-table-element-links .admin-data-row,
   .admin-data-table-collaborators .admin-data-row,
-  .admin-data-table-hosts .admin-data-row {
+  .admin-data-table-hosts .admin-data-row,
+  .admin-data-table-routes .admin-data-row,
+  .admin-data-table-route-elements .admin-data-row {
     grid-template-columns: 1fr auto;
+  }
+  .route-element-picker {
+    grid-template-columns: 1fr;
   }
   .usage-table > div {
     grid-template-columns: 1fr;

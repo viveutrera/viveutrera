@@ -112,6 +112,21 @@ export interface GuideElementPage {
   contentLanguage: LanguageCode;
 }
 
+export interface GuideRoute {
+  id: string;
+  slug: string;
+  mediaAsset?: MediaAsset;
+  isActive: boolean;
+  sortOrder: number;
+  translations: Record<LanguageCode, {
+    name: string;
+    description: string;
+    seoTitle: string;
+    seoDescription: string;
+  }>;
+  elements: GuideElement[];
+}
+
 export interface NearbyElementCandidate {
   id: string;
   latitude: number;

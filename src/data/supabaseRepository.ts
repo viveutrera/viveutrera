@@ -6,6 +6,7 @@ import type {
   GuideElement,
   GuideElementPage,
   GuideElementQuery,
+  GuideRoute,
   Language,
   LanguageCode,
   MediaAsset,
@@ -157,6 +158,26 @@ interface ElementAudioRowRaw {
   media_assets: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
 }
 
+interface RouteRowRaw {
+  id: string;
+  slug: string;
+  media_asset_id: string | null;
+  is_active: boolean;
+  sort_order: number;
+  media_assets?: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
+  route_translations?: Array<{
+    name: string;
+    description: string | null;
+    seo_title: string | null;
+    seo_description: string | null;
+    languages?: { code: string } | { code: string }[] | null;
+  }>;
+  route_elements?: Array<{
+    element_id: string;
+    sort_order: number;
+  }>;
+}
+
 interface SiteSettingRowRaw {
   key: string;
   value_json: unknown;
@@ -232,6 +253,13 @@ function isMissingColumnError(error: unknown) {
     || Boolean(candidate.message?.includes('special_collaborator_label'))
     || Boolean(candidate.message?.includes('latitude'))
     || Boolean(candidate.message?.includes('longitude'));
+}
+
+function isMissingRoutesTableError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: string; message?: string };
+  return candidate.code === '42P01'
+    || Boolean(candidate.message?.includes('routes'));
 }
 
 export const supabaseGuideRepository = {
@@ -430,6 +458,32 @@ export const supabaseGuideRepository = {
     await hydrateElementCoverImages(elements, language);
     const order = new Map(ids.map((id, index) => [id, index]));
     return elements.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
+  },
+
+  async getRoutes(language: LanguageCode): Promise<GuideRoute[]> {
+    const client = ensureSupabase();
+    const languageId = await getLanguageId(language);
+    if (!languageId) return [];
+
+    const { data, error } = await client
+      .from('routes')
+      .select('id, slug, media_asset_id, is_active, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), route_translations!inner(name, description, seo_title, seo_description, languages(code)), route_elements(element_id, sort_order)')
+      .eq('is_active', true)
+      .eq('route_translations.language_id', languageId)
+      .order('sort_order')
+      .order('sort_order', { foreignTable: 'route_elements', ascending: true });
+
+    if (error) throw error;
+
+    const routes = (data ?? []) as RouteRowRaw[];
+    return Promise.all(routes.map(async (row) => {
+      const elementIds = (row.route_elements ?? [])
+        .slice()
+        .sort((left, right) => left.sort_order - right.sort_order)
+        .map((item) => item.element_id);
+      const elements = await this.getElementsByIds(language, elementIds);
+      return mapRouteRow(row, elements);
+    }));
   },
 
   async getElementNavigation(language: LanguageCode): Promise<GuideElement[]> {
@@ -677,19 +731,22 @@ export const adminRepository = {
   },
   async getMediaAssetUsage(id: string) {
     const client = ensureSupabase();
-    const [images, audios, collaborators, siteSettings] = await Promise.all([
+    const [images, audios, collaborators, siteSettings, routes] = await Promise.all([
       client.from('element_images').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
       client.from('element_audios').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
       client.from('collaborators').select('id', { count: 'exact', head: true }).eq('media_asset_id', id),
-      client.from('site_settings').select('id', { count: 'exact', head: true }).contains('value_json', { media_asset_id: id })
+      client.from('site_settings').select('id', { count: 'exact', head: true }).contains('value_json', { media_asset_id: id }),
+      client.from('routes').select('id', { count: 'exact', head: true }).eq('media_asset_id', id)
     ]);
-    const error = images.error ?? audios.error ?? collaborators.error ?? siteSettings.error;
+    const routeError = routes.error && !isMissingRoutesTableError(routes.error) ? routes.error : null;
+    const error = images.error ?? audios.error ?? collaborators.error ?? siteSettings.error ?? routeError;
     if (error) throw error;
     return {
       images: images.count ?? 0,
       audios: audios.count ?? 0,
       collaborators: collaborators.count ?? 0,
-      siteSettings: siteSettings.count ?? 0
+      siteSettings: siteSettings.count ?? 0,
+      routes: routes.error ? 0 : routes.count ?? 0
     };
   },
 
@@ -901,6 +958,82 @@ export const adminRepository = {
   async deleteElement(id: string) {
     const client = ensureSupabase();
     const { error } = await client.from('elements').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async listRoutes() {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('routes')
+      .select('id, slug, media_asset_id, is_active, sort_order, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds, media_variants(id, variant, object_key, file_size, width, height)), route_translations(id, language_id, name, description, seo_title, seo_description, languages(code)), route_elements(id, element_id, sort_order, elements(slug, element_translations(name, languages(code))))')
+      .order('sort_order')
+      .order('sort_order', { foreignTable: 'route_elements', ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async saveRoute(input: {
+    id?: string;
+    slug: string;
+    media_asset_id?: string | null;
+    is_active: boolean;
+    sort_order: number;
+    translations: Array<{
+      language_id: string;
+      name: string;
+      description: string;
+      seo_title: string;
+      seo_description: string;
+    }>;
+    elements: Array<{ element_id: string; sort_order: number }>;
+  }) {
+    const client = ensureSupabase();
+    const { data: route, error } = await client
+      .from('routes')
+      .upsert({
+        id: input.id,
+        slug: input.slug,
+        media_asset_id: input.media_asset_id || null,
+        is_active: input.is_active,
+        sort_order: input.sort_order
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    if (!route) throw new Error('No se pudo guardar la ruta.');
+
+    const translationRows = input.translations.filter((translation) => translation.name.trim()).map((translation) => ({
+      route_id: route.id,
+      language_id: translation.language_id,
+      name: translation.name,
+      description: translation.description || null,
+      seo_title: translation.seo_title || translation.name,
+      seo_description: translation.seo_description || translation.description || translation.name
+    }));
+    if (translationRows.length) {
+      const { error: translationError } = await client
+        .from('route_translations')
+        .upsert(translationRows, { onConflict: 'route_id,language_id' });
+      if (translationError) throw translationError;
+    }
+
+    const { error: deleteElementsError } = await client.from('route_elements').delete().eq('route_id', route.id);
+    if (deleteElementsError) throw deleteElementsError;
+
+    const elementRows = input.elements.map((element, index) => ({
+      route_id: route.id,
+      element_id: element.element_id,
+      sort_order: element.sort_order || index
+    }));
+    if (elementRows.length) {
+      const { error: elementsError } = await client.from('route_elements').insert(elementRows);
+      if (elementsError) throw elementsError;
+    }
+  },
+
+  async deleteRoute(id: string) {
+    const client = ensureSupabase();
+    const { error } = await client.from('routes').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -1549,6 +1682,36 @@ function mapElementImage(row: ElementImageRowRaw, element: GuideElement, languag
     isCover: row.is_cover,
     sortOrder: row.sort_order,
     translations
+  };
+}
+
+function mapRouteRow(row: RouteRowRaw, elements: GuideElement[]): GuideRoute {
+  const firstTranslation = row.route_translations?.[0];
+  const translations = emptyTranslations(() => ({
+    name: firstTranslation?.name ?? row.slug,
+    description: firstTranslation?.description ?? '',
+    seoTitle: firstTranslation?.seo_title ?? firstTranslation?.name ?? row.slug,
+    seoDescription: firstTranslation?.seo_description ?? firstTranslation?.description ?? ''
+  }));
+
+  row.route_translations?.forEach((translation) => {
+    const code = asLanguageCode(relatedLanguageCode(translation.languages));
+    translations[code] = {
+      name: translation.name,
+      description: translation.description ?? '',
+      seoTitle: translation.seo_title ?? translation.name,
+      seoDescription: translation.seo_description ?? translation.description ?? translation.name
+    };
+  });
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    mediaAsset: mapMediaAsset(row.media_assets),
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+    translations,
+    elements
   };
 }
 

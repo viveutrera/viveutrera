@@ -1,5 +1,5 @@
 import { collaborators, elements, elementTypes, languages, siteContent } from './mockData';
-import type { CollaboratorsPageContent, DonationContent, GuideElement, GuideElementQuery, LanguageCode, NearbyElementCandidate, UploadRequest, UploadResult } from '../domain/types';
+import type { CollaboratorsPageContent, DonationContent, GuideElement, GuideElementQuery, GuideRoute, LanguageCode, NearbyElementCandidate, UploadRequest, UploadResult } from '../domain/types';
 import { mediaUrl } from '../lib/media';
 import { canUseSupabase, defaultCollaboratorsPageContent, defaultDonationContent, supabaseGuideRepository } from './supabaseRepository';
 
@@ -72,6 +72,12 @@ export const guideRepository = {
           .sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0))
           .map((element) => ({ ...element, audios: [], links: [], images: element.images.slice(0, 1) }));
       }
+    );
+  },
+  async getRoutes(language: LanguageCode): Promise<GuideRoute[]> {
+    return withFallback(
+      () => supabaseGuideRepository.getRoutes(language),
+      async () => []
     );
   },
   async getElementNavigation(language: LanguageCode) {

@@ -116,7 +116,7 @@ export function AdminCollaboratorEdit() {
       setForm(nextForm);
       if (asset?.id && canUseUploadApi()) {
         const usage = await adminRepository.getMediaAssetUsage(asset.id);
-        const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+        const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings + usage.routes;
         if (totalUsage === 0) {
           const objectKeys = [asset.object_key, ...(asset.media_variants ?? []).map((variant) => variant.object_key)];
           await deleteMediaFiles(objectKeys);

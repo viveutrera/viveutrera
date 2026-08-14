@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, ExternalLink, Globe2, Headphones, Landmark, Map, Users } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -138,6 +138,12 @@ export function LandingPage() {
               <h3>{t(landingLanguage, 'joinTour')}</h3>
               <p>{t(landingLanguage, 'joinTourText')}</p>
               <ButtonLink to="/tours">{t(landingLanguage, 'joinTour')}</ButtonLink>
+            </Card>
+            <Card className="tour-action-card">
+              <Map size={32} />
+              <h3>{t(landingLanguage, 'routes')}</h3>
+              <p>{t(landingLanguage, 'routesCardText')}</p>
+              <ButtonLink to="/rutas">{t(landingLanguage, 'viewRoutes')}</ButtonLink>
             </Card>
           </div>
         </section>

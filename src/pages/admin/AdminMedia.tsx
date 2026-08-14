@@ -355,9 +355,9 @@ export function AdminMedia() {
     setSuccess('');
     try {
       const usage = await adminRepository.getMediaAssetUsage(asset.id);
-      const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings;
+      const totalUsage = usage.images + usage.audios + usage.collaborators + usage.siteSettings + usage.routes;
       if (totalUsage > 0) {
-        setError(`No se puede borrar: esta usado en ${usage.images} imagenes de elementos, ${usage.audios} audios, ${usage.collaborators} colaboradores y ${usage.siteSettings} ajustes del sitio. Quita primero esas asociaciones.`);
+        setError(`No se puede borrar: esta usado en ${usage.images} imagenes de elementos, ${usage.audios} audios, ${usage.collaborators} colaboradores, ${usage.siteSettings} ajustes del sitio y ${usage.routes} rutas. Quita primero esas asociaciones.`);
         return;
       }
 

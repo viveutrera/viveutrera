@@ -54,7 +54,17 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourNotificationTitle: 'Nueva indicacion del anfitrion',
     tourNotificationText: 'El anfitrion quiere mostrarte este lugar.',
     open: 'Abrir',
-    lastTourInstruction: 'Ultima indicacion'
+    lastTourInstruction: 'Ultima indicacion',
+    routes: 'Rutas',
+    routesSubtitle: 'Recorridos ordenados para descubrir Utrera paso a paso.',
+    routesCardText: 'Explora recorridos preparados con una seleccion de lugares de la guia.',
+    viewRoutes: 'Ver rutas',
+    routesPageIntro: 'Elige una ruta para seguir sus lugares en el orden recomendado. Cada ruta agrupa elementos de la guia para ayudarte a recorrer la ciudad con calma.',
+    routesUnavailable: 'No se pudieron cargar las rutas.',
+    noRoutes: 'No hay rutas publicadas',
+    noRoutesText: 'Las rutas apareceran cuando esten configuradas desde administracion.',
+    routeWithoutElements: 'Esta ruta aun no tiene elementos publicados.',
+    startRoute: 'Empezar ruta'
   },
   en: {
     guide: 'View guide',
@@ -109,7 +119,17 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourNotificationTitle: 'New host instruction',
     tourNotificationText: 'The host wants to show you this place.',
     open: 'Open',
-    lastTourInstruction: 'Last instruction'
+    lastTourInstruction: 'Last instruction',
+    routes: 'Routes',
+    routesSubtitle: 'Ordered walks to discover Utrera step by step.',
+    routesCardText: 'Explore prepared routes with selected places from the guide.',
+    viewRoutes: 'View routes',
+    routesPageIntro: 'Choose a route to follow its places in the recommended order. Each route groups guide entries to help you explore the city calmly.',
+    routesUnavailable: 'Could not load routes.',
+    noRoutes: 'No published routes',
+    noRoutesText: 'Routes will appear once they are configured from administration.',
+    routeWithoutElements: 'This route has no published places yet.',
+    startRoute: 'Start route'
   },
   fr: {
     guide: 'Voir le guide',
@@ -164,7 +184,17 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourNotificationTitle: 'Nouvelle indication de l hote',
     tourNotificationText: 'L hote souhaite vous montrer ce lieu.',
     open: 'Ouvrir',
-    lastTourInstruction: 'Derniere indication'
+    lastTourInstruction: 'Derniere indication',
+    routes: 'Itineraires',
+    routesSubtitle: 'Parcours ordonnes pour decouvrir Utrera pas a pas.',
+    routesCardText: 'Explorez des parcours prepares avec une selection de lieux du guide.',
+    viewRoutes: 'Voir les itineraires',
+    routesPageIntro: 'Choisissez un itineraire pour suivre ses lieux dans l ordre recommande. Chaque itineraire regroupe des fiches du guide pour visiter la ville tranquillement.',
+    routesUnavailable: 'Impossible de charger les itineraires.',
+    noRoutes: 'Aucun itineraire publie',
+    noRoutesText: 'Les itineraires apparaitront lorsqu ils seront configures dans l administration.',
+    routeWithoutElements: 'Cet itineraire ne contient pas encore de lieux publies.',
+    startRoute: 'Commencer'
   },
   de: {
     guide: 'Guide ansehen',
@@ -219,7 +249,17 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     tourNotificationTitle: 'Neue Anweisung des Gastgebers',
     tourNotificationText: 'Der Gastgeber mochte dir diesen Ort zeigen.',
     open: 'Offnen',
-    lastTourInstruction: 'Letzte Anweisung'
+    lastTourInstruction: 'Letzte Anweisung',
+    routes: 'Routen',
+    routesSubtitle: 'Geordnete Rundgange, um Utrera Schritt fur Schritt zu entdecken.',
+    routesCardText: 'Entdecke vorbereitete Routen mit ausgewahlten Orten aus dem Guide.',
+    viewRoutes: 'Routen ansehen',
+    routesPageIntro: 'Wahle eine Route, um ihre Orte in der empfohlenen Reihenfolge zu besuchen. Jede Route bundelt Eintrage des Guides fur einen ruhigen Stadtrundgang.',
+    routesUnavailable: 'Routen konnten nicht geladen werden.',
+    noRoutes: 'Keine veroffentlichten Routen',
+    noRoutesText: 'Routen erscheinen, sobald sie in der Administration konfiguriert sind.',
+    routeWithoutElements: 'Diese Route hat noch keine veroffentlichten Orte.',
+    startRoute: 'Route starten'
   }
 };
 

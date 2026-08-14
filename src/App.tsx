@@ -15,6 +15,7 @@ import { AdminLanguages } from './pages/admin/AdminLanguages';
 import { AdminHosts } from './pages/admin/AdminHosts';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminMedia } from './pages/admin/AdminMedia';
+import { AdminRoutes } from './pages/admin/AdminRoutes';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { HostDashboard } from './pages/host/HostDashboard';
 import { HostLogin } from './pages/host/HostLogin';
@@ -26,6 +27,7 @@ import { GuidePage } from './pages/public/GuidePage';
 import { LandingPage } from './pages/public/LandingPage';
 import { NotFoundPage } from './pages/public/NotFoundPage';
 import { ToursPage } from './pages/public/ToursPage';
+import { RoutesPage } from './pages/public/RoutesPage';
 import { RequireAuth } from './routes/RequireAuth';
 
 export function App() {
@@ -38,6 +40,8 @@ export function App() {
         <Route path="/donativos" element={<DonationPage />} />
         <Route path="/tours" element={<ToursPage />} />
         <Route path="/tours/:idioma" element={<ToursPage />} />
+        <Route path="/rutas" element={<RoutesPage />} />
+        <Route path="/rutas/:idioma" element={<RoutesPage />} />
         <Route path="/guia/:idioma" element={<GuidePage />} />
         <Route path="/guia/:idioma/elemento/:slug" element={<ElementDetailPage />} />
       </Route>
@@ -60,6 +64,7 @@ export function App() {
         <Route path="tipos/:id" element={<AdminElementTypeEdit />} />
         <Route path="elementos" element={<AdminElements />} />
         <Route path="elementos/:id" element={<AdminElementEdit />} />
+        <Route path="rutas" element={<AdminRoutes />} />
         <Route path="multimedia" element={<AdminMedia />} />
         <Route path="colaboradores" element={<AdminCollaborators />} />
         <Route path="colaboradores-pagina" element={<AdminCollaboratorPageSettings />} />
