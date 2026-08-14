@@ -1,10 +1,8 @@
 import { ArrowRight, Map } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
-import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
-import { PublicUserMenu } from '../../components/PublicUserMenu';
+import { PublicTopNav } from '../../components/PublicTopNav';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -52,15 +50,8 @@ export function RoutesPage() {
 
   return (
     <>
+      <PublicTopNav current={language} languages={languages} pathForLanguage={(code) => `/rutas/${code}`} />
       <main className="guide-page routes-page">
-        <div className="guide-language-bar">
-          <ActiveTourIndicator />
-          <div className="public-top-actions">
-            <LanguageSelector current={language} languages={languages} pathFor={(code) => `/rutas/${code}`} />
-            <PublicUserMenu />
-          </div>
-        </div>
-
         <header className="guide-header">
           <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
             <span>VIVE</span>

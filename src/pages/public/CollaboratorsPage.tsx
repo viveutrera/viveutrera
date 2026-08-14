@@ -2,26 +2,30 @@ import { ExternalLink, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
+import { PublicTopNav } from '../../components/PublicTopNav';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { Collaborator, CollaboratorsPageContent, LanguageCode } from '../../domain/types';
-import { defaultLanguageCode, getPersistedLanguage } from '../../lib/language';
+import type { Collaborator, CollaboratorsPageContent, Language, LanguageCode } from '../../domain/types';
+import { defaultLanguageCode, getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
 
 export function CollaboratorsPage() {
-  const language = getPersistedLanguage() ?? defaultLanguageCode;
+  const [language, setLanguage] = useState<LanguageCode>(getPersistedLanguage() ?? defaultLanguageCode);
+  const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<CollaboratorsPageContent>();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
   useEffect(() => {
     Promise.all([
       guideRepository.getCollaboratorsPageContent(),
-      guideRepository.getCollaborators()
-    ]).then(([pageContent, collaboratorRows]) => {
+      guideRepository.getCollaborators(),
+      guideRepository.getLanguages()
+    ]).then(([pageContent, collaboratorRows, languageRows]) => {
       setContent(pageContent);
       setCollaborators(collaboratorRows);
+      setLanguages(languageRows);
       setSeo({
         title: `${pageContent.title} Vive Utrera`,
         description: pageContent.subtitle,
@@ -31,6 +35,11 @@ export function CollaboratorsPage() {
     });
   }, [language]);
 
+  function changeLanguage(code: LanguageCode) {
+    setLanguage(code);
+    persistLanguage(code);
+  }
+
   if (!content) return <LoadingState label="Cargando colaboradores" />;
 
   const special = collaborators.filter((collaborator) => collaborator.isSpecial);
@@ -38,6 +47,7 @@ export function CollaboratorsPage() {
 
   return (
     <>
+      <PublicTopNav current={language} languages={languages} onLanguageSelect={changeLanguage} />
       <main className="project-page project-page-collaborators">
         <header className="project-hero">
           <img className="project-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />

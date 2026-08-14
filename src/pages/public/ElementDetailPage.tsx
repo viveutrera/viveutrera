@@ -1,13 +1,11 @@
 import { ExternalLink, MapPin, Radio, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
 import { AudioPlayer } from '../../components/AudioPlayer';
 import { GalleryLightbox } from '../../components/GalleryLightbox';
-import { LanguageSelector } from '../../components/LanguageSelector';
 import { NearbyPlacesModal } from '../../components/NearbyPlacesModal';
 import { PublicFooter } from '../../components/PublicFooter';
-import { PublicUserMenu } from '../../components/PublicUserMenu';
+import { PublicTopNav } from '../../components/PublicTopNav';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, LoadingState } from '../../components/ui/States';
@@ -242,14 +240,8 @@ export function ElementDetailPage() {
 
   return (
     <>
+      <PublicTopNav current={language} languages={languages} pathForLanguage={(code) => `/guia/${code}/elemento/${element.slug}`} />
       <main className="detail-page">
-        <div className="detail-language-bar">
-          <ActiveTourIndicator />
-          <div className="public-top-actions">
-            <LanguageSelector current={language} languages={languages} pathFor={(code) => `/guia/${code}/elemento/${element.slug}`} />
-            <PublicUserMenu />
-          </div>
-        </div>
         {contentLanguage !== language ? (
           <div className="notice" role="status">
             Esta ficha no esta publicada en {languageName(language, languages)}. Mostrando contenido en {languageName(contentLanguage, languages)}.

@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react';
 import { PublicFooter } from '../../components/PublicFooter';
+import { PublicTopNav } from '../../components/PublicTopNav';
 import { Button } from '../../components/ui/Button';
 import { LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
-import type { DonationContent } from '../../domain/types';
-import { defaultLanguageCode, getPersistedLanguage } from '../../lib/language';
+import type { DonationContent, Language, LanguageCode } from '../../domain/types';
+import { defaultLanguageCode, getPersistedLanguage, persistLanguage } from '../../lib/language';
 import { publicPath } from '../../lib/routing';
 import { setSeo } from '../../lib/seo';
 
 export function DonationPage() {
-  const language = getPersistedLanguage() ?? defaultLanguageCode;
+  const [language, setLanguage] = useState<LanguageCode>(getPersistedLanguage() ?? defaultLanguageCode);
+  const [languages, setLanguages] = useState<Language[]>([]);
   const [content, setContent] = useState<DonationContent>();
   const [bizumCopyMessage, setBizumCopyMessage] = useState('');
   const [bankCopyMessage, setBankCopyMessage] = useState('');
 
   useEffect(() => {
-    guideRepository.getDonationContent().then((donationContent) => {
+    Promise.all([
+      guideRepository.getDonationContent(),
+      guideRepository.getLanguages()
+    ]).then(([donationContent, languageRows]) => {
       setContent(donationContent);
+      setLanguages(languageRows);
       setSeo({
         title: `${donationContent.title} - Vive Utrera`,
         description: donationContent.subtitle,
@@ -25,6 +31,11 @@ export function DonationPage() {
       });
     });
   }, [language]);
+
+  function changeLanguage(code: LanguageCode) {
+    setLanguage(code);
+    persistLanguage(code);
+  }
 
   if (!content) return <LoadingState label="Cargando donativos" />;
 
@@ -55,6 +66,7 @@ export function DonationPage() {
 
   return (
     <>
+      <PublicTopNav current={language} languages={languages} onLanguageSelect={changeLanguage} />
       <main className="project-page project-page-donations">
         <header className="project-hero">
           <img className="project-logo" src={publicPath('brand/logo-vive-utrera.png')} alt="" aria-hidden="true" />

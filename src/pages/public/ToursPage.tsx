@@ -1,10 +1,8 @@
 import { LogOut, Radio, Users } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { ActiveTourIndicator } from '../../components/ActiveTourIndicator';
-import { LanguageSelector } from '../../components/LanguageSelector';
 import { PublicFooter } from '../../components/PublicFooter';
-import { PublicUserMenu } from '../../components/PublicUserMenu';
+import { PublicTopNav } from '../../components/PublicTopNav';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
@@ -80,7 +78,7 @@ export function ToursPage() {
         setError(t(language, 'tourUnavailable'));
         return;
       }
-      const nextSession = saveParticipantTourSession({ tourId: tour.id, code: tour.code, expiresAt: tour.expiresAt });
+      const nextSession = saveParticipantTourSession({ tourId: tour.id, code: tour.code, name: tour.name, expiresAt: tour.expiresAt });
       setSession(nextSession);
       setTourCode('');
       setMessage(t(language, 'tourJoined'));
@@ -102,15 +100,8 @@ export function ToursPage() {
 
   return (
     <>
+      <PublicTopNav current={language} languages={languages} pathForLanguage={(code) => `/tours/${code}`} />
       <main className="guide-page tours-page">
-        <div className="guide-language-bar">
-          <ActiveTourIndicator />
-          <div className="public-top-actions">
-            <LanguageSelector current={language} languages={languages} pathFor={(code) => `/tours/${code}`} />
-            <PublicUserMenu />
-          </div>
-        </div>
-
         <header className="guide-header">
           <Link to="/preview" className="guide-brand-link" aria-label="Vive Utrera">
             <span>VIVE</span>

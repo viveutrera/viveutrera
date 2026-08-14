@@ -1,6 +1,7 @@
 export interface ParticipantTourSession {
   tourId: string;
   code: string;
+  name?: string;
   participantToken: string;
   joinedAt: string;
   expiresAt: string;
@@ -26,10 +27,11 @@ export function getParticipantTourSession(): ParticipantTourSession | undefined 
   }
 }
 
-export function saveParticipantTourSession(input: { tourId: string; code: string; expiresAt: string }) {
+export function saveParticipantTourSession(input: { tourId: string; code: string; name?: string; expiresAt: string }) {
   const session: ParticipantTourSession = {
     tourId: input.tourId,
     code: input.code,
+    name: input.name,
     participantToken: crypto.randomUUID(),
     joinedAt: new Date().toISOString(),
     expiresAt: input.expiresAt
