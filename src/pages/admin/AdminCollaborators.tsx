@@ -34,6 +34,7 @@ export interface CollaboratorRow {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
+  is_auxiliary?: boolean;
   show_name?: boolean;
   collaborator_translations?: CollaboratorTranslationRow[];
 }
@@ -59,6 +60,7 @@ export interface CollaboratorForm {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
+  is_auxiliary: boolean;
   show_name: boolean;
   translations: TranslationForm[];
 }
@@ -70,6 +72,7 @@ const emptyCollaborator = (languages: LanguageRow[]): CollaboratorForm => ({
   sort_order: 0,
   is_active: true,
   is_special: false,
+  is_auxiliary: false,
   show_name: true,
   translations: languages.map((language) => ({ language_id: language.id, display_name: '', thank_you_text: '' }))
 });
@@ -192,7 +195,12 @@ export function AdminCollaborators() {
       ...(item.collaborator_translations?.flatMap((translation) => [translation.display_name, translation.thank_you_text]) ?? [])
     ], search)
     && (statusFilter === 'all' || (statusFilter === 'active' ? item.is_active : !item.is_active))
-    && (specialFilter === 'all' || (specialFilter === 'special' ? item.is_special : !item.is_special))
+    && (
+      specialFilter === 'all'
+      || (specialFilter === 'special' && item.is_special)
+      || (specialFilter === 'auxiliary' && item.is_auxiliary)
+      || (specialFilter === 'general' && !item.is_special)
+    )
   ));
   const selectedCollaborator = items.find((item) => item.id === deleteId);
 
@@ -217,6 +225,7 @@ export function AdminCollaborators() {
         <select className="admin-filter" value={specialFilter} onChange={(event) => setSpecialFilter(event.target.value)} aria-label="Filtrar colaboradores por tipo">
           <option value="all">Todos los tipos</option>
           <option value="special">Especiales</option>
+          <option value="auxiliary">Auxiliares</option>
           <option value="general">Generales</option>
         </select>
         <Button type="button" icon={<Plus size={18} />} onClick={() => setCreateOpen(true)}>Crear colaborador</Button>
@@ -228,6 +237,7 @@ export function AdminCollaborators() {
           <span role="columnheader">URL</span>
           <span role="columnheader">Orden</span>
           <span role="columnheader">Especial</span>
+          <span role="columnheader">Auxiliar</span>
           <span role="columnheader">Nombre visible</span>
           <span role="columnheader">Estado</span>
           <span role="columnheader" aria-label="Acciones" />
@@ -242,6 +252,7 @@ export function AdminCollaborators() {
               <span role="cell">{item.url || 'Sin enlace'}</span>
               <span role="cell">{item.sort_order}</span>
               <span role="cell">{item.is_special ? 'Si' : 'No'}</span>
+              <span role="cell">{item.is_auxiliary ? 'Si' : 'No'}</span>
               <span role="cell">{item.show_name ?? true ? 'Si' : 'No'}</span>
               <span role="cell">{item.is_active ? 'Activo' : 'Inactivo'}</span>
               <span className="row-actions" role="cell">
@@ -301,7 +312,8 @@ export function CollaboratorFields({ form, languages, mediaAssets, onChange, onT
         <FormField label="URL" value={form.url} onChange={(event) => onChange({ ...form, url: event.target.value })} />
         <FormField label="Orden" type="number" value={form.sort_order} onChange={(event) => onChange({ ...form, sort_order: Number(event.target.value) })} />
         <label className="check-field"><input type="checkbox" checked={form.is_active} onChange={(event) => onChange({ ...form, is_active: event.target.checked })} /> Activo</label>
-        <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => onChange({ ...form, is_special: event.target.checked })} /> Especial</label>
+        <label className="check-field"><input type="checkbox" checked={form.is_special} onChange={(event) => onChange({ ...form, is_special: event.target.checked, is_auxiliary: event.target.checked ? form.is_auxiliary : false })} /> Especial</label>
+        <label className="check-field"><input type="checkbox" checked={form.is_auxiliary} onChange={(event) => onChange({ ...form, is_special: event.target.checked ? true : form.is_special, is_auxiliary: event.target.checked })} /> Auxiliar</label>
         <label className="check-field"><input type="checkbox" checked={form.show_name} onChange={(event) => onChange({ ...form, show_name: event.target.checked })} /> Mostrar nombre en la web</label>
       </div>
       <div className="translation-grid">

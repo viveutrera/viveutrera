@@ -211,6 +211,7 @@ interface CollaboratorRowRaw {
   sort_order: number;
   is_active: boolean;
   is_special: boolean;
+  is_auxiliary?: boolean | null;
   show_name?: boolean | null;
   media_assets?: MediaAssetRowRaw | MediaAssetRowRaw[] | null;
   collaborator_translations?: CollaboratorTranslationRowRaw[];
@@ -249,6 +250,7 @@ function isMissingColumnError(error: unknown) {
     || candidate.code === 'PGRST204'
     || Boolean(candidate.message?.includes('show_long_text_default'))
     || Boolean(candidate.message?.includes('show_name'))
+    || Boolean(candidate.message?.includes('is_auxiliary'))
     || Boolean(candidate.message?.includes('collaborator_section_text'))
     || Boolean(candidate.message?.includes('special_collaborator_label'))
     || Boolean(candidate.message?.includes('latitude'))
@@ -599,19 +601,28 @@ export const supabaseGuideRepository = {
     const client = ensureSupabase();
     const response = await client
       .from('collaborators')
-      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, is_auxiliary, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
       .eq('is_active', true)
       .order('sort_order');
     let data = response.data as CollaboratorRowRaw[] | null;
     let error = response.error;
     if (error && isMissingColumnError(error)) {
-      const legacy = await client
+      const withoutAuxiliary = await client
+        .from('collaborators')
+        .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
+        .eq('is_active', true)
+        .order('sort_order');
+      data = withoutAuxiliary.data;
+      error = withoutAuxiliary.error;
+    }
+    if (error && isMissingColumnError(error)) {
+      const withoutVisibility = await client
         .from('collaborators')
         .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(display_name, thank_you_text, languages(code))')
         .eq('is_active', true)
         .order('sort_order');
-      data = legacy.data;
-      error = legacy.error;
+      data = withoutVisibility.data;
+      error = withoutVisibility.error;
     }
 
     if (error) throw error;
@@ -634,6 +645,7 @@ export const supabaseGuideRepository = {
         sortOrder: row.sort_order,
         isActive: row.is_active,
         isSpecial: row.is_special,
+        isAuxiliary: row.is_auxiliary ?? false,
         showName: row.show_name ?? true,
         translations
       };
@@ -1144,17 +1156,25 @@ export const adminRepository = {
     const client = ensureSupabase();
     const response = await client
       .from('collaborators')
-      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+      .select('id, name, media_asset_id, url, sort_order, is_active, is_special, is_auxiliary, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
       .order('sort_order');
     let data = response.data as CollaboratorRowRaw[] | null;
     let error = response.error;
     if (error && isMissingColumnError(error)) {
-      const legacy = await client
+      const withoutAuxiliary = await client
+        .from('collaborators')
+        .select('id, name, media_asset_id, url, sort_order, is_active, is_special, show_name, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
+        .order('sort_order');
+      data = withoutAuxiliary.data;
+      error = withoutAuxiliary.error;
+    }
+    if (error && isMissingColumnError(error)) {
+      const withoutVisibility = await client
         .from('collaborators')
         .select('id, name, media_asset_id, url, sort_order, is_active, is_special, media_assets(id, object_key, media_type, mime_type, original_name, file_size, width, height, duration_seconds), collaborator_translations(id, display_name, thank_you_text, language_id, languages(code))')
         .order('sort_order');
-      data = legacy.data;
-      error = legacy.error;
+      data = withoutVisibility.data;
+      error = withoutVisibility.error;
     }
     if (error) throw error;
     return data ?? [];
@@ -1167,6 +1187,7 @@ export const adminRepository = {
     sort_order: number;
     is_active: boolean;
     is_special: boolean;
+    is_auxiliary?: boolean;
     show_name?: boolean;
     translations: Array<{ language_id: string; display_name: string; thank_you_text: string }>;
   }) {
@@ -1179,6 +1200,7 @@ export const adminRepository = {
       sort_order: input.sort_order,
       is_active: input.is_active,
       is_special: input.is_special,
+      is_auxiliary: input.is_auxiliary ?? false,
       show_name: input.show_name ?? true
     };
     let { data: collaborator, error } = await client
@@ -1187,15 +1209,27 @@ export const adminRepository = {
       .select('id')
       .single();
     if (error && isMissingColumnError(error)) {
-      const legacyPayload: Partial<typeof payload> = { ...payload };
-      delete legacyPayload.show_name;
-      const legacy = await client
+      const withoutAuxiliaryPayload: Partial<typeof payload> = { ...payload };
+      delete withoutAuxiliaryPayload.is_auxiliary;
+      const withoutAuxiliary = await client
         .from('collaborators')
-        .upsert(legacyPayload)
+        .upsert(withoutAuxiliaryPayload)
         .select('id')
         .single();
-      collaborator = legacy.data;
-      error = legacy.error;
+      collaborator = withoutAuxiliary.data;
+      error = withoutAuxiliary.error;
+    }
+    if (error && isMissingColumnError(error)) {
+      const withoutVisibilityPayload: Partial<typeof payload> = { ...payload };
+      delete withoutVisibilityPayload.show_name;
+      delete withoutVisibilityPayload.is_auxiliary;
+      const withoutVisibility = await client
+        .from('collaborators')
+        .upsert(withoutVisibilityPayload)
+        .select('id')
+        .single();
+      collaborator = withoutVisibility.data;
+      error = withoutVisibility.error;
     }
     if (error) throw error;
     if (!collaborator) throw new Error('No se pudo guardar el colaborador.');

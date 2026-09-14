@@ -56,7 +56,8 @@ export function LandingPage() {
   }
 
   if (!content) return <LoadingState label="Preparando Vive Utrera" />;
-  const specialCollaborators = collaborators.filter((collaborator) => collaborator.isSpecial);
+  const auxiliaryCollaborators = collaborators.filter((collaborator) => collaborator.isSpecial && collaborator.isAuxiliary);
+  const specialCollaborators = collaborators.filter((collaborator) => collaborator.isSpecial && !collaborator.isAuxiliary);
   const generalCollaborators = collaborators.filter((collaborator) => !collaborator.isSpecial);
 
   return (
@@ -147,17 +148,16 @@ export function LandingPage() {
           <div className="section-heading">
             <h2>Colaboradores</h2>
           </div>
+          {auxiliaryCollaborators.length ? (
+            <CollaboratorCarousel
+              collaborators={auxiliaryCollaborators}
+              language={landingLanguage}
+              label="Colaboradores auxiliares"
+              showThankYouText
+            />
+          ) : null}
           {generalCollaborators.length ? (
-            <div className="collaborator-carousel" aria-label="Colaboradores">
-              <div className={generalCollaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
-                {generalCollaborators.map((collaborator) => (
-                  <CollaboratorCard key={collaborator.id} collaborator={collaborator} language={landingLanguage} />
-                ))}
-                {generalCollaborators.length > 1 ? generalCollaborators.map((collaborator) => (
-                  <CollaboratorCard key={`${collaborator.id}-copy`} collaborator={collaborator} language={landingLanguage} ariaHidden />
-                )) : null}
-              </div>
-            </div>
+            <CollaboratorCarousel collaborators={generalCollaborators} language={landingLanguage} label="Colaboradores" />
           ) : null}
           {content.collaboratorSectionText ? <p className="collaborator-section-text">{content.collaboratorSectionText}</p> : null}
           {specialCollaborators.length ? (
@@ -167,7 +167,7 @@ export function LandingPage() {
               ))}
             </div>
           ) : null}
-          {!generalCollaborators.length && !specialCollaborators.length ? (
+          {!auxiliaryCollaborators.length && !generalCollaborators.length && !specialCollaborators.length ? (
             <p className="hint">Los colaboradores se mostraran cuando esten configurados.</p>
           ) : null}
         </section>
@@ -197,12 +197,38 @@ function SpecialCollaboratorCard({ collaborator, language }: { collaborator: Col
   return <article className="special-collaborator">{content}</article>;
 }
 
-function CollaboratorCard({ collaborator, language, ariaHidden = false }: { collaborator: Collaborator; language: LanguageCode; ariaHidden?: boolean }) {
+function CollaboratorCarousel({ collaborators, language, label, showThankYouText = false }: {
+  collaborators: Collaborator[];
+  language: LanguageCode;
+  label: string;
+  showThankYouText?: boolean;
+}) {
+  return (
+    <div className="collaborator-carousel" aria-label={label}>
+      <div className={collaborators.length > 1 ? 'collaborator-track is-animated' : 'collaborator-track'}>
+        {collaborators.map((collaborator) => (
+          <CollaboratorCard key={collaborator.id} collaborator={collaborator} language={language} showThankYouText={showThankYouText} />
+        ))}
+        {collaborators.length > 1 ? collaborators.map((collaborator) => (
+          <CollaboratorCard key={`${collaborator.id}-copy`} collaborator={collaborator} language={language} showThankYouText={showThankYouText} ariaHidden />
+        )) : null}
+      </div>
+    </div>
+  );
+}
+
+function CollaboratorCard({ collaborator, language, ariaHidden = false, showThankYouText = false }: {
+  collaborator: Collaborator;
+  language: LanguageCode;
+  ariaHidden?: boolean;
+  showThankYouText?: boolean;
+}) {
   const translation = collaboratorTranslation(collaborator, language);
   const content = (
     <>
       {collaborator.mediaAsset ? <img src={mediaUrl(collaborator.mediaAsset.objectKey)} alt={translation.displayName} loading="lazy" /> : null}
       {collaborator.showName ? <span>{translation.displayName}</span> : null}
+      {showThankYouText && translation.thankYouText ? <p className="collaborator-thanks-line">{translation.thankYouText}</p> : null}
       {collaborator.url ? <ExternalLink size={14} /> : null}
     </>
   );

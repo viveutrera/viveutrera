@@ -42,7 +42,8 @@ export function CollaboratorsPage() {
 
   if (!content) return <LoadingState label="Cargando colaboradores" />;
 
-  const special = collaborators.filter((collaborator) => collaborator.isSpecial);
+  const auxiliary = collaborators.filter((collaborator) => collaborator.isSpecial && collaborator.isAuxiliary);
+  const special = collaborators.filter((collaborator) => collaborator.isSpecial && !collaborator.isAuxiliary);
   const general = collaborators.filter((collaborator) => !collaborator.isSpecial);
 
   return (
@@ -58,9 +59,13 @@ export function CollaboratorsPage() {
 
         <section className="project-section">
           <div className="general-supporter-grid">
+            {auxiliary.length ? auxiliary.map((collaborator) => (
+              <GeneralSupporter key={collaborator.id} collaborator={collaborator} language={language} showThankYouText />
+            )) : null}
             {general.length ? general.map((collaborator) => (
               <GeneralSupporter key={collaborator.id} collaborator={collaborator} language={language} />
-            )) : <p className="hint">{content.generalSectionEmptyText}</p>}
+            )) : null}
+            {!auxiliary.length && !general.length ? <p className="hint">{content.generalSectionEmptyText}</p> : null}
           </div>
         </section>
 
@@ -111,12 +116,13 @@ function SpecialSupporter({ collaborator, language }: { collaborator: Collaborat
   );
 }
 
-function GeneralSupporter({ collaborator, language }: { collaborator: Collaborator; language: LanguageCode }) {
+function GeneralSupporter({ collaborator, language, showThankYouText = false }: { collaborator: Collaborator; language: LanguageCode; showThankYouText?: boolean }) {
   const translation = collaborator.translations[language] ?? collaborator.translations.es;
   const content = (
     <>
       <SupporterImage collaborator={collaborator} name={translation.displayName} />
       {collaborator.showName ? <h3>{translation.displayName}</h3> : null}
+      {showThankYouText && translation.thankYouText ? <p className="supporter-thanks-line">{translation.thankYouText}</p> : null}
     </>
   );
 
