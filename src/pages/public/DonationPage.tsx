@@ -18,7 +18,7 @@ export function DonationPage() {
 
   useEffect(() => {
     Promise.all([
-      guideRepository.getDonationContent(),
+      guideRepository.getDonationContent(language),
       guideRepository.getLanguages()
     ]).then(([donationContent, languageRows]) => {
       setContent(donationContent);

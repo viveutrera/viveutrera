@@ -110,15 +110,15 @@ export const guideRepository = {
       () => collaborators.filter((collaborator) => collaborator.isActive).sort((a, b) => a.sortOrder - b.sortOrder)
     );
   },
-  async getDonationContent(): Promise<DonationContent> {
+  async getDonationContent(language: LanguageCode): Promise<DonationContent> {
     return withFallback(
-      () => supabaseGuideRepository.getDonationContent(),
+      () => supabaseGuideRepository.getDonationContent(language),
       () => defaultDonationContent
     );
   },
-  async getCollaboratorsPageContent(): Promise<CollaboratorsPageContent> {
+  async getCollaboratorsPageContent(language: LanguageCode): Promise<CollaboratorsPageContent> {
     return withFallback(
-      () => supabaseGuideRepository.getCollaboratorsPageContent(),
+      () => supabaseGuideRepository.getCollaboratorsPageContent(language),
       () => defaultCollaboratorsPageContent
     );
   }

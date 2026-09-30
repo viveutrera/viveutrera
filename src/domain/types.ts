@@ -181,6 +181,8 @@ export interface DonationContent {
   footerText: string;
 }
 
+export type LocalizedDonationContent = Partial<Record<LanguageCode, DonationContent>>;
+
 export interface CollaboratorsPageContent {
   title: string;
   subtitle: string;
@@ -191,6 +193,8 @@ export interface CollaboratorsPageContent {
   calloutButtonLabel: string;
   closingText: string;
 }
+
+export type LocalizedCollaboratorsPageContent = Partial<Record<LanguageCode, CollaboratorsPageContent>>;
 
 export type TourStatus = 'draft' | 'active' | 'finished' | 'cancelled';
 

@@ -19,7 +19,7 @@ export function CollaboratorsPage() {
 
   useEffect(() => {
     Promise.all([
-      guideRepository.getCollaboratorsPageContent(),
+      guideRepository.getCollaboratorsPageContent(language),
       guideRepository.getCollaborators(),
       guideRepository.getLanguages()
     ]).then(([pageContent, collaboratorRows, languageRows]) => {

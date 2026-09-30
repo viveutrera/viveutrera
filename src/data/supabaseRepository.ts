@@ -9,6 +9,8 @@ import type {
   GuideRoute,
   Language,
   LanguageCode,
+  LocalizedCollaboratorsPageContent,
+  LocalizedDonationContent,
   MediaAsset,
   MediaVariant,
   NearbyElementCandidate,
@@ -31,6 +33,7 @@ const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longi
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const donationContentKey = 'donation_content';
 export const collaboratorsPageContentKey = 'collaborators_page_content';
+export { donationContentKey };
 
 export const defaultDonationContent: DonationContent = {
   title: 'Colabora con la asociacion',
@@ -652,7 +655,7 @@ export const supabaseGuideRepository = {
     });
   },
 
-  async getDonationContent(): Promise<DonationContent> {
+  async getDonationContent(language: LanguageCode = 'es'): Promise<DonationContent> {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('site_settings')
@@ -660,10 +663,10 @@ export const supabaseGuideRepository = {
       .eq('key', donationContentKey)
       .maybeSingle();
     if (error) throw error;
-    return normalizeDonationContent(data?.value_json);
+    return normalizeDonationTranslations(data?.value_json)[language] ?? defaultDonationContent;
   },
 
-  async getCollaboratorsPageContent(): Promise<CollaboratorsPageContent> {
+  async getCollaboratorsPageContent(language: LanguageCode = 'es'): Promise<CollaboratorsPageContent> {
     const client = ensureSupabase();
     const { data, error } = await client
       .from('site_settings')
@@ -671,7 +674,7 @@ export const supabaseGuideRepository = {
       .eq('key', collaboratorsPageContentKey)
       .maybeSingle();
     if (error) throw error;
-    return normalizeCollaboratorsPageContent(data?.value_json);
+    return normalizeCollaboratorsPageTranslations(data?.value_json)[language] ?? defaultCollaboratorsPageContent;
   }
 };
 
@@ -1632,6 +1635,15 @@ function normalizeDonationContent(value: unknown): DonationContent {
   };
 }
 
+export function normalizeDonationTranslations(value: unknown): LocalizedDonationContent {
+  const candidate = value && typeof value === 'object' ? value as { translations?: unknown } : undefined;
+  const translations = candidate?.translations && typeof candidate.translations === 'object'
+    ? candidate.translations as Record<string, unknown>
+    : undefined;
+  const legacy = normalizeDonationContent(value);
+  return Object.fromEntries(languageCodes.map((code) => [code, normalizeDonationContent(translations?.[code] ?? legacy)])) as LocalizedDonationContent;
+}
+
 export function normalizeCollaboratorsPageContent(value: unknown): CollaboratorsPageContent {
   if (!value || typeof value !== 'object') return defaultCollaboratorsPageContent;
   const candidate = value as Partial<Record<keyof CollaboratorsPageContent, unknown>>;
@@ -1645,6 +1657,15 @@ export function normalizeCollaboratorsPageContent(value: unknown): Collaborators
     calloutButtonLabel: stringSetting(candidate.calloutButtonLabel, defaultCollaboratorsPageContent.calloutButtonLabel),
     closingText: stringSetting(candidate.closingText, defaultCollaboratorsPageContent.closingText)
   };
+}
+
+export function normalizeCollaboratorsPageTranslations(value: unknown): LocalizedCollaboratorsPageContent {
+  const candidate = value && typeof value === 'object' ? value as { translations?: unknown } : undefined;
+  const translations = candidate?.translations && typeof candidate.translations === 'object'
+    ? candidate.translations as Record<string, unknown>
+    : undefined;
+  const legacy = normalizeCollaboratorsPageContent(value);
+  return Object.fromEntries(languageCodes.map((code) => [code, normalizeCollaboratorsPageContent(translations?.[code] ?? legacy)])) as LocalizedCollaboratorsPageContent;
 }
 
 function stringSetting(value: unknown, fallback: string) {
