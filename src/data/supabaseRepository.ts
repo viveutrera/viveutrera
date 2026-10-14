@@ -194,6 +194,13 @@ interface SiteTranslationRowRaw {
   city_text: string;
   collaborator_section_text?: string | null;
   special_collaborator_label?: string | null;
+  footer_donations_label?: string | null;
+  footer_collaborators_label?: string | null;
+  footer_home_label?: string | null;
+  footer_guide_label?: string | null;
+  footer_administration_label?: string | null;
+  footer_hosts_label?: string | null;
+  nearby_places_button_label?: string | null;
   seo_title: string;
   seo_description: string;
 }
@@ -256,6 +263,13 @@ function isMissingColumnError(error: unknown) {
     || Boolean(candidate.message?.includes('is_auxiliary'))
     || Boolean(candidate.message?.includes('collaborator_section_text'))
     || Boolean(candidate.message?.includes('special_collaborator_label'))
+    || Boolean(candidate.message?.includes('footer_donations_label'))
+    || Boolean(candidate.message?.includes('footer_collaborators_label'))
+    || Boolean(candidate.message?.includes('footer_home_label'))
+    || Boolean(candidate.message?.includes('footer_guide_label'))
+    || Boolean(candidate.message?.includes('footer_administration_label'))
+    || Boolean(candidate.message?.includes('footer_hosts_label'))
+    || Boolean(candidate.message?.includes('nearby_places_button_label'))
     || Boolean(candidate.message?.includes('latitude'))
     || Boolean(candidate.message?.includes('longitude'));
 }
@@ -304,7 +318,7 @@ export const supabaseGuideRepository = {
 
     const response = await client
       .from('site_translations')
-      .select('hero_title, hero_slogan, hero_description, city_title, city_text, collaborator_section_text, special_collaborator_label, seo_title, seo_description')
+      .select('hero_title, hero_slogan, hero_description, city_title, city_text, collaborator_section_text, special_collaborator_label, footer_donations_label, footer_collaborators_label, footer_home_label, footer_guide_label, footer_administration_label, footer_hosts_label, nearby_places_button_label, seo_title, seo_description')
       .eq('language_id', languageRow.id)
       .maybeSingle();
     let data = response.data as SiteTranslationRowRaw | null;
@@ -331,6 +345,13 @@ export const supabaseGuideRepository = {
       cityText: data.city_text,
       collaboratorSectionText: data.collaborator_section_text ?? mockSiteContent[language].collaboratorSectionText,
       specialCollaboratorLabel: data.special_collaborator_label ?? mockSiteContent[language].specialCollaboratorLabel,
+      footerDonationsLabel: data.footer_donations_label ?? 'Donativos',
+      footerCollaboratorsLabel: data.footer_collaborators_label ?? 'Colaboradores',
+      footerHomeLabel: data.footer_home_label ?? 'Inicio',
+      footerGuideLabel: data.footer_guide_label ?? 'Guía',
+      footerAdministrationLabel: data.footer_administration_label ?? 'Administración',
+      footerHostsLabel: data.footer_hosts_label ?? 'Anfitriones',
+      nearbyPlacesButtonLabel: data.nearby_places_button_label ?? 'Lugares próximos',
       seoTitle: data.seo_title,
       seoDescription: data.seo_description,
       heroLogoObjectKey: mediaSettings.heroLogoObjectKey,
@@ -795,6 +816,13 @@ export const adminRepository = {
     language_card_button: string;
     collaborator_section_text?: string | null;
     special_collaborator_label?: string | null;
+    footer_donations_label?: string | null;
+    footer_collaborators_label?: string | null;
+    footer_home_label?: string | null;
+    footer_guide_label?: string | null;
+    footer_administration_label?: string | null;
+    footer_hosts_label?: string | null;
+    nearby_places_button_label?: string | null;
     seo_title: string;
     seo_description: string;
   }>) {
@@ -805,6 +833,13 @@ export const adminRepository = {
         const legacy: Partial<typeof translation> = { ...translation };
         delete legacy.collaborator_section_text;
         delete legacy.special_collaborator_label;
+        delete legacy.footer_donations_label;
+        delete legacy.footer_collaborators_label;
+        delete legacy.footer_home_label;
+        delete legacy.footer_guide_label;
+        delete legacy.footer_administration_label;
+        delete legacy.footer_hosts_label;
+        delete legacy.nearby_places_button_label;
         return legacy;
       });
       const legacy = await client.from('site_translations').upsert(legacyTranslations, { onConflict: 'language_id' });

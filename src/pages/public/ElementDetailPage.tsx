@@ -11,7 +11,7 @@ import { Modal } from '../../components/ui/Modal';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
 import { tourRepository } from '../../data/supabaseRepository';
-import type { ElementType, GuideElement, GuideRoute, Language, LanguageCode, Tour } from '../../domain/types';
+import type { ElementType, GuideElement, GuideRoute, Language, LanguageCode, SiteContent, Tour } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, isLanguageCode, languageName, persistLanguage, resolveLanguage } from '../../lib/language';
 import { hasValidCoordinates, haversineDistanceMeters, type NearbyElement } from '../../lib/geolocation';
@@ -55,6 +55,11 @@ export function ElementDetailPage() {
   const [isNearbyOpen, setNearbyOpen] = useState(false);
   const [nearbyResults, setNearbyResults] = useState<NearbyElement[]>([]);
   const [nearbyError, setNearbyError] = useState('');
+  const [siteContent, setSiteContent] = useState<SiteContent>();
+
+  useEffect(() => {
+    guideRepository.getSiteContent(language).then(setSiteContent).catch(() => setSiteContent(undefined));
+  }, [language]);
 
   useEffect(() => {
     setLoading(true);
@@ -344,8 +349,8 @@ export function ElementDetailPage() {
         </section>
 
         {canShowNearbyPlaces ? (
-          <div className="detail-pagination" aria-label="Lugares próximos">
-            <Button type="button" variant="secondary" icon={<MapPin size={18} />} onClick={showNearbyPlaces}>Lugares próximos</Button>
+          <div className="detail-pagination" aria-label={siteContent?.nearbyPlacesButtonLabel ?? 'Lugares próximos'}>
+            <Button type="button" variant="secondary" icon={<MapPin size={18} />} onClick={showNearbyPlaces}>{siteContent?.nearbyPlacesButtonLabel ?? 'Lugares próximos'}</Button>
           </div>
         ) : null}
       </main>

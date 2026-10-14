@@ -29,6 +29,13 @@ interface SettingsTranslation {
   language_card_button: string;
   collaborator_section_text: string;
   special_collaborator_label: string;
+  footer_donations_label: string;
+  footer_collaborators_label: string;
+  footer_home_label: string;
+  footer_guide_label: string;
+  footer_administration_label: string;
+  footer_hosts_label: string;
+  nearby_places_button_label: string;
   seo_title: string;
   seo_description: string;
 }
@@ -62,6 +69,13 @@ const emptyTranslation = (languageId: string): SettingsTranslation => ({
   language_card_button: '',
   collaborator_section_text: '',
   special_collaborator_label: '',
+  footer_donations_label: '',
+  footer_collaborators_label: '',
+  footer_home_label: '',
+  footer_guide_label: '',
+  footer_administration_label: '',
+  footer_hosts_label: '',
+  nearby_places_button_label: '',
   seo_title: '',
   seo_description: ''
 });
@@ -394,6 +408,13 @@ export function AdminSettings() {
                 <FormField label="Boton tarjeta idioma" value={translation.language_card_button} onChange={(event) => update(language.id, 'language_card_button', event.target.value)} required readOnly={!isEditing} />
                 <TextAreaField label="Texto seccion colaboradores" value={translation.collaborator_section_text} onChange={(event) => update(language.id, 'collaborator_section_text', event.target.value)} readOnly={!isEditing} />
                 <FormField label="Etiqueta colaborador especial" value={translation.special_collaborator_label} onChange={(event) => update(language.id, 'special_collaborator_label', event.target.value)} readOnly={!isEditing} />
+                <FormField label="Enlace pie: Donativos" value={translation.footer_donations_label} onChange={(event) => update(language.id, 'footer_donations_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Enlace pie: Colaboradores" value={translation.footer_collaborators_label} onChange={(event) => update(language.id, 'footer_collaborators_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Enlace pie: Inicio" value={translation.footer_home_label} onChange={(event) => update(language.id, 'footer_home_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Enlace pie: Guia" value={translation.footer_guide_label} onChange={(event) => update(language.id, 'footer_guide_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Enlace pie: Administracion" value={translation.footer_administration_label} onChange={(event) => update(language.id, 'footer_administration_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Enlace pie: Anfitriones" value={translation.footer_hosts_label} onChange={(event) => update(language.id, 'footer_hosts_label', event.target.value)} required readOnly={!isEditing} />
+                <FormField label="Boton Lugares proximos" value={translation.nearby_places_button_label} onChange={(event) => update(language.id, 'nearby_places_button_label', event.target.value)} required readOnly={!isEditing} />
                 <FormField label="SEO titulo" value={translation.seo_title} onChange={(event) => update(language.id, 'seo_title', event.target.value)} required readOnly={!isEditing} />
                 <TextAreaField label="SEO descripcion" value={translation.seo_description} onChange={(event) => update(language.id, 'seo_description', event.target.value)} required readOnly={!isEditing} />
               </div>
@@ -499,6 +520,13 @@ function validateTranslation(translation: SettingsTranslation, language: Languag
     validateRequired(translation.city_text, `Texto ciudad en ${language.native_name}`),
     validateRequired(translation.language_card_text, `Texto tarjeta idioma en ${language.native_name}`),
     validateRequired(translation.language_card_button, `Boton tarjeta idioma en ${language.native_name}`),
+    validateRequired(translation.footer_donations_label, `Enlace Donativos en ${language.native_name}`),
+    validateRequired(translation.footer_collaborators_label, `Enlace Colaboradores en ${language.native_name}`),
+    validateRequired(translation.footer_home_label, `Enlace Inicio en ${language.native_name}`),
+    validateRequired(translation.footer_guide_label, `Enlace Guia en ${language.native_name}`),
+    validateRequired(translation.footer_administration_label, `Enlace Administracion en ${language.native_name}`),
+    validateRequired(translation.footer_hosts_label, `Enlace Anfitriones en ${language.native_name}`),
+    validateRequired(translation.nearby_places_button_label, `Boton Lugares proximos en ${language.native_name}`),
     validateRequired(translation.seo_title, `SEO titulo en ${language.native_name}`),
     validateRequired(translation.seo_description, `SEO descripcion en ${language.native_name}`)
   ].find(Boolean) ?? '';

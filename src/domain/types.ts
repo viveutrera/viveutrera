@@ -159,6 +159,13 @@ export interface SiteContent {
   heroLogoObjectKey?: string;
   heroImageObjectKey?: string;
   cityImageObjectKey?: string;
+  footerDonationsLabel?: string;
+  footerCollaboratorsLabel?: string;
+  footerHomeLabel?: string;
+  footerGuideLabel?: string;
+  footerAdministrationLabel?: string;
+  footerHostsLabel?: string;
+  nearbyPlacesButtonLabel?: string;
 }
 
 export interface DonationContent {
