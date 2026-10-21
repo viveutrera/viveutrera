@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'vive-utrera-shell-v2';
+const CACHE_NAME = 'vive-utrera-shell-v3';
 const APP_SHELL = [
   '/',
   '/preview',
