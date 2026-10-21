@@ -1,17 +1,20 @@
-import { Facebook, Instagram } from 'lucide-react';
+import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { guideRepository } from '../data/repositories';
-import type { SiteContent } from '../domain/types';
+import type { ContactContent, SiteContent } from '../domain/types';
 import { defaultLanguageCode, getPersistedLanguage } from '../lib/language';
 import { publicPath } from '../lib/routing';
 
 export function PublicFooter() {
   const language = getPersistedLanguage() ?? defaultLanguageCode;
   const [content, setContent] = useState<SiteContent>();
+  const [contact, setContact] = useState<ContactContent>();
 
   useEffect(() => {
-    guideRepository.getSiteContent(language).then(setContent).catch(() => setContent(undefined));
+    Promise.all([guideRepository.getSiteContent(language), guideRepository.getContactContent()])
+      .then(([siteContent, contactContent]) => { setContent(siteContent); setContact(contactContent); })
+      .catch(() => { setContent(undefined); setContact(undefined); });
   }, [language]);
 
   return (
@@ -33,11 +36,18 @@ export function PublicFooter() {
           <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
           <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
         </a>
-        <div className="public-footer-social" aria-label="Redes sociales">
-          <span aria-label="Facebook" role="img"><Facebook size={20} /></span>
-          <span aria-label="Instagram" role="img"><Instagram size={20} /></span>
-          <span aria-label="X" role="img">X</span>
+        <div className="public-footer-contact">
+          {contact?.address ? <span><MapPin size={16} aria-hidden="true" />{contact.address}</span> : null}
+          {contact?.phone ? <a href={`tel:${contact.phone}`}><Phone size={16} aria-hidden="true" />{contact.phone}</a> : null}
+          {contact?.email ? <a href={`mailto:${contact.email}`}><Mail size={16} aria-hidden="true" />{contact.email}</a> : null}
         </div>
+        {contact && (contact.facebookUrl || contact.instagramUrl || contact.xUrl) ? (
+          <div className="public-footer-social" aria-label="Redes sociales">
+            {contact.facebookUrl ? <a href={contact.facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook"><Facebook size={20} /></a> : null}
+            {contact.instagramUrl ? <a href={contact.instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={20} /></a> : null}
+            {contact.xUrl ? <a href={contact.xUrl} target="_blank" rel="noreferrer" aria-label="X">X</a> : null}
+          </div>
+        ) : null}
       </div>
     </footer>
   );

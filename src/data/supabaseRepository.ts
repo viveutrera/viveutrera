@@ -1,6 +1,7 @@
 import type {
   Collaborator,
   CollaboratorsPageContent,
+  ContactContent,
   DonationContent,
   ElementType,
   GuideElement,
@@ -33,7 +34,17 @@ const adminElementSelect = 'id, slug, element_type_id, maps_url, latitude, longi
 const adminElementSelectLegacy = 'id, slug, element_type_id, maps_url, status, is_featured, sort_order, element_translations(id, name, short_text, long_text, is_published, language_id, languages(code))';
 const donationContentKey = 'donation_content';
 export const collaboratorsPageContentKey = 'collaborators_page_content';
+export const contactContentKey = 'contact_content';
 export { donationContentKey };
+
+export const defaultContactContent: ContactContent = {
+  facebookUrl: '',
+  instagramUrl: '',
+  xUrl: '',
+  email: '',
+  address: '',
+  phone: ''
+};
 
 export const defaultDonationContent: DonationContent = {
   title: 'Colabora con la asociacion',
@@ -696,6 +707,17 @@ export const supabaseGuideRepository = {
       .maybeSingle();
     if (error) throw error;
     return normalizeCollaboratorsPageTranslations(data?.value_json)[language] ?? defaultCollaboratorsPageContent;
+  },
+
+  async getContactContent(): Promise<ContactContent> {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('site_settings')
+      .select('value_json')
+      .eq('key', contactContentKey)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeContactContent(data?.value_json);
   }
 };
 
@@ -1703,8 +1725,25 @@ export function normalizeCollaboratorsPageTranslations(value: unknown): Localize
   return Object.fromEntries(languageCodes.map((code) => [code, normalizeCollaboratorsPageContent(translations?.[code] ?? legacy)])) as LocalizedCollaboratorsPageContent;
 }
 
+export function normalizeContactContent(value: unknown): ContactContent {
+  if (!value || typeof value !== 'object') return defaultContactContent;
+  const candidate = value as Partial<Record<keyof ContactContent, unknown>>;
+  return {
+    facebookUrl: optionalStringSetting(candidate.facebookUrl),
+    instagramUrl: optionalStringSetting(candidate.instagramUrl),
+    xUrl: optionalStringSetting(candidate.xUrl),
+    email: optionalStringSetting(candidate.email),
+    address: optionalStringSetting(candidate.address),
+    phone: optionalStringSetting(candidate.phone)
+  };
+}
+
 function stringSetting(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function optionalStringSetting(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 function normalizeBizumButtonLabel(value: unknown) {

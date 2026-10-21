@@ -168,6 +168,15 @@ export interface SiteContent {
   nearbyPlacesButtonLabel?: string;
 }
 
+export interface ContactContent {
+  facebookUrl: string;
+  instagramUrl: string;
+  xUrl: string;
+  email: string;
+  address: string;
+  phone: string;
+}
+
 export interface DonationContent {
   title: string;
   subtitle: string;

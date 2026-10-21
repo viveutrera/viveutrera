@@ -4,7 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { FormField, TextAreaField } from '../../components/ui/FormField';
 import { Modal } from '../../components/ui/Modal';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { adminRepository, canUseSupabase } from '../../data/supabaseRepository';
+import { adminRepository, canUseSupabase, contactContentKey, defaultContactContent, normalizeContactContent } from '../../data/supabaseRepository';
 import { prepareImageUpload } from '../../lib/imageCompression';
 import { mediaUrl } from '../../lib/media';
 import { publicPath } from '../../lib/routing';
@@ -55,7 +55,7 @@ interface MediaAssetRow {
 
 interface SiteSettingRow {
   key: string;
-  value_json: { media_asset_id?: string; object_key?: string } | null;
+  value_json: { media_asset_id?: string; object_key?: string; [key: string]: unknown } | null;
 }
 
 const emptyTranslation = (languageId: string): SettingsTranslation => ({
@@ -87,6 +87,7 @@ export function AdminSettings() {
   const [heroLogoMediaId, setHeroLogoMediaId] = useState('');
   const [heroMediaId, setHeroMediaId] = useState('');
   const [cityMediaId, setCityMediaId] = useState('');
+  const [contactForm, setContactForm] = useState(defaultContactContent);
   const [activeMediaSlot, setActiveMediaSlot] = useState<'hero_logo_media' | 'hero_media' | 'city_media'>();
   const [mediaUploadFile, setMediaUploadFile] = useState<File>();
   const [mediaFileInputKey, setMediaFileInputKey] = useState(0);
@@ -139,6 +140,7 @@ export function AdminSettings() {
         setHeroLogoMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_logo_media'), imageRows));
         setHeroMediaId(resolveMediaId(settings.find((setting) => setting.key === 'hero_media'), imageRows));
         setCityMediaId(resolveMediaId(settings.find((setting) => setting.key === 'city_media'), imageRows));
+        setContactForm(normalizeContactContent(settings.find((setting) => setting.key === contactContentKey)?.value_json));
       })
       .catch(() => setError('No se pudo cargar la configuracion.'))
       .finally(() => setLoading(false));
@@ -328,6 +330,20 @@ export function AdminSettings() {
     }
   }
 
+  async function saveContact(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await adminRepository.saveSiteSetting(contactContentKey, { ...contactForm });
+      setSuccessModal('Datos de contacto guardados correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No se pudieron guardar los datos de contacto.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (!canUseSupabase()) return <EmptyState title="Supabase no configurado" message="Configura las variables remotas antes de editar contenido real." />;
   if (isLoading) return <LoadingState />;
 
@@ -362,6 +378,20 @@ export function AdminSettings() {
               onDelete={() => deleteSettingMedia('city_media')}
             />
           </div>
+        </Card>
+        <Card>
+          <h2>Contacto</h2>
+          <form className="stack-form" onSubmit={saveContact}>
+            <div className="admin-form admin-form-wide">
+              <FormField label="Enlace Facebook" type="url" value={contactForm.facebookUrl} onChange={(event) => setContactForm((current) => ({ ...current, facebookUrl: event.target.value }))} placeholder="https://facebook.com/..." />
+              <FormField label="Enlace Instagram" type="url" value={contactForm.instagramUrl} onChange={(event) => setContactForm((current) => ({ ...current, instagramUrl: event.target.value }))} placeholder="https://instagram.com/..." />
+              <FormField label="Enlace X" type="url" value={contactForm.xUrl} onChange={(event) => setContactForm((current) => ({ ...current, xUrl: event.target.value }))} placeholder="https://x.com/..." />
+              <FormField label="Email contacto" type="email" value={contactForm.email} onChange={(event) => setContactForm((current) => ({ ...current, email: event.target.value }))} placeholder="contacto@ejemplo.es" />
+              <FormField label="Direccion" value={contactForm.address} onChange={(event) => setContactForm((current) => ({ ...current, address: event.target.value }))} />
+              <FormField label="Telefono" type="tel" value={contactForm.phone} onChange={(event) => setContactForm((current) => ({ ...current, phone: event.target.value }))} />
+            </div>
+            <div className="admin-title-row"><span /><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar contacto'}</Button></div>
+          </form>
         </Card>
         <Card>
           <h2>Textos por idioma</h2>

@@ -584,6 +584,48 @@ button, input { font: inherit; }
   line-height: 1;
 }
 
+.public-footer-social a {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  color: var(--color-white);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.public-footer-social a:hover {
+  color: var(--color-stone);
+  border-color: var(--color-stone);
+}
+
+.public-footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 16px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.85rem;
+}
+
+.public-footer-contact a,
+.public-footer-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-footer-contact a:hover {
+  color: var(--color-stone);
+}
+
 .project-page {
   position: relative;
   min-height: 100svh;
@@ -2703,6 +2745,14 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   .public-footer-social span {
     width: 34px;
     height: 34px;
+  }
+  .public-footer-social a {
+    width: 34px;
+    height: 34px;
+  }
+  .public-footer-contact {
+    justify-content: center;
+    text-align: center;
   }
   .project-page {
     padding-inline: 14px;
