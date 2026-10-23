@@ -32,14 +32,14 @@ export function PublicFooter() {
           <Link to="/host/login">{content?.footerHostsLabel ?? 'Anfitriones'}</Link>
         </div>
       </nav>
+      <div className="public-footer-install-section">
+        <PwaInstallButton language={language} />
+      </div>
       <div className="public-footer-inner">
-        <div className="public-footer-brand-group">
-          <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
-            <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
-            <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
-          </a>
-          <PwaInstallButton language={language} />
-        </div>
+        <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
+          <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
+          <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
+        </a>
         <div className="public-footer-contact">
           {contact?.address ? <span><MapPin size={16} aria-hidden="true" />{contact.address}</span> : null}
           {contact?.phone ? <a href={`tel:${contact.phone}`}><Phone size={16} aria-hidden="true" />{contact.phone}</a> : null}

@@ -537,11 +537,8 @@ button, input { font: inherit; }
   gap: 18px;
 }
 
-.public-footer-brand-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+.public-footer-install-section {
+  display: none;
 }
 
 .public-footer-install {
@@ -2779,12 +2776,14 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .public-footer-inner {
     min-height: 48px;
-    flex-wrap: wrap;
     gap: 12px;
   }
-  .public-footer-brand-group {
-    width: 100%;
-    align-items: center;
+  .public-footer-install-section:not(:empty) {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 16px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
   .public-footer-install { text-align: center; }
   .public-footer-brand {
@@ -2807,8 +2806,17 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
     height: 34px;
   }
   .public-footer-contact {
-    justify-content: center;
-    text-align: center;
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .public-footer-contact a {
+    min-width: 0;
+  }
+  .public-footer-contact svg {
+    flex-shrink: 0;
   }
   .project-page {
     padding-inline: 14px;
