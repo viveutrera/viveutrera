@@ -61,7 +61,7 @@ export function NearbyPlacesModal({
               const detailPath = `/guia/${language}/elemento/${element.slug}${selectedTypeId ? `?tipo=${encodeURIComponent(selectedTypeId)}` : ''}`;
               return (
                 <article className="nearby-result" key={element.id}>
-                  <Link to={detailPath} className="nearby-thumb" aria-label={translation.name}>
+                  <Link to={detailPath} className="nearby-thumb" aria-label={translation.name} onClick={onClose}>
                     {cover ? <img src={mediaUrl(mediaObjectKey(cover.mediaAsset, 'thumbnail'))} alt={cover.translations[contentLanguage].altText} loading="lazy" /> : <MapPin size={28} />}
                   </Link>
                   <div>
@@ -70,7 +70,7 @@ export function NearbyPlacesModal({
                       <span>{formatDistance(distanceMeters, language)}</span>
                     </div>
                     <small>{type?.name[language] ?? ''}</small>
-                    <ButtonLink to={detailPath} variant="secondary">{t(language, 'openPlace')}</ButtonLink>
+                    <ButtonLink to={detailPath} variant="primary" onClick={onClose}>{t(language, 'openPlace')}</ButtonLink>
                   </div>
                 </article>
               );
