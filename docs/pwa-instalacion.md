@@ -11,12 +11,24 @@ Los iconos Android siguen siendo PNG de 192 y 512 píxeles, con propósitos
 anteriores. El enlace `apple-touch-icon` y su PNG de 180 píxeles se conservan.
 
 El service worker precarga la entrada real y los tres iconos. La versión de caché
-es `vive-utrera-shell-v4`; el manifiesto se consulta primero por red para que sus
+es `vive-utrera-shell-v5`; el manifiesto se consulta primero por red para que sus
 cambios no queden bloqueados en caché. Las navegaciones con 404 o sin conexión
 usan la entrada precargada. Las respuestas de navegación autenticadas no se
 guardan en la caché pública.
 
 ## Publicación
+
+Para regenerar los tres iconos en Windows a partir del original cuadrado:
+
+```powershell
+./scripts/Update-PwaIcons.ps1 -SourcePath 'ruta/al/icono.jpg'
+```
+
+El script conserva el dibujo y añade un margen con el color de fondo del
+original. El margen está ajustado para el diseño de `Icono-Corregido22.jpg`;
+comprobar los recortes si cambia la composición. Al sustituirlos, renovar también
+la versión de sus URL en `index.html`, el manifiesto y `public/sw.js`, y aumentar
+la versión de caché del service worker.
 
 Publicar los cambios mediante el workflow habitual de GitHub Pages. Comprobar
 que `/preview/`, `/manifest.webmanifest` y los iconos devuelven HTTP 200.

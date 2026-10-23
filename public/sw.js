@@ -1,13 +1,13 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'vive-utrera-shell-v4';
+const CACHE_NAME = 'vive-utrera-shell-v5';
 const APP_SHELL = [
   '/',
   '/preview/',
   '/manifest.webmanifest',
-  '/brand/pwa-icon-192.png?v=20261023',
-  '/brand/pwa-icon-512.png?v=20261023',
-  '/brand/pwa-icon-180.png',
+  '/brand/pwa-icon-192.png?v=20261023-2',
+  '/brand/pwa-icon-512.png?v=20261023-2',
+  '/brand/pwa-icon-180.png?v=20261023-2',
   '/brand/logo-cascos.jpg'
 ];
 

@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 const source = readFileSync(new URL('../../public/sw.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(readFileSync(new URL('../../public/manifest.webmanifest', import.meta.url), 'utf8'));
+const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const appleIcon = html.match(/rel="apple-touch-icon"[^>]*href="([^"]+)"/)?.[1];
 
 function worker() {
   const handlers: Record<string, (event: unknown) => void> = {};
@@ -58,7 +60,8 @@ describe('PWA installation and updates', () => {
     await sw.lifecycle('install');
     expect(sw.entries.has(manifest.start_url)).toBe(true);
     for (const icon of manifest.icons) expect(sw.entries.has(icon.src)).toBe(true);
-    expect(sw.entries.has('/brand/pwa-icon-180.png')).toBe(true);
+    expect(appleIcon).toBeDefined();
+    expect(sw.entries.has(appleIcon!)).toBe(true);
     expect(sw.self.skipWaiting).toHaveBeenCalled();
   });
 
