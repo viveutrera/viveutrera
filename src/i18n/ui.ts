@@ -2,6 +2,16 @@ import type { LanguageCode } from '../domain/types';
 
 export const uiText: Record<LanguageCode, Record<string, string>> = {
   es: {
+    installApp: 'Instalar app',
+    installAppTitle: 'Instala Vive Utrera',
+    installAppIntro: 'Añade Vive Utrera a tu pantalla de inicio para abrir la guía como una aplicación.',
+    installIosShare: 'En Safari, pulsa el botón Compartir.',
+    installIosAdd: 'Selecciona «Añadir a la pantalla de inicio».',
+    installIosSafari: 'Si estás en otro navegador, abre esta página en Safari.',
+    installBrowserMenu: 'Abre el menú de tu navegador.',
+    installBrowserAdd: 'Selecciona «Instalar aplicación» o «Añadir a la pantalla de inicio».',
+    installBrowserHint: 'Si no aparece esa opción, prueba en Chrome o Edge. Puede que la aplicación ya esté instalada.',
+    installAppConfirm: 'Confirma con «Instalar» o «Añadir».',
     guide: 'Ver guia',
     all: 'Todos',
     search: 'Buscar lugares',
@@ -73,6 +83,16 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     returnToRoute: 'Volver a la ruta'
   },
   en: {
+    installApp: 'Install app',
+    installAppTitle: 'Install Vive Utrera',
+    installAppIntro: 'Add Vive Utrera to your home screen to open the guide as an app.',
+    installIosShare: 'In Safari, tap the Share button.',
+    installIosAdd: 'Select “Add to Home Screen”.',
+    installIosSafari: 'If you are using another browser, open this page in Safari.',
+    installBrowserMenu: 'Open your browser menu.',
+    installBrowserAdd: 'Select “Install app” or “Add to Home Screen”.',
+    installBrowserHint: 'If the option is missing, try Chrome or Edge. The app may already be installed.',
+    installAppConfirm: 'Confirm with “Install” or “Add”.',
     guide: 'View guide',
     all: 'All',
     search: 'Search places',
@@ -144,6 +164,16 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     returnToRoute: 'Return to route'
   },
   fr: {
+    installApp: 'Installer l’application',
+    installAppTitle: 'Installer Vive Utrera',
+    installAppIntro: 'Ajoutez Vive Utrera à votre écran d’accueil pour ouvrir le guide comme une application.',
+    installIosShare: 'Dans Safari, appuyez sur le bouton Partager.',
+    installIosAdd: 'Sélectionnez « Sur l’écran d’accueil ».',
+    installIosSafari: 'Si vous utilisez un autre navigateur, ouvrez cette page dans Safari.',
+    installBrowserMenu: 'Ouvrez le menu de votre navigateur.',
+    installBrowserAdd: 'Sélectionnez « Installer l’application » ou « Ajouter à l’écran d’accueil ».',
+    installBrowserHint: 'Si cette option est absente, essayez Chrome ou Edge. L’application est peut-être déjà installée.',
+    installAppConfirm: 'Confirmez avec « Installer » ou « Ajouter ».',
     guide: 'Voir le guide',
     all: 'Tous',
     search: 'Rechercher',
@@ -215,6 +245,16 @@ export const uiText: Record<LanguageCode, Record<string, string>> = {
     returnToRoute: 'Retour a l itineraire'
   },
   de: {
+    installApp: 'App installieren',
+    installAppTitle: 'Vive Utrera installieren',
+    installAppIntro: 'Füge Vive Utrera zum Startbildschirm hinzu, um den Guide als App zu öffnen.',
+    installIosShare: 'Tippe in Safari auf die Teilen-Taste.',
+    installIosAdd: 'Wähle „Zum Home-Bildschirm“.',
+    installIosSafari: 'Wenn du einen anderen Browser verwendest, öffne diese Seite in Safari.',
+    installBrowserMenu: 'Öffne das Menü deines Browsers.',
+    installBrowserAdd: 'Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.',
+    installBrowserHint: 'Falls die Option fehlt, versuche Chrome oder Edge. Die App ist möglicherweise bereits installiert.',
+    installAppConfirm: 'Bestätige mit „Installieren“ oder „Hinzufügen“.',
     guide: 'Guide ansehen',
     all: 'Alle',
     search: 'Orte suchen',

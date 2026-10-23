@@ -537,6 +537,56 @@ button, input { font: inherit; }
   gap: 18px;
 }
 
+.public-footer-brand-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.public-footer-install {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-white);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+.public-footer-install:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.public-footer-install:focus-visible {
+  outline: 2px solid var(--color-white);
+  outline-offset: 3px;
+}
+.public-footer-install:disabled { opacity: 0.65; cursor: wait; }
+
+.pwa-install-dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--color-ink);
+  background: var(--color-white);
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.3);
+  text-align: left;
+}
+.pwa-install-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+.pwa-install-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pwa-install-dialog-header h2 { margin: 0; font-size: 1.35rem; }
+.pwa-install-close { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; margin-top: -8px; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
+.pwa-install-close:hover { background: #f0f2f5; }
+.pwa-install-dialog li { margin-block: 10px; line-height: 1.5; }
+
 .public-footer-brand {
   display: inline-flex;
   align-items: center;
@@ -2729,8 +2779,14 @@ code { white-space: pre-wrap; word-break: break-word; color: var(--color-primary
   }
   .public-footer-inner {
     min-height: 48px;
+    flex-wrap: wrap;
     gap: 12px;
   }
+  .public-footer-brand-group {
+    width: 100%;
+    align-items: center;
+  }
+  .public-footer-install { text-align: center; }
   .public-footer-brand {
     gap: 8px;
     font-size: 0.9rem;

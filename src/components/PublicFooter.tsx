@@ -5,6 +5,7 @@ import { guideRepository } from '../data/repositories';
 import type { ContactContent, SiteContent } from '../domain/types';
 import { defaultLanguageCode, getPersistedLanguage } from '../lib/language';
 import { publicPath } from '../lib/routing';
+import { PwaInstallButton } from './PwaInstallButton';
 
 export function PublicFooter() {
   const language = getPersistedLanguage() ?? defaultLanguageCode;
@@ -32,10 +33,13 @@ export function PublicFooter() {
         </div>
       </nav>
       <div className="public-footer-inner">
-        <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
-          <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
-          <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
-        </a>
+        <div className="public-footer-brand-group">
+          <a className="public-footer-brand" href={publicPath('preview')} aria-label="Ir al inicio de la guia">
+            <img src={publicPath('brand/logo-monocromo-blanco.png')} alt="" aria-hidden="true" />
+            <span className="public-footer-wordmark"><span>VIVE</span><strong>UTRERA</strong></span>
+          </a>
+          <PwaInstallButton language={language} />
+        </div>
         <div className="public-footer-contact">
           {contact?.address ? <span><MapPin size={16} aria-hidden="true" />{contact.address}</span> : null}
           {contact?.phone ? <a href={`tel:${contact.phone}`}><Phone size={16} aria-hidden="true" />{contact.phone}</a> : null}
