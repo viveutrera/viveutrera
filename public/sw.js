@@ -1,12 +1,13 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'vive-utrera-shell-v3';
+const CACHE_NAME = 'vive-utrera-shell-v4';
 const APP_SHELL = [
   '/',
-  '/preview',
+  '/preview/',
   '/manifest.webmanifest',
-  '/brand/pwa-icon-192.png',
-  '/brand/pwa-icon-512.png',
+  '/brand/pwa-icon-192.png?v=20261023',
+  '/brand/pwa-icon-512.png?v=20261023',
+  '/brand/pwa-icon-180.png',
   '/brand/logo-cascos.jpg'
 ];
 
@@ -21,7 +22,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('vive-utrera-shell-') && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -37,11 +38,24 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          if (response.status === 404) return caches.match('/preview/').then((cached) => cached || response);
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/preview')))
+        .catch(() => caches.match('/preview/'))
+    );
+    return;
+  }
+
+  // Revalidate install metadata; cache-first would keep an old manifest indefinitely.
+  if (url.pathname === '/manifest.webmanifest') {
+    event.respondWith(
+      fetch(request).then(async (response) => {
+        if (response.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      }).catch(() => caches.match(request))
     );
     return;
   }
