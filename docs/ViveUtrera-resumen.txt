@@ -1,0 +1,113 @@
+VIVE UTRERA — RESUMEN FUNCIONAL Y TÉCNICO
+============================================================
+Fecha: 26 de octubre de 2026.
+Referencia: rama main del repositorio, aplicación revisada en commit 7882b30.
+Repositorio: https://github.com/viveutrera/viveutrera
+
+QUÉ ES
+------
+Vive Utrera es una guía audiovisual de Utrera para móvil y escritorio.
+Ofrece lugares de interés, fotografías, audioguías, mapas, información
+multidioma, rutas y tours dirigidos por anfitriones. Dispone de áreas
+privadas para administrar el contenido y gestionar las visitas.
+
+DIRECCIONES PRINCIPALES
+----------------------
+https://viveutrera.es/            Pantalla temporal «Próximamente».
+https://viveutrera.es/preview/    Portada completa e inicio de la PWA.
+/guia/:idioma                    Guía en español, inglés, francés o alemán.
+/admin/login                    Acceso de administradores.
+/host/login                     Acceso de anfitriones.
+
+El dominio con www redirige al dominio sin www conservando la ruta.
+
+DÓNDE ESTÁ CADA COSA
+-------------------
+GitHub: código e historial. Se trabaja sobre main.
+Cloudflare DNS/proxy: dominio, recepción del tráfico y redirección de www.
+Cloudflare Pages: alojamiento de la aplicación compilada.
+Cloudflare Worker: API para subir y borrar multimedia con autorización.
+Cloudflare R2: imágenes, audios y otros archivos en media.viveutrera.es.
+Supabase: base PostgreSQL, contenidos, usuarios, permisos y tours en tiempo real.
+Navegador: ejecuta la aplicación y conserva preferencias y parte de la caché.
+
+La publicación activa es Cloudflare Pages. El repositorio conserva archivos
+antiguos de GitHub Pages; su workflow principal está desactivado manualmente.
+Eso no significa que el dominio actual esté alojado en GitHub Pages.
+
+TECNOLOGÍA
+----------
+React 18, TypeScript, Vite, React Router, cliente JavaScript de Supabase,
+CSS propio e iconos Lucide. Pruebas con Vitest y Testing Library; revisión
+de código con ESLint. El Worker está escrito en JavaScript y los cambios
+de base de datos se guardan como migraciones SQL.
+
+Es una SPA: Cloudflare entrega archivos y el navegador construye las
+pantallas. No hay WordPress, PHP o un servidor Node generando cada página.
+El navegador obtiene los contenidos de Supabase y la multimedia de R2.
+
+FUNCIONES DESTACADAS
+-------------------
+- Búsqueda y filtros por tipo, fichas con textos, fotos, audios y enlaces.
+- Cuatro idiomas, traducciones configurables y preferencia local de idioma.
+- Lugares cercanos al visitante con permiso de geolocalización.
+- Lugares próximos a una ficha: hasta tres del mismo tipo, por distancia.
+  «Abrir ficha» es azul con texto blanco y cierra el modal al navegar.
+- Rutas individuales con una secuencia de lugares.
+- Tours: anfitrión comparte un código y envía fichas por Supabase Realtime;
+  los visitantes reciben avisos y eligen si abrirlos.
+- Administración de contenidos, multimedia, colaboradores y anfitriones.
+
+INSTALACIÓN COMO PWA
+-------------------
+Es la misma web instalada desde el navegador, no una aplicación distinta.
+En móvil hay un botón centrado entre los enlaces y la fila inferior del
+pie. En escritorio se oculta. Abre la instalación nativa si está disponible;
+en iPhone muestra instrucciones de Safari para añadirla a la pantalla inicial.
+
+Hay iconos de 192 y 512 píxeles para Android y de 180 para iPhone, manifiesto
+y service worker. Se utiliza caché local para algunos recursos; no existe
+una copia offline completa de todos los datos, fotografías y audios.
+
+PUBLICACIÓN Y MANTENIMIENTO
+--------------------------
+Subir código a main activa la integración de Cloudflare Pages. Vite genera
+dist, incluida una entrada real /preview/ con HTTP 200. Antes de publicar
+se realizan las comprobaciones adecuadas: lint, pruebas y compilación.
+
+Editar contenidos en administración modifica Supabase y no exige publicar
+de nuevo el frontend. Las imágenes y los audios se almacenan en R2.
+El Worker, las migraciones SQL y las Edge Functions se actualizan aparte.
+Cambiar variables del frontend requiere recompilar la aplicación.
+
+Las imágenes se preparan en el navegador: principal con objetivo de 300 KiB
+y miniatura de 50 KiB, con compresión WebP cuando corresponde. Los originales
+pequeños pueden conservarse. R2 guarda los archivos y Supabase sus metadatos.
+
+Los permisos reales dependen de Supabase RLS, Auth y validación de servidor.
+No deben incorporarse claves privadas al frontend. Git respalda el código,
+pero no sustituye copias de la base de datos y la multimedia.
+
+ESTADO Y DISPONIBILIDAD
+----------------------
+La última batería del código de referencia pasó lint, 23 pruebas y build.
+El 26/10/2026 respondían correctamente la portada, la guía, el acceso con
+www, el Worker, una consulta pública real de Supabase y una imagen de R2.
+
+Se comunicaron cortes las tardes de los domingos 18 y 25 de octubre desde
+varias redes, con un mensaje aproximado de tiempo de espera agotado.
+La causa sigue sin confirmar: no se dispone del error exacto ni de registros
+del intervalo. No se ha encontrado una tarea semanal que apague la web.
+
+Si el navegador no abre ni la portada, revisar dominio, DNS, HTTPS y
+Cloudflare. Si la aplicación aparece pero sigue cargando, revisar sus
+peticiones y Supabase. Si solo faltan imágenes o audio, revisar R2.
+La guía no fija un tiempo máximo propio uniforme de espera para sus datos.
+
+Conviene definir mediciones independientes de web, datos y multimedia,
+además de copias de seguridad y pruebas de recuperación. Esta revisión
+no ha configurado una monitorización ni confirma planes de pago, consumos,
+backups o todas las opciones privadas de las cuentas.
+
+El informe detallado amplía arquitectura, rutas, seguridad, PWA, variables,
+operación, limitaciones, diagnóstico de cortes y fuentes de referencia.

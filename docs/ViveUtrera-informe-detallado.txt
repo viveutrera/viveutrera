@@ -1,0 +1,782 @@
+VIVE UTRERA
+INFORME FUNCIONAL, TÉCNICO Y OPERATIVO DETALLADO
+============================================================
+
+Fecha de elaboración: 26 de octubre de 2026.
+Versión de la aplicación declarada en package.json: 0.1.0.
+Código de referencia: rama main, commit 7882b30.
+Repositorio: https://github.com/viveutrera/viveutrera
+Copia de trabajo: V:\Proyectos\Git\ViveUtrera
+
+Este documento describe el código revisado y las comprobaciones públicas
+realizadas el 26/10/2026. No sustituye los registros privados de Cloudflare o
+Supabase ni acredita sus planes contratados, consumos, copias o configuraciones
+que no se han podido consultar. Los datos de infraestructura pueden cambiar.
+No se incluyen contraseñas, claves privadas ni tokens de acceso.
+
+ÍNDICE
+------
+1. Finalidad y estado del proyecto
+2. Arquitectura y distribución de responsabilidades
+3. Dominios y direcciones de servicio
+4. Tecnologías y dependencias
+5. Funcionamiento de una visita
+6. Funcionalidades públicas y multidioma
+7. Lugares cercanos y lugares próximos
+8. Rutas y tours en tiempo real
+9. Administración y usuarios
+10. Base de datos, permisos y seguridad
+11. Multimedia y almacenamiento
+12. PWA, instalación, iconos y caché
+13. Despliegue y configuración
+14. Organización del código y pruebas
+15. SEO, accesibilidad y limitaciones
+16. Disponibilidad y cortes de acceso
+17. Operación, mantenimiento y recuperación
+18. Información pendiente de confirmar
+19. Fuentes y archivos de referencia
+
+
+1. FINALIDAD Y ESTADO DEL PROYECTO
+============================================================
+
+Vive Utrera es una guía audiovisual pública de Utrera, pensada especialmente
+para visitantes que consultan el contenido desde el móvil. Combina fichas de
+lugares de interés, fotografías, audioguías, mapas, recorridos y visitas
+dirigidas por anfitriones.
+
+Incluye una web pública, un área privada de administración y un área de
+anfitriones. El visitante puede consultar la guía sin registrarse. El acceso
+a funciones de gestión requiere autenticación y permisos.
+
+La dirección raíz https://viveutrera.es/ muestra actualmente una pantalla
+temporal con la marca y el texto «Próximamente». La portada completa de la
+guía está en https://viveutrera.es/preview/.
+
+El proyecto se publica como aplicación web estática. Sus datos y operaciones
+privadas se resuelven mediante servicios externos. También puede instalarse
+como PWA, utilizando la misma aplicación y los mismos contenidos.
+
+
+2. ARQUITECTURA Y DISTRIBUCIÓN DE RESPONSABILIDADES
+============================================================
+
+El sistema se reparte entre varios servicios:
+
+GitHub
+  Guarda el código, el historial y los archivos de configuración. La rama
+  utilizada para publicar es main. No es el alojamiento activo del dominio
+  principal, aunque conserva recursos de una etapa anterior con GitHub Pages.
+
+Cloudflare DNS y proxy
+  Gestiona la resolución de los dominios y recibe las conexiones a través de
+  su red. La configuración de redirección de www pertenece a esta capa.
+  En las consultas realizadas, los dominios principal, www y media resuelven
+  hacia direcciones de Cloudflare; principal y www también tienen IPv6.
+
+Cloudflare Pages
+  Aloja la aplicación compilada: HTML, JavaScript, CSS, iconos y otros
+  recursos estáticos. La integración con GitHub publica los cambios de main.
+  El proyecto identificado es viveutrera.
+
+Cloudflare Workers
+  Ejecuta la API de gestión de multimedia viveutrera-media-api. Valida
+  usuarios administrativos y realiza subidas y borrados en R2. No genera
+  normalmente las páginas públicas ni sirve como intermediario de todas
+  las consultas de la guía.
+
+Cloudflare R2
+  Almacena los archivos multimedia. El bucket configurado en el repositorio
+  se llama viveutrera-media y se conecta al Worker mediante MEDIA_BUCKET.
+  Los archivos públicos se sirven desde media.viveutrera.es.
+
+Supabase
+  Proporciona PostgreSQL, API de datos, autenticación, permisos RLS,
+  funciones de base de datos y Realtime para tours. El repositorio también
+  contiene la Edge Function administrativa admin-hosts.
+
+Navegador del visitante
+  Ejecuta React, presenta las pantallas, consulta los datos y reproduce la
+  multimedia. Conserva preferencias y sesiones locales. La PWA añade un
+  manifiesto y un service worker que se ejecuta en el propio navegador.
+
+No hay un servidor PHP, WordPress o una aplicación Node tradicional
+generando cada página. Node y npm se utilizan para preparar la compilación;
+las operaciones de servidor se reparten entre Supabase y el Worker.
+
+
+3. DOMINIOS Y DIRECCIONES DE SERVICIO
+============================================================
+
+Dominio principal:
+  https://viveutrera.es/
+
+Portada completa de la guía e inicio de la PWA:
+  https://viveutrera.es/preview/
+
+Dominio alternativo:
+  https://www.viveutrera.es/
+  Redirige al dominio sin www conservando la ruta. También se comprobó
+  previamente que conserva los parámetros de consulta.
+
+Multimedia pública:
+  https://media.viveutrera.es/
+  La raíz puede devolver 404 porque no contiene una página de inicio ni un
+  listado público. Ese 404 no significa que fallen los archivos del bucket.
+  Se ha comprobado una imagen concreta con respuesta 200.
+
+API de multimedia:
+  https://viveutrera-media-api.viveutrera.workers.dev
+  GET /health: comprobación básica de que el Worker responde.
+  POST /upload: subida autenticada.
+  POST /delete: borrado autenticado.
+
+Proyecto Supabase utilizado por el frontend publicado:
+  https://oartoepbgrxzyjmolgjf.supabase.co
+
+Dirección de la versión de Pages comprobada:
+  https://c67a1f5d.viveutrera.pages.dev/preview/
+  Es una URL específica de un despliegue. Puede servir para comparar el
+  acceso al dominio personalizado con el acceso directo a esa versión de
+  Pages. No sustituye el dominio principal ni se debe tomar como dirección
+  permanente de las futuras publicaciones.
+
+La regla indicada para redirigir www en Cloudflare utiliza:
+  Patrón: http*://www.viveutrera.es/*
+  Destino: https://viveutrera.es/${2}
+  Estado: 301.
+  Conservación de la cadena de consulta: activada.
+
+Las comprobaciones directas con HTTPS fueron satisfactorias. En una prueba
+anterior desde esta conexión, HTTP fue bloqueado por FortiGuard antes de
+llegar a la web; ese bloqueo no permitía juzgar la respuesta HTTP del sitio.
+
+
+4. TECNOLOGÍAS Y DEPENDENCIAS
+============================================================
+
+Lenguajes:
+  TypeScript y TSX para la aplicación; JavaScript para el Worker y el
+  service worker; CSS para el diseño; SQL para la base de datos; PowerShell
+  para la utilidad de generación de iconos.
+
+Dependencias principales declaradas en package.json:
+  React y React DOM: ^18.3.1.
+  React Router DOM: ^7.18.2.
+  Cliente JavaScript de Supabase: ^2.55.0.
+  Lucide React: ^0.468.0, para iconos de interfaz.
+
+Herramientas de desarrollo declaradas:
+  Vite: ^6.4.3.
+  TypeScript: ^5.5.3.
+  Vitest: ^3.2.7.
+  ESLint: ^9.9.0.
+  Testing Library React: ^16.0.1.
+  jsdom: ^24.1.1.
+
+Estas cifras son rangos declarados, no una afirmación de que sean las
+últimas versiones disponibles. package-lock.json fija el árbol de
+dependencias que instala npm ci.
+
+El diseño utiliza CSS propio y componentes reutilizables de botones,
+formularios, tarjetas, estados de carga, galerías y modales. Los colores
+de marca incluyen azul #0D2B4D, rojo #B22226, piedra #D8C7A6 y blanco.
+
+
+5. FUNCIONAMIENTO DE UNA VISITA
+============================================================
+
+1. El navegador resuelve el dominio mediante DNS y establece HTTPS.
+2. Si se utiliza www, se redirige al dominio principal.
+3. Cloudflare Pages entrega el HTML y los recursos compilados.
+4. React se ejecuta en el navegador y React Router interpreta la dirección.
+5. En la guía y las fichas, el navegador solicita datos a Supabase.
+6. Las URL de imágenes y audios se construyen con la base de multimedia y
+   el object_key guardado en los metadatos.
+7. El navegador descarga esos archivos directamente desde el dominio de R2.
+8. Si existe una sesión de tour, se utiliza Supabase Realtime para recibir
+   indicaciones y gestionar presencia.
+
+Las transiciones internas se realizan normalmente sin recargar el documento
+completo. Abrir una URL directamente exige que el alojamiento entregue una
+entrada válida para la aplicación. Para /preview/ se genera expresamente
+dist/preview/index.html, de modo que la PWA tenga una entrada con HTTP 200.
+
+La pantalla temporal de la raíz no necesita datos de Supabase para mostrar
+su marca y texto. Esta diferencia es útil para diagnosticar una incidencia:
+si tampoco se puede abrir la raíz y el navegador muestra un error de
+conexión, no basta atribuirlo a la base de datos.
+
+
+6. FUNCIONALIDADES PÚBLICAS Y MULTIDIOMA
+============================================================
+
+Rutas principales:
+  /                         Pantalla temporal «Próximamente».
+  /preview/                 Portada completa de la guía.
+  /guia/:idioma             Listado de lugares.
+  /guia/:idioma/elemento/:slug
+                            Ficha de un lugar.
+  /rutas y /rutas/:idioma    Recorridos preparados.
+  /tours y /tours/:idioma    Acceso de visitantes a tours.
+  /colaboradores            Página de colaboradores.
+  /donativos                Información configurable para colaborar.
+  /404                      Pantalla de recurso no encontrado.
+
+La portada incorpora marca, textos e imágenes configurables, elección de
+idioma, acceso a la guía, rutas y tours, y secciones de colaboradores.
+
+La guía permite buscar, filtrar por tipo y cargar resultados por páginas.
+Presenta tarjetas con imagen, nombre y descripción. Las fichas incluyen
+texto breve y ampliado, galería, audios por idioma, enlaces y ubicación.
+Cuando el navegador lo permite, hay funciones de compartir la ficha.
+
+La página de donativos es contenido configurable. Su existencia no acredita
+por sí sola una pasarela de pago integrada o una conciliación automática.
+
+Los idiomas admitidos explícitamente por el código son español, inglés,
+francés y alemán: es, en, fr y de. Aunque la administración gestiona los
+registros de idiomas, incorporar un código adicional requiere revisar
+también los tipos y la lógica del frontend, no solo añadir una fila SQL.
+
+Los textos de interfaz se encuentran en src/i18n/ui.ts. Los contenidos
+editoriales y numerosas etiquetas configurables proceden de Supabase.
+La preferencia de idioma se guarda en localStorage. Hay mecanismos de
+selección de idioma activo y alternativa al español cuando corresponde.
+
+Pie de página actual:
+  En escritorio mantiene marca, enlaces y datos de contacto, sin mostrar
+  el botón de instalación PWA. En móvil, el botón se centra en una franja
+  intermedia entre los enlaces y la fila inferior; esta conserva el logo
+  a la izquierda y el contacto a la derecha. Los datos visibles dependen
+  de lo configurado: correo, teléfono, dirección y redes sociales.
+  El enlace de correo usa mailto; no es un servidor de correo del proyecto.
+
+
+7. LUGARES CERCANOS Y LUGARES PRÓXIMOS
+============================================================
+
+Se distinguen dos orígenes para el cálculo de distancia:
+
+Desde la guía, cerca del visitante:
+  Se pide permiso de geolocalización al navegador. Las distancias se
+  calculan localmente con las coordenadas disponibles. Este flujo no envía
+  la posición del visitante a Supabase para realizar el cálculo.
+
+Desde una ficha, lugares próximos al elemento:
+  Se utilizan las coordenadas del lugar que se está visualizando. Se
+  excluye ese elemento y se seleccionan hasta tres lugares del mismo tipo,
+  ordenados por distancia. No es necesario localizar al visitante.
+
+Se utiliza la fórmula de Haversine sobre latitud y longitud. La distancia
+es una aproximación geográfica, no una ruta a pie ni tiempo de recorrido.
+
+El modal muestra nombre, imagen, tipo y distancia. «Abrir ficha» tiene
+estilo azul con texto blanco. Al pulsarlo, o al tocar la imagen del lugar,
+se cierra el modal y se navega a la ficha conservando el filtro de tipo.
+Esta corrección corresponde al commit 7882b30.
+
+
+8. RUTAS Y TOURS EN TIEMPO REAL
+============================================================
+
+Una ruta es un conjunto ordenado de lugares preparado desde administración.
+El visitante puede iniciarla y recorrer sus elementos con navegación
+anterior/siguiente. El identificador de ruta y la posición se conservan en
+localStorage. No debe confundirse este recorrido individual con un tour.
+
+Un tour es una visita dirigida por un anfitrión:
+  - El anfitrión inicia sesión y crea o gestiona sus tours.
+  - Se comparte un código con cinco números y una letra.
+  - El visitante se une introduciendo el código, sin una cuenta propia.
+  - Las comprobaciones de estado y caducidad se realizan en la base de datos.
+  - La migración inicial define una caducidad por defecto de 24 horas.
+  - La sesión del participante se conserva en sessionStorage e incluye
+    el identificador, código, token local y fecha de caducidad.
+
+Cuando el anfitrión envía una ficha, se registra un evento y se transmite
+por Supabase Realtime. Los canales usan el formato privado tour:{uuid}.
+Broadcast transmite las indicaciones y Presence informa de conexiones.
+El visitante recibe un aviso y decide si abre la ficha; no se le cambia de
+página automáticamente ni se pretende interrumpir su reproducción de audio.
+
+Existen políticas de autorización para canales y eventos. La aplicación
+incluye recuperación de la última indicación. Las notas del proyecto aún
+identifican como mejoras el aviso explícito de tour finalizado y un
+historial más completo; no deben darse por terminadas por aparecer en una
+lista de objetivos.
+
+
+9. ADMINISTRACIÓN Y USUARIOS
+============================================================
+
+Administración:
+  /admin/login: acceso.
+  /admin: redirige a configuración.
+  /admin/panel: panel.
+  /admin/configuracion: textos, imágenes y contacto del sitio.
+  /admin/donativos: contenido de donativos.
+  /admin/idiomas: idiomas y traducciones.
+  /admin/tipos: clasificación de elementos.
+  /admin/elementos: fichas y sus recursos.
+  /admin/rutas: recorridos.
+  /admin/multimedia: biblioteca y metadatos.
+  /admin/colaboradores: colaboradores.
+  /admin/colaboradores-pagina: contenido de su página pública.
+  /admin/anfitriones: gestión de usuarios anfitriones.
+  Varias secciones disponen de rutas de edición con /:id.
+
+Anfitriones:
+  /host/login: acceso y flujos de recuperación de contraseña.
+  /host: gestión de tours, con acceso para host o admin.
+
+Los permisos diferencian administrador, anfitrión y visitante. El frontend
+comprueba la sesión y el rol para presentar las áreas adecuadas. La
+seguridad de los datos debe seguir descansando en las políticas del backend,
+no solo en ocultar botones o proteger rutas visuales.
+
+Los administradores gestionan fichas, publicaciones, traducciones, imágenes,
+audios, enlaces, colaboradores y configuración. Los anfitriones dirigen
+tours conforme a sus permisos. Supabase Auth gestiona las identidades.
+
+La función admin-hosts utiliza privilegios de servidor para crear o eliminar
+usuarios anfitriones y comprueba previamente al administrador que la invoca.
+Su código está en supabase/functions/admin-hosts/index.ts; la revisión del
+repositorio no sustituye comprobar su versión desplegada en el panel.
+
+
+10. BASE DE DATOS, PERMISOS Y SEGURIDAD
+============================================================
+
+Los datos se almacenan en PostgreSQL gestionado por Supabase. El esquema y
+sus cambios se versionan en supabase/migrations. Hay un seed inicial en
+supabase/seeds, que no debe ejecutarse a ciegas sobre producción.
+
+Grupos de tablas:
+  Configuración: site_settings, languages, site_translations.
+  Clasificación: element_types, element_type_translations.
+  Lugares: elements, element_translations.
+  Recursos: media_assets, media_variants, element_images,
+    element_image_translations, element_audios, element_links.
+  Colaboradores: collaborators, collaborator_translations.
+  Usuarios: admin_profiles y profiles, además de las identidades de Auth.
+  Rutas: routes, route_translations, route_elements.
+  Tours: tours, tour_events.
+
+Las migraciones incluyen claves foráneas, índices, restricciones y políticas
+RLS, además de funciones como is_admin(), is_host() y operaciones de tours.
+La lectura pública se restringe según publicación, actividad y relaciones.
+Las escrituras exigen permisos. El detalle exacto debe comprobarse aplicando
+y probando todas las migraciones, no suponiendo que están desplegadas por
+estar presentes en GitHub.
+
+La clave anónima de Supabase del frontend es pública por diseño; no concede
+por sí sola privilegios administrativos. Las restricciones reales dependen
+de RLS, funciones y permisos. Una service role key, credenciales de R2 o
+tokens administrativos nunca deben incorporarse a variables VITE_*.
+
+El Worker valida el token con Supabase Auth y consulta admin_profiles antes
+de operar en R2. Usa el binding nativo del bucket: el diseño actual no
+requiere claves S3 de R2 dentro del navegador.
+
+Hay validaciones de campos, slugs y URL en la aplicación, junto con
+restricciones SQL. Las validaciones del navegador son ayuda de uso; no
+sustituyen las del servidor. No se ha realizado una auditoría de seguridad
+exhaustiva de toda la infraestructura ni de sus configuraciones privadas.
+
+
+11. MULTIMEDIA Y ALMACENAMIENTO
+============================================================
+
+Los binarios y los metadatos se guardan en servicios distintos:
+  R2: archivo de imagen, miniatura, audio u otro recurso.
+  Supabase: object_key, tipo MIME, nombre, tamaño, dimensiones, duración
+  cuando corresponde y asociaciones con las fichas u otros contenidos.
+
+Flujo de subida:
+1. El administrador selecciona un archivo.
+2. El navegador valida y, para imágenes, prepara las versiones necesarias.
+3. El frontend envía multipart/form-data al Worker con el token de sesión.
+4. El Worker comprueba al usuario y el destino permitido.
+5. Se escribe en R2 y se devuelve la clave y los metadatos.
+6. La aplicación registra o asocia esos metadatos en Supabase.
+
+La optimización de imágenes se hace en el navegador, no en el Worker:
+  - Objetivo de principal: 300 x 1024 bytes; dimensión máxima de partida 1800.
+  - Objetivo de miniatura: 50 x 1024 bytes; dimensión máxima de partida 520.
+  - Cuando se comprime se genera WebP y se ajustan calidad y resolución.
+  - Si el original principal ya es pequeño puede conservarse sin conversión.
+  - Si la optimización empeora el peso, se puede conservar el original.
+  - Se informa cuando no se alcanza el objetivo sin degradar demasiado.
+
+El límite del Worker es 50 MiB por archivo y sus destinos admitidos son
+site, element-image, element-audio y collaborator. Ese límite no garantiza
+que cualquier formato sea adecuado o que no existan límites adicionales.
+El Worker no realiza un análisis profundo del contenido de cada fichero.
+
+El borrado coordina operaciones en R2 y Supabase, pero no existe una
+transacción única entre ambos proveedores. Un fallo a mitad puede dejar
+archivos huérfanos o referencias sin archivo. Una auditoría periódica de
+consistencia es una mejora pendiente.
+
+El código revisado no acredita un proceso completo de transcodificación
+automática de audios. No debe confundirse su validación con convertirlos a
+un bitrate o formato homogéneo mediante un servicio de procesamiento.
+
+
+12. PWA, INSTALACIÓN, ICONOS Y CACHÉ
+============================================================
+
+La PWA utiliza public/manifest.webmanifest:
+  Nombre: Vive Utrera.
+  Identidad: /.
+  Inicio: /preview/.
+  Ámbito: /.
+  Presentación: standalone.
+  Orientación solicitada: portrait.
+  Tema: #0D2B4D; fondo: blanco.
+
+Iconos actuales:
+  public/brand/pwa-icon-192.png: Android, 192 x 192.
+  public/brand/pwa-icon-512.png: Android, 512 x 512.
+  public/brand/pwa-icon-180.png: iPhone, 180 x 180, apple-touch-icon.
+
+Los dos iconos del manifiesto declaran purpose «any maskable». Se han
+generado desde Icono-Corregido22.jpg conservando el dibujo y añadiendo margen
+para recortes. scripts/Update-PwaIcons.ps1 permite regenerarlos en Windows
+desde una imagen cuadrada. Un diseño diferente requiere revisar su margen.
+
+Las referencias actuales incluyen ?v=20261023-2. La versión de caché del
+service worker es vive-utrera-shell-v5. Al cambiar los iconos deben renovarse
+las URL del manifiesto, index.html y sw.js, y la versión de caché.
+
+El botón de instalación se muestra solo en móvil, entre enlaces y zona
+inferior del pie. La aplicación captura beforeinstallprompt desde el inicio
+para no perder la oferta mientras carga datos. Al pulsar el botón utiliza
+el diálogo nativo si está disponible; si no, presenta instrucciones. En
+iPhone indica el flujo de Safari: Compartir y añadir a la pantalla de inicio.
+La detección de modo instalado y appinstalled permite ocultar el acceso
+cuando corresponde; no equivale a consultar un inventario universal de
+aplicaciones instaladas en todos los navegadores del dispositivo.
+
+El service worker se registra en producción y aplica estas estrategias:
+  - Precarga la raíz, /preview/, el manifiesto, tres iconos y logo-cascos.jpg.
+  - Navegación: intenta red; ante 404 o fallo de conexión usa la entrada
+    precargada cuando está disponible. No guarda cada navegación privada.
+  - Manifiesto: primero red, con copia en caché para uso sin conexión.
+  - Otras solicitudes GET del mismo origen: primero caché; almacena las
+    respuestas 200. No fija aquí una caducidad ni un límite explícito.
+  - Las solicitudes de otros orígenes, como Supabase y media, no se
+    incorporan mediante ese manejador a esta caché del service worker.
+  - Al activarse elimina versiones anteriores con el prefijo de esta app.
+
+La precarga no enumera todos los bundles JavaScript y CSS. La disponibilidad
+sin conexión depende de lo que ya se haya almacenado y del navegador. No hay
+una copia offline completa de todos los contenidos y archivos de la guía.
+
+Una instalación antigua puede conservar un icono anterior. Para comprobar
+de inmediato un cambio de icono, eliminar el acceso o instalación anterior,
+abrir la versión actual y volver a instalar. No hace falta cambiar DNS ni
+reglas de Cloudflare por sustituir una imagen del icono.
+
+
+13. DESPLIEGUE Y CONFIGURACIÓN
+============================================================
+
+Frontend: Cloudflare Pages
+  El push a main activa su integración con GitHub. La preparación de Vite
+  produce dist; la configuración genera también preview/index.html. El
+  resultado se publica con un nombre de recursos que cambia con su contenido.
+  Los checks públicos de las últimas correcciones confirmaron éxito.
+  El comando exacto, versión de Node y variables efectivas de Pages deben
+  consultarse en su panel; no se han inventariado todos esos ajustes privados.
+
+Worker: Cloudflare Workers
+  Configuración en worker/wrangler.jsonc. Despliegue independiente:
+    npm run worker:deploy
+  Invoca Wrangler con esa configuración. Un push del frontend no garantiza
+  que se haya actualizado el Worker.
+
+Base de datos: Supabase
+  Los cambios SQL requieren aplicar las migraciones por el procedimiento
+  autorizado en ese proyecto. Publicar Pages no cambia automáticamente SQL.
+  No ejecutar de nuevo migraciones o seeds sin revisar su estado y efectos.
+
+Edge Functions: Supabase
+  admin-hosts tiene despliegue independiente. Requiere configuración privada
+  de servidor y validación de permisos. La clave service role se utiliza
+  únicamente en ese entorno de confianza.
+
+DNS y redirecciones
+  Se gestionan en Cloudflare. Editar el código de React no corrige por sí
+  solo un dominio mal apuntado o una regla que se ejecuta antes de cargarlo.
+
+Variables que realmente consume el frontend revisado:
+  VITE_SUPABASE_URL: dirección del proyecto Supabase.
+  VITE_SUPABASE_ANON_KEY: clave pública de cliente.
+  VITE_PUBLIC_MEDIA_BASE_URL: base de las URL de multimedia.
+  VITE_UPLOAD_API_URL: API del Worker para subir y borrar.
+  VITE_SITE_URL: dominio utilizado para construir URL de SEO.
+  VITE_ASSET_BASE_PATH: base opcional de Vite; por defecto /.
+
+Estas variables se incorporan durante la compilación. Cambiarlas en el
+panel exige una nueva compilación/publicación para que cambie el frontend.
+
+VITE_BASE_PATH, VITE_CUSTOM_DOMAIN y VITE_R2_WORKER_URL aparecen en algunas
+notas antiguas, pero no deben confundirse con variables que controlen el
+código actual por el mero hecho de existir en la documentación. El helper
+de rutas conserva una detección heredada de /viveutrera; la PWA actual usa
+rutas absolutas en raíz. No se garantiza su traslado a una subcarpeta sin
+adaptar manifiesto, registro del service worker y referencias.
+
+Worker: SUPABASE_URL, SUPABASE_ANON_KEY, PUBLIC_MEDIA_BASE_URL,
+ALLOWED_ORIGINS y el binding MEDIA_BUCKET. Edge Function: SUPABASE_URL,
+SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY en el entorno privado.
+
+Situación heredada de GitHub Pages:
+  Existe .github/workflows/pages.yml, pero el workflow «Deploy GitHub Pages»
+  figuraba disabled_manually el 26/10/2026. El repositorio mantiene una rama
+  gh-pages antigua y un workflow dinámico pages-build-deployment activo.
+  Su presencia no convierte GitHub Pages en el alojamiento activo del
+  dominio principal. Conviene revisar esa herencia antes de reactivarla.
+
+
+14. ORGANIZACIÓN DEL CÓDIGO Y PRUEBAS
+============================================================
+
+src/main.tsx y src/App.tsx: arranque, instalación y rutas.
+src/pages/public: pantallas públicas.
+src/pages/admin: administración.
+src/pages/host: área de anfitriones.
+src/components: componentes de interfaz y modales.
+src/components/ui: botones, tarjetas, campos y otros elementos compartidos.
+src/data: contratos de acceso, implementación Supabase y datos simulados.
+src/domain/types.ts: modelos de datos TypeScript.
+src/routes: contexto de autenticación y protección de acceso.
+src/lib: geolocalización, multimedia, sesiones, SEO, instalación y utilidades.
+src/i18n: textos de interfaz y pruebas.
+src/styles/global.css: estilos y adaptación a distintos anchos.
+public: iconos, manifiesto, service worker y marca.
+supabase/migrations y supabase/seeds: esquema y datos iniciales.
+supabase/functions: funciones de servidor de Supabase.
+worker: API de multimedia y configuración de Cloudflare.
+scripts: utilidad para generar los iconos.
+docs: documentación funcional, operativa y estos informes.
+
+Comandos habituales, desde la raíz:
+  npm ci                 Instala las dependencias del lockfile.
+  npm run dev            Inicia Vite para desarrollo.
+  npm run lint           Revisión estática con ESLint.
+  npm test               Ejecuta Vitest.
+  npm run build          TypeScript y compilación de producción.
+  npm run preview        Sirve localmente la compilación con Vite.
+  npm run worker:deploy  Publica por separado la API de multimedia.
+
+Última batería ejecutada para el commit de referencia:
+  23 pruebas correctas en 9 archivos, lint y compilación correctos.
+  Se cubren utilidades de idioma, filtros, distancias, sesiones, Realtime,
+  caché PWA, acceso de instalación y cierre del modal de lugares próximos.
+
+No constituye una prueba integral de todas las pantallas, roles, políticas
+RLS, errores de proveedor o dispositivos físicos. Las pruebas de Realtime
+actuales no sustituyen una visita con varios participantes reales.
+
+
+15. SEO, ACCESIBILIDAD Y LIMITACIONES
+============================================================
+
+SEO:
+  El navegador actualiza título, descripción, canonical, Open Graph,
+  Twitter Cards, idioma, hreflang y JSON-LD. Son cambios en cliente.
+  No existe un prerender completo de cada ficha en el código revisado.
+  Buscadores y servicios de vista previa pueden no interpretar igual una
+  SPA; hay que validar cómo ven las páginas y sus metadatos realmente.
+  VITE_SITE_URL debe apuntar al dominio correcto. Algunas alternativas
+  de configuración aún remiten al antiguo dominio de GitHub Pages.
+
+Accesibilidad:
+  Se utilizan etiquetas, nombres accesibles y controles nativos en varias
+  partes. El diálogo de ayuda PWA utiliza dialog nativo. Otros modales son
+  componentes propios, por lo que no deben darse por resueltos de forma
+  uniforme el foco, el bloqueo de scroll o el cierre con teclado.
+  No se declara conformidad completa WCAG sin una auditoría específica.
+
+Datos simulados:
+  Los repositorios públicos pueden recurrir a mocks cuando Supabase no
+  está configurado o una consulta falla. Eso permite desarrollo y cierta
+  continuidad, pero puede mostrar contenido de ejemplo en lugar del real.
+  No debe confundirse con una copia de seguridad actual de producción.
+  El modo de desarrollo incluye comportamientos de autenticación simulada;
+  no se debe publicar accidentalmente una compilación sin la configuración
+  real esperando que conserve todas las garantías del backend.
+
+Otras mejoras identificadas:
+  Límites de espera y mensajes de recuperación para consultas de datos;
+  pruebas de permisos y tours; auditoría de archivos huérfanos; estrategia
+  de caché con control de tamaño; revisión de audio; observabilidad y SEO.
+  La búsqueda de usuarios en admin-hosts usa listUsers sin paginar, por lo
+  que una cuenta fuera de la primera página puede no detectarse al invitar.
+
+
+16. DISPONIBILIDAD Y CORTES DE ACCESO
+============================================================
+
+Incidencias comunicadas por el propietario:
+  Domingos 18 y 25 de octubre de 2026, por la tarde. Durante varias horas
+  no se pudo acceder; volvió a funcionar sin una intervención identificada.
+  Se probó desde Wi-Fi de distintas casas y mediante datos móviles.
+  El mensaje recordado era aproximadamente «tiempo de espera agotado».
+  No se dispone del código exacto, captura ni intervalos precisos.
+
+Comprobaciones públicas realizadas el 26/10/2026:
+  Raíz y /preview/: HTTP 200.
+  www/preview/: acceso con redirección al dominio principal y HTTP 200 final.
+  Dirección específica del despliegue en pages.dev: HTTP 200.
+  Worker /health: HTTP 200.
+  API de autenticación Supabase con clave pública: HTTP 200.
+  Consulta pública de idiomas: HTTP 200.
+  Consulta pública de metadatos e imagen concreta de R2: HTTP 200.
+
+Estas comprobaciones acreditan respuesta en ese momento, no disponibilidad
+continua de todas las funciones ni el origen de los fallos anteriores.
+
+No se ha identificado en el repositorio una tarea semanal que apague la
+web los domingos. Los historiales públicos consultados no han permitido
+relacionar claramente ambos cortes con una incidencia concreta de los
+proveedores. La ausencia de coincidencia no descarta un fallo específico
+del proyecto, del dominio o de una ruta regional de acceso.
+
+Diagnóstico según síntoma:
+  A. Error del navegador antes de mostrar la web:
+     Revisar DNS, HTTPS, conectividad, Cloudflare y dominio personalizado.
+     Que falle también la raíz es una pista importante contra atribuirlo
+     exclusivamente a una consulta de contenidos de Supabase.
+  B. La aplicación aparece, pero sigue cargando:
+     Revisar JavaScript, peticiones de datos, errores de Supabase y tiempos
+     de espera. La guía espera datos y no fija un límite propio uniforme
+     para sus consultas. El fallback se ejecuta tras un error, no mientras
+     una petición sigue pendiente.
+  C. Texto correcto, pero faltan fotos o audio:
+     Revisar media.viveutrera.es, el objeto concreto, R2 y sus asociaciones.
+  D. Solo fallan subidas o borrados:
+     Revisar Worker, sesión, autorización y binding de R2.
+  E. Solo falla la PWA o un dispositivo:
+     Comparar instalación, caché y versión con una sesión nueva del navegador.
+
+Límites y pausas:
+  La documentación de Pages describe las solicitudes estáticas como
+  gratuitas e ilimitadas. Los límites de Workers/Functions son distintos;
+  no se puede concluir que se agotaron por el mero hecho de una caída.
+  Supabase Free puede pausar proyectos con poca actividad en siete días.
+  No está confirmado el plan de este proyecto ni que se pausara. Su
+  restauración por el propietario no encaja, por sí sola, con atribuir una
+  recuperación espontánea de horas a una pausa. Debe comprobarse en el panel.
+
+Próxima evidencia necesaria:
+  Hora local y zona, URL exacta, código o captura del error, comparación
+  raíz/preview/pages.dev, redes utilizadas y resultados DNS/HTTP. Correlacionar
+  esos datos con eventos de seguridad, DNS, despliegues y registros de los
+  proveedores. No hay registros históricos propios aportados que permitan
+  una conclusión causal definitiva sobre esos dos domingos.
+
+
+17. OPERACIÓN, MANTENIMIENTO Y RECUPERACIÓN
+============================================================
+
+Contenido habitual:
+  Editar fichas, textos, traducciones y colaboradores desde administración.
+  Los cambios de datos no requieren compilar el frontend. Comprobar estado
+  publicado, traducciones activas, archivo asociado y URL de multimedia.
+
+Cambios de código:
+  Revisar el estado Git, preservar modificaciones ajenas, implementar y
+  ejecutar las comprobaciones apropiadas. El propietario ha indicado subir
+  los cambios terminados a GitHub. Esa preferencia no convierte una consulta
+  de diagnóstico en autorización para modificar infraestructura o contenido.
+
+Publicación:
+  Subir main activa Pages. Consultar el check de Cloudflare cuando se desee
+  confirmar el despliegue. Un push correcto confirma GitHub, no garantiza
+  por sí mismo que la compilación remota haya terminado correctamente.
+
+Recuperación del frontend:
+  Revisar el despliegue activo y el anterior en Cloudflare Pages. Si procede,
+  usar rollback o revertir un cambio concreto con trazabilidad. Recuperar
+  una versión de Pages no restaura automáticamente la base de datos ni R2.
+
+Copias de seguridad:
+  Git conserva código, no el contenido actual de PostgreSQL ni los objetos
+  de R2. Hace falta definir respaldos y restauración para ambos, así como
+  conservar configuración de dominios y variables de forma segura.
+  No está verificada una política efectiva de copias en esta cuenta.
+
+Observabilidad recomendada, todavía no configurada en esta revisión:
+  Medir de forma independiente la portada, la entrada de la guía, una
+  lectura pública de Supabase y un objeto multimedia. Registrar fecha,
+  latencia y respuesta desde más de un punto de red. Añadir una prueba de
+  navegador para detectar cargas bloqueadas aunque el HTML responda 200.
+  El /health del Worker solo comprueba esa respuesta básica; no acredita
+  por sí mismo la salud de Supabase y R2.
+
+Revisión periódica:
+  Dependencias y vulnerabilidades, dominios y certificados, accesos admin,
+  permisos RLS, consumo de proveedores, logs, consistencia de multimedia,
+  comportamiento móvil, instalación en Android/iPhone y pruebas de recuperación.
+
+
+18. INFORMACIÓN PENDIENTE DE CONFIRMAR
+============================================================
+
+- Registrador del dominio, titularidad y fecha de renovación.
+- Planes contratados, facturación, consumos y alertas de Cloudflare/Supabase.
+- Región y recursos de cómputo del proyecto de base de datos.
+- Comando, entorno y variables completas del proyecto de Pages en su panel.
+- Lista de migraciones efectivamente aplicadas y versión de la Edge Function.
+- Reglas completas de seguridad, firewall, rate limiting y rutas de Workers.
+- Política de backups, retención y pruebas reales de restauración.
+- Configuración de correo de autenticación, SMTP y entregabilidad.
+- Métricas históricas de disponibilidad y registros de los dos cortes.
+- Cobertura integral de accesibilidad, rendimiento y SEO en producción.
+
+No se deben sustituir estas comprobaciones por supuestos derivados del
+código o de que el servicio responda ahora.
+
+
+19. FUENTES Y ARCHIVOS DE REFERENCIA
+============================================================
+
+Fuentes primarias del proyecto:
+  package.json y package-lock.json.
+  vite.config.ts; src/App.tsx; src/main.tsx.
+  src/data/repositories.ts y src/data/supabaseRepository.ts.
+  src/domain/types.ts y src/routes/.
+  src/lib/seo.ts, media.ts, imageCompression.ts, geolocation.ts,
+    pwaInstall.ts, tourSession.ts, routeSession.ts y realtimeTourService.ts.
+  src/components/PublicFooter.tsx, PwaInstallButton.tsx y NearbyPlacesModal.tsx.
+  public/manifest.webmanifest, public/sw.js e index.html.
+  worker/src/index.js y worker/wrangler.jsonc.
+  supabase/migrations/ y supabase/functions/admin-hosts/index.ts.
+  .github/workflows/pages.yml y estado público de GitHub Actions.
+  docs/pwa-instalacion.md.
+
+Las notas previas README.md, guia-funcionalidades-implementadas.md,
+pendientes-prompts.md y worker/README.md contienen información útil, pero
+algunas referencias de alojamiento, variables o tareas pendientes están
+desactualizadas. Ante discrepancia, se ha contrastado el código actual.
+
+Comprobación del último despliegue de referencia:
+  https://api.github.com/repos/viveutrera/viveutrera/commits/7882b3063f5588ee0bf02afe4647a4934d73fb53/check-runs
+
+Documentación oficial consultada para la revisión de infraestructura:
+  https://developers.cloudflare.com/pages/configuration/git-integration/
+  https://developers.cloudflare.com/pages/configuration/serving-pages/
+  https://developers.cloudflare.com/pages/functions/pricing/
+  https://developers.cloudflare.com/workers/platform/limits/
+  https://supabase.com/docs/guides/platform/free-project-pausing
+
+Historial público de proveedores:
+  https://www.cloudflarestatus.com/history
+  https://status.supabase.com/history
+
+Fin del informe. Actualizar este documento cuando cambien arquitectura,
+dominios, variables, permisos, despliegue o funcionamiento de la aplicación.
