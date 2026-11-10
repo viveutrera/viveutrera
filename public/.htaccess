@@ -1,0 +1,26 @@
+# Apache configuration for the SW Hosting static build.
+# SW Hosting serves static files through Nginx: verify direct SPA routes there.
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Serve existing files and directories normally (including /preview/).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [END]
+
+  # Missing static resources must return 404 rather than the React HTML shell.
+  RewriteRule ^(?:assets|brand|flags)(?:/|$) - [END]
+  RewriteRule \.(?:js|mjs|css|map|png|jpe?g|webp|svg|ico|woff2?|mp3|ogg|wav|webmanifest|txt|xml)$ - [END,NC]
+
+  # React Router handles public and administration routes.
+  RewriteRule ^ index.html [END]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Browsers must revalidate the application shell and PWA metadata.
+  <FilesMatch "^(?:index\.html|sw\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
