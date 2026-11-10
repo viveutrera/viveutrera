@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'vive-utrera-shell-v5';
+const CACHE_NAME = 'vive-utrera-shell-v6';
 const APP_SHELL = [
   '/',
   '/preview/',
@@ -33,6 +33,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Never infer the responding host from offline or previously cached metadata.
+  if (url.pathname.endsWith('/hosting-info.json')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(

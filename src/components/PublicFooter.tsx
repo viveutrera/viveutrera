@@ -6,6 +6,7 @@ import type { ContactContent, SiteContent } from '../domain/types';
 import { defaultLanguageCode, getPersistedLanguage } from '../lib/language';
 import { publicPath } from '../lib/routing';
 import { PwaInstallButton } from './PwaInstallButton';
+import { HostingIndicator } from './HostingIndicator';
 
 export function PublicFooter() {
   const language = getPersistedLanguage() ?? defaultLanguageCode;
@@ -53,6 +54,7 @@ export function PublicFooter() {
           </div>
         ) : null}
       </div>
+      <HostingIndicator />
     </footer>
   );
 }

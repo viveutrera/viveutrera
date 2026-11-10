@@ -22,11 +22,31 @@ Nunca usar una clave `service_role` ni otras credenciales privadas en Vite.
 ```powershell
 npm run lint
 npm test
-npm run build
+npm run build:sw
 ```
 
 El resultado es `dist`. Incluye `.htaccess`, el manifiesto, el service worker y
 `preview/index.html`. No subir el código fuente, `.env.local` ni `node_modules`.
+
+## Identificación del alojamiento
+
+La portada y el pie consultan `hosting-info.json` con una URL única y sin caché.
+El service worker nuevo no lo almacena ni ofrece una copia sin conexión. Se
+comprueba al abrir la vista, cada minuto y al recuperar el foco o la conexión.
+Si no se recibe un JSON válido en cinco segundos, indica «Alojamiento sin verificar».
+No se utiliza el nombre de dominio para decidir la etiqueta.
+
+`npm run build:sw` genera automáticamente `{"hosting":"SW Hosting"}`.
+Cloudflare Pages inyecta `CF_PAGES=1` y su compilación normal genera automáticamente
+`{"hosting":"Cloudflare Pages"}`. El frontend es el mismo: solo cambia el marcador
+independiente del servidor. No copiar el marcador de SW a Pages o viceversa.
+Una compilación sin destino conocido genera `{"hosting":null}`, sin atribuir un
+alojamiento por defecto. No es necesario editar el archivo para el ZIP de SW.
+
+El indicador identifica la respuesta del marcador en ese momento, no el origen
+de todos los recursos ni el HTML que un navegador pudiera tener en caché.
+Nginx debe respetar `Cache-Control: no-store` para este JSON; la URL única y la
+petición sin caché evitan reutilizar comprobaciones previas durante la transición.
 
 ## Subida
 

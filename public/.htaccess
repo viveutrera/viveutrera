@@ -12,13 +12,16 @@ DirectoryIndex index.html
 
   # Missing static resources must return 404 rather than the React HTML shell.
   RewriteRule ^(?:assets|brand|flags)(?:/|$) - [END]
-  RewriteRule \.(?:js|mjs|css|map|png|jpe?g|webp|svg|ico|woff2?|mp3|ogg|wav|webmanifest|txt|xml)$ - [END,NC]
+  RewriteRule \.(?:js|mjs|json|css|map|png|jpe?g|webp|svg|ico|woff2?|mp3|ogg|wav|webmanifest|txt|xml)$ - [END,NC]
 
   # React Router handles public and administration routes.
   RewriteRule ^ index.html [END]
 </IfModule>
 
 <IfModule mod_headers.c>
+  <Files "hosting-info.json">
+    Header set Cache-Control "no-store"
+  </Files>
   # Browsers must revalidate the application shell and PWA metadata.
   <FilesMatch "^(?:index\.html|sw\.js|manifest\.webmanifest)$">
     Header set Cache-Control "no-cache"

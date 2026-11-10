@@ -497,6 +497,15 @@ button, input { font: inherit; }
   color: var(--color-white);
 }
 
+.hosting-indicator {
+  margin: 16px 0 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0.8;
+}
+
 .public-footer-links {
   display: grid;
   justify-items: center;

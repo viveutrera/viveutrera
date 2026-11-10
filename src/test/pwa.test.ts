@@ -96,4 +96,16 @@ describe('PWA installation and updates', () => {
     sw.fetch.mockRejectedValueOnce(new Error('Offline'));
     expect(await (await sw.request('/manifest.webmanifest', 'cors')).text()).toBe('Updated manifest');
   });
+
+  it('always checks the hosting marker on the network and never falls back to cached identification', async () => {
+    const sw = worker();
+    const path = '/hosting-info.json?check=unique';
+    sw.entries.set(`https://viveutrera.es${path}`, new Response('Old hosting'));
+    sw.fetch.mockResolvedValueOnce(new Response('Current hosting'));
+    expect(await (await sw.request(path, 'cors')).text()).toBe('Current hosting');
+    expect(sw.fetch).toHaveBeenLastCalledWith(expect.objectContaining({ url: `https://viveutrera.es${path}` }), { cache: 'no-store' });
+    expect(sw.caches.match).not.toHaveBeenCalled();
+    sw.fetch.mockRejectedValueOnce(new Error('Offline'));
+    await expect(sw.request(path, 'cors')).rejects.toThrow('Offline');
+  });
 });
