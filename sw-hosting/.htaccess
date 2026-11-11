@@ -1,0 +1,4 @@
+# Preserve the Supabase bearer token when Apache forwards the request to PHP.
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>

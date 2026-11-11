@@ -254,7 +254,7 @@ export function AdminMedia() {
           width: prepared.width,
           height: prepared.height,
           warnings: prepared.warnings,
-          status: 'Subiendo imagen principal y miniatura a R2...'
+          status: 'Subiendo imagen principal y miniatura al alojamiento...'
         }));
         const mainResult = await uploadMediaFile(prepared.mainFile, uploadTarget, (progress) => {
           setUploadPreview((current) => ({ ...current, progress: Math.round(progress * 0.7), status: `Subiendo imagen principal: ${progress}%` }));
@@ -282,7 +282,7 @@ export function AdminMedia() {
         });
         setSuccess(`Imagen optimizada: ${Math.round(prepared.mainFile.size / 1024)} KB y miniatura: ${Math.round(prepared.thumbnailFile.size / 1024)} KB.`);
       } else {
-        setUploadPreview((current) => ({ ...current, status: 'Subiendo fichero a R2...' }));
+        setUploadPreview((current) => ({ ...current, status: 'Subiendo fichero al alojamiento...' }));
         const result = await uploadMediaFile(uploadFile, uploadTarget, (progress) => {
           setUploadPreview((current) => ({ ...current, progress, status: `Subiendo fichero: ${progress}%` }));
         });
@@ -365,7 +365,7 @@ export function AdminMedia() {
       await deleteMediaFiles(objectKeys);
       await adminRepository.deleteMediaAsset(deleteId);
       setDeleteId(undefined);
-      setSuccess(`Asset borrado de R2 y Supabase: ${objectKeys.length} archivo${objectKeys.length === 1 ? '' : 's'}.`);
+      setSuccess(`Archivo borrado del almacenamiento y de Supabase: ${objectKeys.length} archivo${objectKeys.length === 1 ? '' : 's'}.`);
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo borrar el asset de forma coordinada.');
@@ -559,10 +559,10 @@ export function AdminMedia() {
           </SelectField>
           <FormField label="Fichero" type="file" onChange={(event) => selectUploadFile(event.target.files?.[0])} disabled={!canUseUploadApi()} />
           <div className="button-row">
-            <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir a R2'}</Button>
+            <Button type="submit" disabled={isSubmitting || !canUseUploadApi()}>{isSubmitting ? 'Subiendo...' : 'Subir archivo'}</Button>
           </div>
           <p className="hint">Las imagenes se convierten a WebP: version principal hasta 300 KB y miniatura hasta 50 KB.</p>
-          {!canUseUploadApi() ? <p className="hint">Configura VITE_UPLOAD_API_URL y despliega el Worker para activar la subida directa.</p> : null}
+          {!canUseUploadApi() ? <p className="hint">La subida no está disponible. Revisa la configuración del servicio de archivos.</p> : null}
         </form>
         {uploadFile ? (
           <div className="upload-preview-panel">
@@ -737,7 +737,7 @@ export function AdminMedia() {
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar asset"
-        message={`Se borrara ${selectedAsset?.object_key ?? 'el asset seleccionado'} de R2 y despues su registro de Supabase. Si esta asociado a algun elemento o colaborador, se bloqueara el borrado.`}
+        message={`Se borrara ${selectedAsset?.object_key ?? 'el asset seleccionado'} del almacenamiento y despues su registro de Supabase. Si esta asociado a algun elemento o colaborador, se bloqueara el borrado.`}
         confirmLabel="Borrar"
         onCancel={() => setDeleteId(undefined)}
         onConfirm={confirmDelete}

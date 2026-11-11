@@ -178,7 +178,7 @@ export function AdminSettings() {
         width: prepared.width,
         height: prepared.height,
         warnings: prepared.warnings,
-        status: 'Subiendo imagen y miniatura a R2...'
+        status: 'Subiendo imagen y miniatura al alojamiento...'
       }));
       const [mainResult, thumbnailResult] = await Promise.all([
         uploadMediaFile(prepared.mainFile, 'site', (progress) => {
@@ -245,7 +245,7 @@ export function AdminSettings() {
           await deleteMediaFiles(objectKeys);
           await adminRepository.deleteMediaAsset(asset.id);
           setMediaAssets((current) => current.filter((item) => item.id !== asset.id));
-          setSuccessModal('Imagen borrada de R2 y Supabase.');
+          setSuccessModal('Imagen borrada del almacenamiento y de Supabase.');
         } else {
           setSuccessModal('Imagen quitada de configuracion. El archivo sigue en uso en otro contenido.');
         }

@@ -21,6 +21,11 @@ export function canUseUploadApi() {
   return Boolean(import.meta.env.VITE_UPLOAD_API_URL && supabase);
 }
 
+export function uploadApiEndpoint(baseUrl: string, action: 'upload' | 'delete') {
+  const base = baseUrl.replace(/\/$/, '');
+  return /\.php$/i.test(base) ? `${base}?action=${action}` : `${base}/${action}`;
+}
+
 export async function uploadMediaFile(file: File, target: string, onProgress?: (percent: number) => void): Promise<UploadResponse> {
   if (!supabase) throw new Error('Supabase no esta configurado.');
   const uploadApiUrl = String(import.meta.env.VITE_UPLOAD_API_URL || '').replace(/\/$/, '');
@@ -35,10 +40,10 @@ export async function uploadMediaFile(file: File, target: string, onProgress?: (
   formData.append('target', target);
 
   if (onProgress) {
-    return uploadWithProgress(`${uploadApiUrl}/upload`, token, formData, onProgress);
+    return uploadWithProgress(uploadApiEndpoint(uploadApiUrl, 'upload'), token, formData, onProgress);
   }
 
-  const response = await fetch(`${uploadApiUrl}/upload`, {
+  const response = await fetch(uploadApiEndpoint(uploadApiUrl, 'upload'), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`
@@ -51,7 +56,7 @@ export async function uploadMediaFile(file: File, target: string, onProgress?: (
     throw new Error(payload && 'error' in payload && payload.error ? payload.error : 'No se pudo subir el fichero.');
   }
 
-  if (!payload || !('asset' in payload)) throw new Error('Respuesta invalida del Worker.');
+  if (!payload || !('asset' in payload)) throw new Error('Respuesta invalida del servicio de archivos.');
   return payload;
 }
 
@@ -70,13 +75,13 @@ function uploadWithProgress(url: string, token: string, formData: FormData, onPr
         return;
       }
       if (!payload || !('asset' in payload)) {
-        reject(new Error('Respuesta invalida del Worker.'));
+        reject(new Error('Respuesta invalida del servicio de archivos.'));
         return;
       }
       onProgress(100);
       resolve(payload as UploadResponse);
     };
-    request.onerror = () => reject(new Error('No se pudo conectar con el Worker de subida.'));
+    request.onerror = () => reject(new Error('No se pudo conectar con el servicio de subida.'));
     request.send(formData);
   });
 }
@@ -98,7 +103,7 @@ export async function deleteMediaFiles(objectKeys: string[]): Promise<DeleteResp
   const token = data.session?.access_token;
   if (!token) throw new Error('La sesion ha caducado. Vuelve a iniciar sesion.');
 
-  const response = await fetch(`${uploadApiUrl}/delete`, {
+  const response = await fetch(uploadApiEndpoint(uploadApiUrl, 'delete'), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -109,9 +114,9 @@ export async function deleteMediaFiles(objectKeys: string[]): Promise<DeleteResp
 
   const payload = await response.json().catch(() => undefined) as { error?: string } | DeleteResponse | undefined;
   if (!response.ok) {
-    throw new Error(payload && 'error' in payload && payload.error ? payload.error : 'No se pudieron borrar los archivos de R2.');
+    throw new Error(payload && 'error' in payload && payload.error ? payload.error : 'No se pudieron borrar los archivos.');
   }
 
-  if (!payload || !('deleted' in payload)) throw new Error('Respuesta invalida del Worker.');
+  if (!payload || !('deleted' in payload)) throw new Error('Respuesta invalida del servicio de archivos.');
   return payload;
 }

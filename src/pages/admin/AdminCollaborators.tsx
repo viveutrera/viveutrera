@@ -282,7 +282,7 @@ export function AdminCollaborators() {
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Borrar colaborador"
-        message={`Se eliminara ${selectedCollaborator?.name ?? 'este colaborador'} y sus textos traducidos. Si su imagen no se usa en otro sitio, tambien se eliminara de R2 y Supabase.`}
+        message={`Se eliminara ${selectedCollaborator?.name ?? 'este colaborador'} y sus textos traducidos. Si su imagen no se usa en otro sitio, tambien se eliminara del almacenamiento y de Supabase.`}
         confirmLabel="Borrar"
         onCancel={() => setDeleteId(undefined)}
         onConfirm={confirmDelete}

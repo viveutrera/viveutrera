@@ -108,4 +108,12 @@ describe('PWA installation and updates', () => {
     sw.fetch.mockRejectedValueOnce(new Error('Offline'));
     await expect(sw.request(path, 'cors')).rejects.toThrow('Offline');
   });
+
+  it('does not cache PHP API responses', async () => {
+    const sw = worker();
+    sw.fetch.mockResolvedValueOnce(new Response('{"ok":true}'));
+    await sw.request('/api/media.php?action=health', 'cors');
+    expect(sw.caches.match).not.toHaveBeenCalled();
+    expect(sw.fetch).toHaveBeenLastCalledWith(expect.anything(), { cache: 'no-store' });
+  });
 });

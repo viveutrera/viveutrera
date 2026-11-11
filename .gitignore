@@ -6,3 +6,4 @@ dist
 .dev.vars.*
 .npm-cache
 *.log
+__pycache__/

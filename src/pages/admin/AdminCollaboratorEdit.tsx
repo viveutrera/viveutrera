@@ -123,7 +123,7 @@ export function AdminCollaboratorEdit() {
           await deleteMediaFiles(objectKeys);
           await adminRepository.deleteMediaAsset(asset.id);
           setMediaAssets((current) => current.filter((item) => item.id !== asset.id));
-          setSuccess('Imagen del colaborador eliminada de R2 y Supabase.');
+          setSuccess('Imagen del colaborador eliminada del almacenamiento y de Supabase.');
         } else {
           setSuccess('Imagen quitada del colaborador. El archivo sigue en uso en otro contenido.');
         }
@@ -184,7 +184,7 @@ export function AdminCollaboratorEdit() {
         width: prepared.width,
         height: prepared.height,
         warnings: prepared.warnings,
-        status: 'Subiendo logo y miniatura a R2...'
+        status: 'Subiendo logo y miniatura al alojamiento...'
       }));
       const [mainResult, thumbnailResult] = await Promise.all([
         uploadMediaFile(prepared.mainFile, 'collaborator', (progress) => {

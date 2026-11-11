@@ -24,6 +24,7 @@ interface UsageSummary {
 }
 
 export function AdminDashboard() {
+  const usesSwStorage = /\.php$/i.test(import.meta.env.VITE_UPLOAD_API_URL || '');
   const [summary, setSummary] = useState<UsageSummary>();
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -84,19 +85,25 @@ export function AdminDashboard() {
             <MetricCard title="Elementos creados" value={summary.elements} detail="Elementos dados de alta en la guia" />
             <MetricCard title="Contenido" value={summary.elementTypes} detail={`${summary.languages} idiomas configurados`} />
             <MetricCard title="Multimedia" value={summary.mediaAssets} detail={`${summary.imageAssets} imagenes/logos - ${summary.audioAssets} audios`} />
-            <MetricCard title="R2 estimado" value={formatBytes(summary.registeredBytes)} detail={`${summary.elementImages} imagenes - ${summary.elementAudios} audios asociados`} />
+            <MetricCard title="Almacenamiento registrado" value={formatBytes(summary.registeredBytes)} detail={`${summary.elementImages} imagenes - ${summary.elementAudios} audios asociados`} />
             <MetricCard title="Colaboradores" value={summary.collaborators} detail={`${summary.elementLinks} enlaces de elementos`} />
           </div>
 
           <Card>
-            <h2>Uso sensible para planes free</h2>
-            <div className="usage-table" role="table" aria-label="Uso sensible para planes free">
+            <h2>Uso de servicios</h2>
+            <div className="usage-table" role="table" aria-label="Uso de servicios">
               <div role="row">
                 <strong role="columnheader">Servicio</strong>
                 <strong role="columnheader">Dato a vigilar</strong>
-                <strong role="columnheader">Limite free / riesgo</strong>
+                <strong role="columnheader">Limite / referencia</strong>
                 <strong role="columnheader">Estado en la app</strong>
               </div>
+              {usesSwStorage ? <div role="row">
+                <span role="cell">SW Hosting</span>
+                <span role="cell">Almacenamiento multimedia</span>
+                <span role="cell">Consultar capacidad y espacio libre en SWPanel</span>
+                <span role="cell">{formatBytes(summary.registeredBytes)} registrados por la app</span>
+              </div> : <>
               <div role="row">
                 <span role="cell">Cloudflare R2</span>
                 <span role="cell">Almacenamiento</span>
@@ -115,6 +122,7 @@ export function AdminDashboard() {
                 <span role="cell">10 millones/mes incluidas; lecturas de objetos consumen este bloque</span>
                 <span role="cell">Consultar en Cloudflare R2 Metrics</span>
               </div>
+              </>}
               <div role="row">
                 <span role="cell">Supabase</span>
                 <span role="cell">Base de datos</span>
@@ -128,7 +136,7 @@ export function AdminDashboard() {
                 <span role="cell">Consultar en Supabase Usage</span>
               </div>
             </div>
-            <p className="hint">Las operaciones reales de R2 y el egress real de Supabase no deben consultarse desde el frontend porque requeririan credenciales privadas. Este panel muestra el inventario interno y te indica los contadores externos que afectan a coste.</p>
+            <p className="hint">El tamaño registrado se calcula a partir del inventario de Supabase; no mide el espacio real ocupado en el servidor. Consulta el consumo y los límites reales en el panel de cada proveedor.</p>
           </Card>
         </>
       ) : null}

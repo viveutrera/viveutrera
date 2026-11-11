@@ -424,7 +424,7 @@ export function AdminElementEdit() {
         width: prepared.width,
         height: prepared.height,
         warnings: prepared.warnings,
-        status: 'Subiendo imagen principal y miniatura a R2...'
+        status: 'Subiendo imagen principal y miniatura al alojamiento...'
       }));
       const [mainResult, thumbnailResult] = await Promise.all([
         uploadMediaFile(prepared.mainFile, target, (progress) => {
@@ -458,7 +458,7 @@ export function AdminElementEdit() {
       };
     }
 
-    onStatus?.((current) => ({ ...current, status: 'Subiendo fichero a R2...' }));
+    onStatus?.((current) => ({ ...current, status: 'Subiendo fichero al alojamiento...' }));
     const result = await uploadMediaFile(file, target, (progress) => {
       onStatus?.((current) => ({ ...current, progress, status: `Subiendo fichero: ${progress}%` }));
     });
@@ -820,7 +820,7 @@ export function AdminElementEdit() {
       <ConfirmDialog
         isOpen={Boolean(pendingDelete)}
         title={`Borrar ${pendingDelete?.label ?? 'archivo'}`}
-        message={`Se borrara este ${pendingDelete?.label ?? 'archivo'} del elemento y, si el archivo no se usa en otro sitio, tambien se eliminara de R2.`}
+        message={`Se borrara este ${pendingDelete?.label ?? 'archivo'} del elemento y, si el archivo no se usa en otro sitio, tambien se eliminara del almacenamiento.`}
         confirmLabel="Borrar"
         onCancel={() => setPendingDelete(undefined)}
         onConfirm={confirmDeleteAssociation}

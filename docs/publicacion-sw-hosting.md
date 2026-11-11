@@ -2,8 +2,9 @@
 
 El frontend de React/Vite se publica como archivos estáticos. Supabase continúa
 prestando el servicio de base de datos y autenticación. La distribución SW lee
-los archivos multimedia de `https://viveutrera.es/media`. La API de subida y
-eliminación sigue en Cloudflare Workers hasta adaptar ese servicio.
+los archivos multimedia de `https://viveutrera.es/media`. La API PHP de subida y
+eliminación está en `https://viveutrera.es/api/media.php` y valida los permisos
+de administrador con Supabase.
 
 ## Compilación
 
@@ -12,21 +13,20 @@ Configurar `.env.local` (ignorado por Git) con las variables públicas de produc
 ```dotenv
 VITE_SUPABASE_URL=https://oartoepbgrxzyjmolgjf.supabase.co
 VITE_SUPABASE_ANON_KEY=<clave pública anon del proyecto>
-VITE_UPLOAD_API_URL=https://viveutrera-media-api.viveutrera.workers.dev
 VITE_SITE_URL=https://viveutrera.es
 VITE_ASSET_BASE_PATH=/
 ```
 
 Nunca usar una clave `service_role` ni otras credenciales privadas en Vite.
 
-El archivo versionado `.env.sw` establece la dirección de lectura multimedia
+El archivo versionado `.env.sw` establece las direcciones de lectura y API multimedia
 para `npm run build:sw`, con prioridad sobre `.env.local`. No hace falta editar
 variables ni archivos del ZIP para publicar en SW. Las compilaciones normales
 de Cloudflare conservan su configuración de multimedia independiente.
 
-Durante esta fase, evitar subir o eliminar recursos desde el administrador:
-su API todavía modifica R2, mientras los visitantes de SW leen la copia local.
-Un recurso nuevo en R2 no estará disponible en SW hasta copiarlo a `media`.
+Las compilaciones SW gestionan archivos exclusivamente en `/datos/web/media`.
+La copia de Cloudflare conserva su Worker y R2: no usar su administrador durante
+la migración, porque comparte la base de datos pero no los archivos nuevos.
 
 ```powershell
 npm run lint
@@ -36,6 +36,58 @@ npm run build:sw
 
 El resultado es `dist`. Incluye `.htaccess`, el manifiesto, el service worker y
 `preview/index.html`. No subir el código fuente, `.env.local` ni `node_modules`.
+
+## API de archivos en SW
+
+Requiere PHP 8.1 o superior, las extensiones cURL y Fileinfo, salida HTTPS hacia
+Supabase y permisos de escritura de PHP en la carpeta `media` y sus subcarpetas.
+Se recomienda una versión de PHP con soporte activo. No utiliza MySQL, Node.js,
+claves R2 ni credenciales `service_role`.
+
+La compilación SW incluye `api/media.php`, `api/media-service.php`, un archivo
+`api/media-config.php` generado automáticamente y los archivos ocultos del servicio.
+La configuración usa únicamente la URL y la clave pública anon ya usadas por la
+aplicación; su codificación base64 es de transporte, no un mecanismo de secreto.
+No hay que editar el paquete. La compilación de Cloudflare no incluye archivos PHP.
+
+- `GET /api/media.php?action=health`: comprueba requisitos locales básicos, no una
+  sesión de administrador ni la conexión completa con Supabase.
+- `POST /api/media.php?action=upload`: multipart con `file` y `target`.
+- `POST /api/media.php?action=delete`: JSON con `objectKeys`, hasta 100 archivos.
+
+Ambas operaciones exigen `Authorization: Bearer <sesión Supabase>`. La API valida
+la sesión en Auth y la pertenencia a `admin_profiles` usando el mismo token y RLS.
+Un fallo de Supabase bloquea la operación. No se aceptan usuarios anfitriones.
+Solo admite imágenes JPEG, PNG, WebP y GIF y audio MP3, WAV, Ogg, M4A, AAC, FLAC o
+WebM según su MIME real. El servidor asigna una extensión segura, genera nombres
+aleatorios y solo permite operar dentro de `site`, `element-image`, `element-audio`
+y `collaborator`. No permite rutas con retrocesos, archivos ejecutables ni enlaces
+simbólicos. Una petición de borrado valida todas las rutas antes de eliminar.
+
+El máximo de aplicación es 50 MiB. `api/.user.ini` solicita `upload_max_filesize=50M`
+y `post_max_size=56M`; puede tardar en aplicarse y no sustituye los límites de Nginx
+ni una política del proveedor. Si falla una subida grande, revisar con soporte
+esos límites y el límite del cuerpo de petición de Nginx. No utilizar permisos 777.
+
+Para publicar: subir primero toda la carpeta `api` y comprobar que health devuelve
+`{"ok":true,"storage":"SW Hosting"}`. Después subir assets y los HTML al final.
+Si health devuelve HTML, PHP se descarga como texto, o no hay permisos de escritura,
+no activar el frontend nuevo y pedir a soporte que revise la ejecución PHP.
+Verificar una imagen de prueba, su miniatura y un audio desde el administrador;
+comprobar después su eliminación. No borrar archivos reales para esta prueba.
+
+Las operaciones de archivos y las escrituras de metadatos en Supabase siguen
+siendo dos pasos independientes, como con el Worker anterior. No hay una
+transacción conjunta entre disco y base de datos.
+
+Pruebas locales adicionales (Python estándar y PHP con cURL/Fileinfo):
+
+```powershell
+python scripts/test-sw-media.py --php C:\ruta\php.exe
+```
+
+Estas pruebas arrancan servidores locales temporales y un sustituto de Supabase;
+no utilizan credenciales ni datos de producción.
 
 ## Identificación del alojamiento
 
@@ -101,6 +153,7 @@ Solo después de validar el nuevo alojamiento cambiar los registros web o los
 servidores DNS. Preparar antes los registros de correo, `media` y cualquier otro
 subdominio. Mantener Cloudflare Pages disponible durante la transición.
 
-Esta migración parcial traslada la lectura multimedia a SW, pero no elimina la
-dependencia de Cloudflare para subidas y eliminaciones, la copia de Pages ni los
-posibles proveedores de infraestructura de Supabase. Conservar los originales R2.
+La distribución SW ya no utiliza R2 ni Workers para leer, subir o eliminar archivos.
+Mantiene Supabase como backend. La copia de Pages sigue teniendo su configuración
+independiente y no se sincroniza automáticamente con los archivos de SW.
+Conservar los originales R2 como copia hasta terminar las comprobaciones.
