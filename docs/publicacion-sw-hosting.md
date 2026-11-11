@@ -52,6 +52,9 @@ No hay que editar el paquete. La compilación de Cloudflare no incluye archivos 
 
 - `GET /api/media.php?action=health`: comprueba requisitos locales básicos, no una
   sesión de administrador ni la conexión completa con Supabase.
+  Si devuelve `ok: false`, incluye `checks` con los requisitos fallidos:
+  `php_supported` (PHP >= 8.1), `curl`, `fileinfo`, `media_exists`,
+  `media_writable` y `media_not_symlink`. No expone rutas ni claves.
 - `POST /api/media.php?action=upload`: multipart con `file` y `target`.
 - `POST /api/media.php?action=delete`: JSON con `objectKeys`, hasta 100 archivos.
 

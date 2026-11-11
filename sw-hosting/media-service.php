@@ -193,10 +193,19 @@ function dispatch(array $config, array $server, array $query, array $files, arra
     if ($method === 'OPTIONS') return [204, null];
     $action = $query['action'] ?? '';
     if ($action === 'health' && $method === 'GET') {
-        $ready = PHP_VERSION_ID >= 80100 && function_exists('curl_init') && class_exists('finfo')
-            && is_dir($config['media_directory']) && is_writable($config['media_directory'])
-            && !is_link($config['media_directory']);
-        return [$ready ? 200 : 503, ['ok' => $ready, 'storage' => 'SW Hosting']];
+        $checks = [
+            'php_supported' => PHP_VERSION_ID >= 80100,
+            'curl' => function_exists('curl_init'),
+            'fileinfo' => class_exists('finfo'),
+            'media_exists' => is_dir($config['media_directory']),
+            'media_writable' => is_writable($config['media_directory']),
+            'media_not_symlink' => !is_link($config['media_directory']),
+        ];
+        $ready = !in_array(false, $checks, true);
+        $result = ['ok' => $ready, 'storage' => 'SW Hosting'];
+        // Only disclose boolean requirements, never paths or configuration values.
+        if (!$ready) $result['checks'] = $checks;
+        return [$ready ? 200 : 503, $result];
     }
     if ($method !== 'POST') fail(405, 'Método no permitido.');
     if (!in_array($action, ['upload', 'delete'], true)) fail(404, 'Operación no encontrada.');

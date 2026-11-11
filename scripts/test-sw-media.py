@@ -144,6 +144,21 @@ class MediaApiTests(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertEqual(self.upload(token=token)[0], expected)
 
+    def test_health_explains_missing_requirements_without_exposing_paths(self):
+        temporary = self.web / 'media-not-mounted'
+        self.media.rename(temporary)
+        try:
+            status, body, _ = self.request('health', method='GET', token=None)
+            self.assertEqual(status, 503)
+            self.assertFalse(body['ok'])
+            self.assertFalse(body['checks']['media_exists'])
+            self.assertFalse(body['checks']['media_writable'])
+            self.assertTrue(all(isinstance(value, bool) for value in body['checks'].values()))
+            self.assertNotIn(str(self.root), json.dumps(body))
+            self.assertNotIn('test-anon-key', json.dumps(body))
+        finally:
+            temporary.rename(self.media)
+
     def test_upload_image_and_public_response(self):
         status, body, _ = self.upload(filename='foto.php')
         self.assertEqual(status, 201)
