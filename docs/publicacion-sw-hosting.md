@@ -1,8 +1,9 @@
 # Publicación manual en SW Hosting
 
 El frontend de React/Vite se publica como archivos estáticos. Supabase continúa
-prestando el servicio de base de datos y autenticación. Esta primera fase conserva
-los archivos multimedia en R2 y la API de subida en Cloudflare Workers.
+prestando el servicio de base de datos y autenticación. La distribución SW lee
+los archivos multimedia de `https://viveutrera.es/media`. La API de subida y
+eliminación sigue en Cloudflare Workers hasta adaptar ese servicio.
 
 ## Compilación
 
@@ -11,13 +12,21 @@ Configurar `.env.local` (ignorado por Git) con las variables públicas de produc
 ```dotenv
 VITE_SUPABASE_URL=https://oartoepbgrxzyjmolgjf.supabase.co
 VITE_SUPABASE_ANON_KEY=<clave pública anon del proyecto>
-VITE_PUBLIC_MEDIA_BASE_URL=https://media.viveutrera.es
 VITE_UPLOAD_API_URL=https://viveutrera-media-api.viveutrera.workers.dev
 VITE_SITE_URL=https://viveutrera.es
 VITE_ASSET_BASE_PATH=/
 ```
 
 Nunca usar una clave `service_role` ni otras credenciales privadas en Vite.
+
+El archivo versionado `.env.sw` establece la dirección de lectura multimedia
+para `npm run build:sw`, con prioridad sobre `.env.local`. No hace falta editar
+variables ni archivos del ZIP para publicar en SW. Las compilaciones normales
+de Cloudflare conservan su configuración de multimedia independiente.
+
+Durante esta fase, evitar subir o eliminar recursos desde el administrador:
+su API todavía modifica R2, mientras los visitantes de SW leen la copia local.
+Un recurso nuevo en R2 no estará disponible en SW hasta copiarlo a `media`.
 
 ```powershell
 npm run lint
@@ -38,7 +47,8 @@ No se utiliza el nombre de dominio para decidir la etiqueta.
 
 `npm run build:sw` genera automáticamente `{"hosting":"SW Hosting"}`.
 Cloudflare Pages inyecta `CF_PAGES=1` y su compilación normal genera automáticamente
-`{"hosting":"Cloudflare Pages"}`. El frontend es el mismo: solo cambia el marcador
+`{"hosting":"Cloudflare Pages"}`. El frontend comparte el mismo código, con
+la configuración de multimedia propia de cada destino y el marcador
 independiente del servidor. No copiar el marcador de SW a Pages o viceversa.
 Una compilación sin destino conocido genera `{"hosting":null}`, sin atribuir un
 alojamiento por defecto. No es necesario editar el archivo para el ZIP de SW.
@@ -60,6 +70,8 @@ petición sin caché evitan reutilizar comprobaciones previas durante la transic
 4. En posteriores publicaciones subir primero los nuevos recursos de `assets`,
    después el resto y finalmente los HTML. Conservar los recursos antiguos hasta
    que los navegadores hayan renovado sus páginas abiertas.
+5. Conservar siempre la carpeta `/datos/web/media` ya subida: no forma parte del
+   ZIP del frontend y no debe borrarse durante las publicaciones.
 
 ## Prueba antes de cambiar DNS
 
@@ -89,5 +101,6 @@ Solo después de validar el nuevo alojamiento cambiar los registros web o los
 servidores DNS. Preparar antes los registros de correo, `media` y cualquier otro
 subdominio. Mantener Cloudflare Pages disponible durante la transición.
 
-Esta migración parcial no elimina la dependencia de Cloudflare para multimedia,
-subidas ni los posibles proveedores de infraestructura de Supabase.
+Esta migración parcial traslada la lectura multimedia a SW, pero no elimina la
+dependencia de Cloudflare para subidas y eliminaciones, la copia de Pages ni los
+posibles proveedores de infraestructura de Supabase. Conservar los originales R2.
