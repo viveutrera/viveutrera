@@ -30,7 +30,9 @@ export function HostingIndicator() {
         if (hosting !== 'SW Hosting' && hosting !== 'Cloudflare Pages') {
           throw new Error('Unknown hosting');
         }
-        if (active && controller === current) setLabel(`Alojamiento: ${hosting}`);
+        if (active && controller === current) {
+          setLabel(hosting === 'SW Hosting' ? 'v2.0 SW' : 'v1.1 Cl');
+        }
       } catch {
         if (active && controller === current) setLabel('Alojamiento sin verificar');
       } finally {

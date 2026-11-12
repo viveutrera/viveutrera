@@ -12,11 +12,14 @@ const marker = (hosting: string | null) => new Response(JSON.stringify({ hosting
 });
 
 describe('HostingIndicator', () => {
-  it.each(['SW Hosting', 'Cloudflare Pages'])('reports %s from the response, independently of the hostname', async (hosting) => {
+  it.each([
+    ['SW Hosting', 'v2.0 SW'],
+    ['Cloudflare Pages', 'v1.1 Cl']
+  ])('reports %s as %s from the response, independently of the hostname', async (hosting, label) => {
     const fetch = vi.fn().mockResolvedValue(marker(hosting));
     vi.stubGlobal('fetch', fetch);
     render(<HostingIndicator />);
-    expect(await screen.findByText(`Alojamiento: ${hosting}`)).toBeInTheDocument();
+    expect(await screen.findByText(label)).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/^\/hosting-info\.json\?check=.+/), {
       cache: 'no-store', redirect: 'error', signal: expect.any(AbortSignal)
     });
@@ -37,10 +40,10 @@ describe('HostingIndicator', () => {
     const fetch = vi.fn().mockResolvedValueOnce(marker('SW Hosting')).mockRejectedValueOnce(new Error('Offline'));
     vi.stubGlobal('fetch', fetch);
     render(<HostingIndicator />);
-    await screen.findByText('Alojamiento: SW Hosting');
+    await screen.findByText('v2.0 SW');
     fireEvent.focus(window);
     await screen.findByText('Alojamiento sin verificar');
     expect(fetch.mock.calls[0][0]).not.toBe(fetch.mock.calls[1][0]);
-    await waitFor(() => expect(screen.queryByText('Alojamiento: SW Hosting')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('v2.0 SW')).not.toBeInTheDocument());
   });
 });
