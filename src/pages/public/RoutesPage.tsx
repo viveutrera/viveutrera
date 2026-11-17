@@ -1,9 +1,9 @@
-import { ArrowDown, ArrowRight, ArrowUp, Map } from 'lucide-react';
+import { ArrowRight, Map } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
 import { PublicTopNav } from '../../components/PublicTopNav';
-import { Button } from '../../components/ui/Button';
+import { ButtonLink } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState, LoadingState } from '../../components/ui/States';
 import { guideRepository } from '../../data/repositories';
@@ -11,7 +11,6 @@ import type { GuideRoute, Language, LanguageCode } from '../../domain/types';
 import { t } from '../../i18n/ui';
 import { defaultLanguageCode, getPersistedLanguage, isLanguageCode, persistLanguage } from '../../lib/language';
 import { mediaObjectKey, mediaUrl } from '../../lib/media';
-import { startRoute } from '../../lib/routeSession';
 import { setSeo } from '../../lib/seo';
 
 export function RoutesPage() {
@@ -81,17 +80,8 @@ export function RoutesPage() {
 }
 
 function RouteCard({ route, language }: { route: GuideRoute; language: LanguageCode }) {
-  const navigate = useNavigate();
-  const [isExpanded, setExpanded] = useState(false);
   const translation = route.translations[language];
   const imageAsset = route.mediaAsset ?? route.elements.find((element) => element.images[0])?.images[0]?.mediaAsset;
-  const firstElement = route.elements[0];
-
-  function beginRoute() {
-    if (!firstElement) return;
-    startRoute(route.id, 0);
-    navigate(`/guia/${language}/elemento/${firstElement.slug}`);
-  }
 
   return (
     <Card className="element-card route-card">
@@ -101,30 +91,9 @@ function RouteCard({ route, language }: { route: GuideRoute; language: LanguageC
       <div>
         <h2>{translation.name}</h2>
         <p>{translation.description}</p>
-        <div className="route-card-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-expanded={isExpanded}
-            aria-controls={`route-elements-${route.id}`}
-            onClick={() => setExpanded((expanded) => !expanded)}
-          >
-            {t(language, isExpanded ? 'hideRoute' : 'viewRoute')}
-            {isExpanded ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-          </Button>
-          {firstElement ? (
-            <Button type="button" variant="secondary" onClick={beginRoute}>
-              {t(language, 'startRoute')} <ArrowRight size={16} />
-            </Button>
-          ) : null}
-        </div>
-        {isExpanded ? (
-          <ol id={`route-elements-${route.id}`} className="route-elements-list">
-            {route.elements.map((element) => (
-              <li key={element.id}>{element.translations[language]?.name ?? element.slug}</li>
-            ))}
-          </ol>
-        ) : null}
+        <ButtonLink to={`/rutas/${language}/${route.slug}`} variant="primary" className="route-card-view-link">
+          {t(language, 'viewRoute')} <ArrowRight size={16} />
+        </ButtonLink>
       </div>
     </Card>
   );

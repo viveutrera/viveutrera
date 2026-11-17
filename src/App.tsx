@@ -28,6 +28,7 @@ import { LandingPage } from './pages/public/LandingPage';
 import { NotFoundPage } from './pages/public/NotFoundPage';
 import { ToursPage } from './pages/public/ToursPage';
 import { RoutesPage } from './pages/public/RoutesPage';
+import { RouteDetailPage } from './pages/public/RouteDetailPage';
 import { RequireAuth } from './routes/RequireAuth';
 
 export function App() {
@@ -42,6 +43,7 @@ export function App() {
         <Route path="/tours/:idioma" element={<ToursPage />} />
         <Route path="/rutas" element={<RoutesPage />} />
         <Route path="/rutas/:idioma" element={<RoutesPage />} />
+        <Route path="/rutas/:idioma/:slug" element={<RouteDetailPage />} />
         <Route path="/guia/:idioma" element={<GuidePage />} />
         <Route path="/guia/:idioma/elemento/:slug" element={<ElementDetailPage />} />
       </Route>
