@@ -1,4 +1,4 @@
-import { ArrowRight, Map } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, Map } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { PublicFooter } from '../../components/PublicFooter';
@@ -82,6 +82,7 @@ export function RoutesPage() {
 
 function RouteCard({ route, language }: { route: GuideRoute; language: LanguageCode }) {
   const navigate = useNavigate();
+  const [isExpanded, setExpanded] = useState(false);
   const translation = route.translations[language];
   const imageAsset = route.mediaAsset ?? route.elements.find((element) => element.images[0])?.images[0]?.mediaAsset;
   const firstElement = route.elements[0];
@@ -100,10 +101,29 @@ function RouteCard({ route, language }: { route: GuideRoute; language: LanguageC
       <div>
         <h2>{translation.name}</h2>
         <p>{translation.description}</p>
-        {firstElement ? (
-          <Button type="button" variant="secondary" onClick={beginRoute}>
-            {t(language, 'startRoute')} <ArrowRight size={16} />
+        <div className="route-card-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            aria-expanded={isExpanded}
+            aria-controls={`route-elements-${route.id}`}
+            onClick={() => setExpanded((expanded) => !expanded)}
+          >
+            {t(language, isExpanded ? 'hideRoute' : 'viewRoute')}
+            {isExpanded ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
           </Button>
+          {firstElement ? (
+            <Button type="button" variant="secondary" onClick={beginRoute}>
+              {t(language, 'startRoute')} <ArrowRight size={16} />
+            </Button>
+          ) : null}
+        </div>
+        {isExpanded ? (
+          <ol id={`route-elements-${route.id}`} className="route-elements-list">
+            {route.elements.map((element) => (
+              <li key={element.id}>{element.translations[language]?.name ?? element.slug}</li>
+            ))}
+          </ol>
         ) : null}
       </div>
     </Card>

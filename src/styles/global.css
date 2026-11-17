@@ -1058,7 +1058,19 @@ p { line-height: 1.65; }
   margin: 0;
 }
 .route-card .button {
+  margin-top: 0;
+}
+.route-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 12px;
+}
+.route-elements-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 24px;
 }
 .tour-notification {
   display: grid;
